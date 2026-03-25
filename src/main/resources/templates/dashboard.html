@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <nav class="bg-indigo-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-white text-xl font-bold tracking-wide">Majordomo</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-indigo-200 text-sm" th:text="'Signed in as ' + ${username}">Signed in as user</span>
+                    <form th:action="@{/logout}" method="post" class="inline">
+                        <button type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-md transition">
+                            Sign out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+            <!-- Property Count -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Properties</div>
+                <div class="mt-2 text-3xl font-bold text-indigo-700" th:text="${summary.propertyCount()}">0</div>
+            </div>
+
+            <!-- Contact Count -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Contacts</div>
+                <div class="mt-2 text-3xl font-bold text-indigo-700" th:text="${summary.contactCount()}">0</div>
+            </div>
+
+            <!-- Total Spend -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Spend</div>
+                <div class="mt-2 text-3xl font-bold text-indigo-700">
+                    $<span th:text="${#numbers.formatDecimal(summary.totalSpend(), 1, 2)}">0.00</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Two-column layout for maintenance sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+            <!-- Upcoming Maintenance -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Upcoming Maintenance</h2>
+                </div>
+                <div class="p-6">
+                    <p th:if="${#lists.isEmpty(summary.upcomingMaintenance())}" class="text-gray-400 text-sm">
+                        No upcoming maintenance items.
+                    </p>
+                    <ul class="space-y-3" th:unless="${#lists.isEmpty(summary.upcomingMaintenance())}">
+                        <li th:each="item : ${summary.upcomingMaintenance()}"
+                            class="flex items-center justify-between p-3 rounded-md bg-yellow-50 border border-yellow-200">
+                            <div>
+                                <span class="font-medium text-gray-800" th:text="${item.description}">Task</span>
+                                <span class="block text-sm text-yellow-700" th:text="'Due: ' + ${item.nextDue}">Due date</span>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Upcoming
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Overdue Items -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Overdue Items</h2>
+                </div>
+                <div class="p-6">
+                    <p th:if="${#lists.isEmpty(summary.overdueItems())}" class="text-gray-400 text-sm">
+                        No overdue items.
+                    </p>
+                    <ul class="space-y-3" th:unless="${#lists.isEmpty(summary.overdueItems())}">
+                        <li th:each="item : ${summary.overdueItems()}"
+                            class="flex items-center justify-between p-3 rounded-md bg-red-50 border border-red-200">
+                            <div>
+                                <span class="font-medium text-gray-800" th:text="${item.description}">Task</span>
+                                <span class="block text-sm text-red-700" th:text="'Due: ' + ${item.nextDue}">Due date</span>
+                            </div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Overdue
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Recent Service Records -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Recent Service Records</h2>
+            </div>
+            <div class="p-6">
+                <p th:if="${#lists.isEmpty(summary.recentServiceRecords())}" class="text-gray-400 text-sm">
+                    No recent service records.
+                </p>
+                <div th:unless="${#lists.isEmpty(summary.recentServiceRecords())}" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr th:each="record : ${summary.recentServiceRecords()}">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" th:text="${record.performedOn}">2026-01-01</td>
+                                <td class="px-6 py-4 text-sm text-gray-700" th:text="${record.description}">Service performed</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"
+                                    th:text="${record.cost != null} ? '$' + ${#numbers.formatDecimal(record.cost, 1, 2)} : '-'">$0.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>
