@@ -5,6 +5,8 @@ import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/schedules")
+@Tag(name = "Herald", description = "Scheduling and maintenance")
 public class ScheduleController {
 
     private final ManageScheduleUseCase scheduleUseCase;

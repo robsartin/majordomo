@@ -4,6 +4,8 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/contacts")
+@Tag(name = "Concierge", description = "Contact management")
 public class ContactController {
 
     private final ManageContactUseCase contactUseCase;

@@ -4,6 +4,8 @@ import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.identity.ManageUserUseCase;
 import com.majordomo.domain.port.out.identity.UserRepository;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/organizations")
+@Tag(name = "Identity", description = "User management")
 public class UserController {
 
     private final ManageUserUseCase manageUserUseCase;
