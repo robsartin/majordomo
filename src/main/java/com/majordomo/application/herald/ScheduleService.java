@@ -91,7 +91,7 @@ public class ScheduleService implements ManageScheduleUseCase {
         var saved = serviceRecordRepository.save(record);
         eventPublisher.publish(new ServiceRecordCreated(
                 saved.getId(), saved.getPropertyId(),
-                saved.getScheduleId(), saved.getCreatedAt()));
+                saved.getScheduleId(), Instant.now()));
         return saved;
     }
 
