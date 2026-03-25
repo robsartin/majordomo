@@ -2,6 +2,7 @@ package com.majordomo.adapter.in.web.ledger;
 
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.ledger.SpendSummary;
 import com.majordomo.domain.port.in.ledger.QuerySpendUseCase;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
@@ -53,7 +54,7 @@ public class LedgerController {
     @GetMapping("/properties/{propertyId}/spend")
     public SpendSummary spendForProperty(@PathVariable UUID propertyId) {
         var property = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new EntityNotFoundException("Property", propertyId));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.PROPERTY.name(), propertyId));
         organizationAccessService.verifyAccess(property.getOrganizationId());
         return querySpendUseCase.spendForProperty(propertyId);
     }

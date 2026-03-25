@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web;
 
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.DashboardSummary;
 import com.majordomo.domain.port.in.DashboardUseCase;
 
@@ -24,14 +25,18 @@ import java.util.UUID;
 public class DashboardController {
 
     private final DashboardUseCase dashboardUseCase;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
-     * Constructs a {@code DashboardController} with the required use case.
+     * Constructs a {@code DashboardController} with the required dependencies.
      *
-     * @param dashboardUseCase the inbound port for dashboard data retrieval
+     * @param dashboardUseCase           the inbound port for dashboard data retrieval
+     * @param organizationAccessService  the service for verifying organization membership
      */
-    public DashboardController(DashboardUseCase dashboardUseCase) {
+    public DashboardController(DashboardUseCase dashboardUseCase,
+                               OrganizationAccessService organizationAccessService) {
         this.dashboardUseCase = dashboardUseCase;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
@@ -42,6 +47,7 @@ public class DashboardController {
      */
     @GetMapping
     public DashboardSummary getSummary(@RequestParam UUID organizationId) {
+        organizationAccessService.verifyAccess(organizationId);
         return dashboardUseCase.getSummary(organizationId);
     }
 }

@@ -1,6 +1,7 @@
 package com.majordomo.adapter.in.web;
 
 import com.majordomo.domain.model.Attachment;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.port.in.ManageAttachmentUseCase;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,7 +62,7 @@ public class AttachmentController {
             @PathVariable UUID id,
             @RequestParam("file") MultipartFile file) throws IOException {
         var saved = attachmentUseCase.upload(
-                "property", id, file.getOriginalFilename(),
+                EntityType.PROPERTY.name(), id, file.getOriginalFilename(),
                 file.getContentType(), file.getSize(), file.getInputStream());
         return ResponseEntity
                 .created(URI.create("/api/attachments/" + saved.getId()))
@@ -76,7 +77,7 @@ public class AttachmentController {
      */
     @GetMapping("/properties/{id}/attachments")
     public List<Attachment> listForProperty(@PathVariable UUID id) {
-        return attachmentUseCase.list("property", id);
+        return attachmentUseCase.list(EntityType.PROPERTY.name(), id);
     }
 
     /**
@@ -94,7 +95,7 @@ public class AttachmentController {
             @PathVariable UUID recordId,
             @RequestParam("file") MultipartFile file) throws IOException {
         var saved = attachmentUseCase.upload(
-                "service_record", recordId, file.getOriginalFilename(),
+                EntityType.SERVICE_RECORD.name(), recordId, file.getOriginalFilename(),
                 file.getContentType(), file.getSize(), file.getInputStream());
         return ResponseEntity
                 .created(URI.create("/api/attachments/" + saved.getId()))
@@ -112,7 +113,7 @@ public class AttachmentController {
     public List<Attachment> listForServiceRecord(
             @PathVariable UUID scheduleId,
             @PathVariable UUID recordId) {
-        return attachmentUseCase.list("service_record", recordId);
+        return attachmentUseCase.list(EntityType.SERVICE_RECORD.name(), recordId);
     }
 
     /**
@@ -152,7 +153,7 @@ public class AttachmentController {
      */
     @GetMapping("/properties/{id}/gallery")
     public List<Attachment> getPropertyGallery(@PathVariable UUID id) {
-        return attachmentUseCase.listImages("property", id);
+        return attachmentUseCase.listImages(EntityType.PROPERTY.name(), id);
     }
 
     /**

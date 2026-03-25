@@ -1,6 +1,7 @@
 package com.majordomo.application.herald;
 
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
@@ -103,7 +104,7 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public MaintenanceSchedule update(UUID id, MaintenanceSchedule schedule) {
         var existing = scheduleRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("MaintenanceSchedule", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.MAINTENANCE_SCHEDULE.name(), id));
         schedule.setId(existing.getId());
         schedule.setCreatedAt(existing.getCreatedAt());
         return scheduleRepository.save(schedule);
@@ -112,7 +113,7 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public void archive(UUID id) {
         var existing = scheduleRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("MaintenanceSchedule", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.MAINTENANCE_SCHEDULE.name(), id));
         existing.setArchivedAt(Instant.now());
         scheduleRepository.save(existing);
     }
@@ -120,7 +121,7 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public ServiceRecord updateRecord(UUID id, ServiceRecord record) {
         var existing = serviceRecordRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("ServiceRecord", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.SERVICE_RECORD.name(), id));
         record.setId(existing.getId());
         record.setCreatedAt(existing.getCreatedAt());
         return serviceRecordRepository.save(record);
@@ -129,7 +130,7 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public void archiveRecord(UUID id) {
         var existing = serviceRecordRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("ServiceRecord", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.SERVICE_RECORD.name(), id));
         existing.setArchivedAt(Instant.now());
         serviceRecordRepository.save(existing);
     }

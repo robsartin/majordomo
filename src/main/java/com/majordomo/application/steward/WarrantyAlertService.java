@@ -62,10 +62,6 @@ public class WarrantyAlertService {
         var expiringProperties = propertyRepository.findWithWarrantyExpiringBefore(
                 LocalDate.now().plusDays(30));
         for (var property : expiringProperties) {
-            if (property.getWarrantyNotificationSentAt() != null) {
-                continue;
-            }
-
             var memberships = membershipRepository.findByOrganizationId(
                     property.getOrganizationId());
             for (var membership : memberships) {

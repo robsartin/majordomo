@@ -2,6 +2,7 @@ package com.majordomo.application;
 
 import com.majordomo.domain.model.Attachment;
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.port.in.ManageAttachmentUseCase;
 import com.majordomo.domain.port.out.AttachmentRepository;
 import com.majordomo.domain.port.out.FileStoragePort;
@@ -85,20 +86,20 @@ public class AttachmentService implements ManageAttachmentUseCase {
     @Override
     public InputStream download(UUID id) {
         Attachment attachment = attachmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.ATTACHMENT.name(), id));
         return fileStorage.load(attachment.getStoragePath());
     }
 
     @Override
     public Attachment getMetadata(UUID id) {
         return attachmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.ATTACHMENT.name(), id));
     }
 
     @Override
     public void archive(UUID id) {
         Attachment existing = attachmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.ATTACHMENT.name(), id));
         existing.setArchivedAt(Instant.now());
         attachmentRepository.save(existing);
     }
@@ -111,7 +112,7 @@ public class AttachmentService implements ManageAttachmentUseCase {
     @Override
     public Attachment setPrimary(UUID id) {
         Attachment target = attachmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.ATTACHMENT.name(), id));
 
         // Clear primary flag on all current images for the same entity
         attachmentRepository
@@ -133,7 +134,7 @@ public class AttachmentService implements ManageAttachmentUseCase {
     @Override
     public Attachment updateSortOrder(UUID id, int sortOrder) {
         Attachment existing = attachmentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.ATTACHMENT.name(), id));
         existing.setSortOrder(sortOrder);
         existing.setUpdatedAt(Instant.now());
         return attachmentRepository.save(existing);
