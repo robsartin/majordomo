@@ -46,4 +46,16 @@ public interface ContactRepository {
      * @return list of contacts after the cursor, ordered by ID
      */
     List<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
+
+    /**
+     * Searches contacts for an organization by a case-insensitive query across
+     * key text fields (formatted name, given name, family name), with cursor-based pagination.
+     *
+     * @param organizationId the organization whose contacts are searched
+     * @param query          the search term (matched via case-insensitive LIKE)
+     * @param cursor         exclusive start cursor (null for first page)
+     * @param limit          maximum number of results
+     * @return list of matching contacts after the cursor, ordered by ID
+     */
+    List<Contact> search(UUID organizationId, String query, UUID cursor, int limit);
 }

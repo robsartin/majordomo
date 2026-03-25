@@ -50,4 +50,17 @@ public class ContactRepositoryAdapter implements ContactRepository {
         }
         return entities.stream().map(ContactMapper::toDomain).toList();
     }
+
+    @Override
+    public List<Contact> search(UUID organizationId, String query, UUID cursor, int limit) {
+        List<ContactEntity> entities;
+        if (cursor == null) {
+            entities = jpa.searchByOrganizationIdOrderById(
+                    organizationId, query, PageRequest.of(0, limit));
+        } else {
+            entities = jpa.searchByOrganizationIdAndIdGreaterThanOrderById(
+                    organizationId, query, cursor, PageRequest.of(0, limit));
+        }
+        return entities.stream().map(ContactMapper::toDomain).toList();
+    }
 }

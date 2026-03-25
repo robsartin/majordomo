@@ -71,6 +71,15 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    public Page<Property> search(UUID organizationId, String query, String category,
+                                 String status, UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = propertyRepository.search(
+                organizationId, query, category, status, cursor, clampedLimit + 1);
+        return Page.fromOverfetch(items, limit, Property::getId);
+    }
+
+    @Override
     public List<Property> findByParentId(UUID parentId) {
         return propertyRepository.findByParentId(parentId);
     }

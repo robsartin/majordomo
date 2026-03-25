@@ -56,4 +56,18 @@ public interface MaintenanceScheduleRepository {
      * @return list of schedules due before that date, or an empty list if none qualify
      */
     List<MaintenanceSchedule> findDueBefore(LocalDate date);
+
+    /**
+     * Searches maintenance schedules for a property by a case-insensitive query across
+     * the description field, with an optional frequency filter and cursor-based pagination.
+     *
+     * @param propertyId the property whose schedules are searched
+     * @param query      the search term (matched via case-insensitive LIKE)
+     * @param frequency  optional frequency filter (exact match, null to skip)
+     * @param cursor     exclusive start cursor (null for first page)
+     * @param limit      maximum number of results
+     * @return list of matching schedules after the cursor, ordered by ID
+     */
+    List<MaintenanceSchedule> search(UUID propertyId, String query, String frequency,
+                                     UUID cursor, int limit);
 }
