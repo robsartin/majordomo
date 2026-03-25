@@ -5,6 +5,7 @@ import com.majordomo.domain.port.in.ledger.QuerySpendUseCase;
 import com.majordomo.domain.port.out.ledger.LedgerQueryRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ public class LedgerService implements QuerySpendUseCase {
     }
 
     @Override
+    @Cacheable(value = "spend", key = "#propertyId")
     public SpendSummary spendForProperty(UUID propertyId) {
         var property = propertyRepository.findById(propertyId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -46,6 +48,7 @@ public class LedgerService implements QuerySpendUseCase {
     }
 
     @Override
+    @Cacheable(value = "spend", key = "'org:' + #organizationId")
     public SpendSummary spendForOrganization(UUID organizationId) {
         var properties =
                 propertyRepository.findByOrganizationId(organizationId);
