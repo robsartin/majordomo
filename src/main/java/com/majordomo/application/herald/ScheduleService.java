@@ -62,12 +62,7 @@ public class ScheduleService implements ManageScheduleUseCase {
     public Page<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit) {
         int clampedLimit = Math.max(1, Math.min(limit, 100));
         var items = scheduleRepository.findByPropertyId(propertyId, cursor, clampedLimit + 1);
-        boolean hasMore = items.size() > clampedLimit;
-        if (hasMore) {
-            items = items.subList(0, clampedLimit);
-        }
-        UUID nextCursor = hasMore ? items.get(items.size() - 1).getId() : null;
-        return new Page<>(items, nextCursor, hasMore);
+        return Page.fromOverfetch(items, limit, MaintenanceSchedule::getId);
     }
 
     @Override

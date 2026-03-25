@@ -55,6 +55,10 @@ adapter/out/persistence/ — JPA entities, mappers, repository adapters
 ./mvnw spring-boot:run   # Start app (requires PostgreSQL on localhost:5432)
 ```
 
+## Known Trade-offs
+
+- **Jakarta Validation in domain models**: Domain models (`Contact`, `Property`, `MaintenanceSchedule`, `ServiceRecord`) use `@NotBlank` and `@NotNull` from Jakarta Validation. Strictly, hexagonal architecture says domain should have zero framework dependencies. We accept this pragmatic trade-off because: (1) Jakarta Validation is a spec, not a framework implementation; (2) moving annotations to adapter-layer DTOs would duplicate every field definition; (3) the coupling is shallow — annotations are metadata only, with no behavioral dependency on a framework runtime. If this becomes problematic, extract validation to request DTOs in the adapter layer.
+
 ## Conventions
 
 - **Javadoc** (ADR-0015): Required on all public classes and methods. Getters/setters/entities exempt.

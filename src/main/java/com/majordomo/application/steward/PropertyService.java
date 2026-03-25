@@ -57,12 +57,7 @@ public class PropertyService implements ManagePropertyUseCase {
     public Page<Property> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
         int clampedLimit = Math.max(1, Math.min(limit, 100));
         var items = propertyRepository.findByOrganizationId(organizationId, cursor, clampedLimit + 1);
-        boolean hasMore = items.size() > clampedLimit;
-        if (hasMore) {
-            items = items.subList(0, clampedLimit);
-        }
-        UUID nextCursor = hasMore ? items.get(items.size() - 1).getId() : null;
-        return new Page<>(items, nextCursor, hasMore);
+        return Page.fromOverfetch(items, limit, Property::getId);
     }
 
     @Override

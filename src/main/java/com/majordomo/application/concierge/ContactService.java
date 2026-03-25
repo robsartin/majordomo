@@ -53,12 +53,7 @@ public class ContactService implements ManageContactUseCase {
     public Page<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
         int clampedLimit = Math.max(1, Math.min(limit, 100));
         var items = contactRepository.findByOrganizationId(organizationId, cursor, clampedLimit + 1);
-        boolean hasMore = items.size() > clampedLimit;
-        if (hasMore) {
-            items = items.subList(0, clampedLimit);
-        }
-        UUID nextCursor = hasMore ? items.get(items.size() - 1).getId() : null;
-        return new Page<>(items, nextCursor, hasMore);
+        return Page.fromOverfetch(items, limit, Contact::getId);
     }
 
     @Override
