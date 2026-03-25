@@ -18,7 +18,7 @@ We will use Spring Security as the authentication framework.
 
 Initial implementation:
 - Form-based login at `/login` (GET returns page, POST authenticates)
-- BCrypt for password hashing via Spring Security's `PasswordEncoder`
+- Argon2id for password hashing via Spring Security's `PasswordEncoder`
 - A `UserDetailsService` implementation bridges Spring Security to the hexagonal domain ports (`UserRepository`, `CredentialRepository`)
 - The root URL `/` is publicly accessible; `/api/**` requires authentication
 - Swagger UI endpoints remain accessible for development
@@ -33,6 +33,6 @@ Future OAuth2:
 - Spring Security is the industry standard for Java web security, with extensive documentation and community support.
 - Form login is simple to implement and test.
 - The `UserDetailsService` abstraction keeps Spring Security concerns in the adapter layer — the domain knows nothing about Spring Security.
-- BCrypt is deliberately slow, protecting against brute-force attacks on the credential store.
+- Argon2id is memory-hard and deliberately slow, protecting against brute-force and GPU-based attacks on the credential store.
 - OAuth2 can be added later as an additional authentication method without changing the existing login flow.
 - Session management adds server-side state; stateless JWT tokens may be considered for API-only clients in the future.

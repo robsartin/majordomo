@@ -13,7 +13,7 @@ INSERT INTO credentials (id, user_id, hashed_password, created_at, updated_at)
 VALUES (
     '019606a0-0000-7000-8000-000000000002',
     '019606a0-0000-7000-8000-000000000001',
-    '$2a$10$6t00FGN9bsAczx5/czYSnu2pHhqWycVfG5lNR2lURHGsH5RsdGX1q',
+    '$argon2id$v=19$m=16384,t=2,p=1$7ZDV8a9vfQ5iasgoHzUA7g$PUcR8b7h3I9Ti4sf+8tAfSxvr4+XLwyGF9dmso1eui0',
     now(),
     now()
 );
