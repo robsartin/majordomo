@@ -18,6 +18,8 @@ final class AttachmentMapper {
         entity.setCreatedAt(attachment.getCreatedAt());
         entity.setUpdatedAt(attachment.getUpdatedAt());
         entity.setArchivedAt(attachment.getArchivedAt());
+        entity.setPrimary(attachment.isPrimary());
+        entity.setSortOrder(attachment.getSortOrder());
         return entity;
     }
 
@@ -33,6 +35,8 @@ final class AttachmentMapper {
         attachment.setCreatedAt(entity.getCreatedAt());
         attachment.setUpdatedAt(entity.getUpdatedAt());
         attachment.setArchivedAt(entity.getArchivedAt());
+        attachment.setPrimary(entity.isPrimary());
+        attachment.setSortOrder(entity.getSortOrder());
         return attachment;
     }
 }

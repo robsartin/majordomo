@@ -42,6 +42,12 @@ public class AttachmentEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "is_primary", nullable = false)
+    private boolean isPrimary;
+
+    @Column(name = "sort_order", nullable = false)
+    private int sortOrder;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -71,4 +77,10 @@ public class AttachmentEntity {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    public boolean isPrimary() { return isPrimary; }
+    public void setPrimary(boolean primary) { this.isPrimary = primary; }
+
+    public int getSortOrder() { return sortOrder; }
+    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 }

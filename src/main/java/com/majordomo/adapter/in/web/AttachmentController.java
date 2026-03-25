@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -141,4 +143,48 @@ public class AttachmentController {
         attachmentUseCase.archive(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Returns the ordered image gallery for a property.
+     *
+     * @param id the property UUID
+     * @return image attachments ordered by sort_order ascending
+     */
+    @GetMapping("/properties/{id}/gallery")
+    public List<Attachment> getPropertyGallery(@PathVariable UUID id) {
+        return attachmentUseCase.listImages("property", id);
+    }
+
+    /**
+     * Marks an attachment as the primary image for its entity.
+     * Clears the primary flag on any previously-primary attachment for the same entity.
+     *
+     * @param id the attachment UUID
+     * @return the updated attachment metadata
+     */
+    @PutMapping("/attachments/{id}/primary")
+    public Attachment setAsPrimary(@PathVariable UUID id) {
+        return attachmentUseCase.setPrimary(id);
+    }
+
+    /**
+     * Updates the sort order of an attachment within its entity's gallery.
+     *
+     * @param id      the attachment UUID
+     * @param request a JSON object containing {@code sortOrder}
+     * @return the updated attachment metadata
+     */
+    @PutMapping("/attachments/{id}/order")
+    public Attachment updateOrder(
+            @PathVariable UUID id,
+            @RequestBody SortOrderRequest request) {
+        return attachmentUseCase.updateSortOrder(id, request.sortOrder());
+    }
+
+    /**
+     * Request body for updating sort order.
+     *
+     * @param sortOrder the new sort order value
+     */
+    record SortOrderRequest(int sortOrder) { }
 }

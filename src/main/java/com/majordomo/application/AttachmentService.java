@@ -105,4 +105,40 @@ public class AttachmentService implements ManageAttachmentUseCase {
         existing.setUpdatedAt(Instant.now());
         attachmentRepository.save(existing);
     }
+
+    @Override
+    public List<Attachment> listImages(String entityType, UUID entityId) {
+        return attachmentRepository.findImagesByEntityTypeAndEntityId(entityType, entityId);
+    }
+
+    @Override
+    public Attachment setPrimary(UUID id) {
+        Attachment target = attachmentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+
+        // Clear primary flag on all current images for the same entity
+        attachmentRepository
+                .findByEntityTypeAndEntityIdAndArchivedAtIsNull(
+                        target.getEntityType(), target.getEntityId())
+                .stream()
+                .filter(Attachment::isPrimary)
+                .forEach(a -> {
+                    a.setPrimary(false);
+                    a.setUpdatedAt(Instant.now());
+                    attachmentRepository.save(a);
+                });
+
+        target.setPrimary(true);
+        target.setUpdatedAt(Instant.now());
+        return attachmentRepository.save(target);
+    }
+
+    @Override
+    public Attachment updateSortOrder(UUID id, int sortOrder) {
+        Attachment existing = attachmentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
+        existing.setSortOrder(sortOrder);
+        existing.setUpdatedAt(Instant.now());
+        return attachmentRepository.save(existing);
+    }
 }

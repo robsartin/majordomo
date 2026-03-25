@@ -1,0 +1,2 @@
+ALTER TABLE attachments ADD COLUMN is_primary BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE attachments ADD COLUMN sort_order INT NOT NULL DEFAULT 0;

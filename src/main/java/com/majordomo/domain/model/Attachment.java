@@ -19,6 +19,8 @@ public class Attachment {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant archivedAt;
+    private boolean isPrimary;
+    private int sortOrder;
 
     public Attachment() { }
 
@@ -51,4 +53,32 @@ public class Attachment {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    /**
+     * Returns whether this attachment is the primary (hero) image for its entity.
+     *
+     * @return {@code true} if this is the primary image
+     */
+    public boolean isPrimary() { return isPrimary; }
+
+    /**
+     * Sets whether this attachment is the primary image for its entity.
+     *
+     * @param primary {@code true} to mark as primary
+     */
+    public void setPrimary(boolean primary) { this.isPrimary = primary; }
+
+    /**
+     * Returns the display order position of this attachment within the gallery.
+     *
+     * @return the zero-based sort order
+     */
+    public int getSortOrder() { return sortOrder; }
+
+    /**
+     * Sets the display order position of this attachment within the gallery.
+     *
+     * @param sortOrder the zero-based sort order
+     */
+    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 }
