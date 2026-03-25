@@ -4,6 +4,8 @@ import com.majordomo.domain.model.herald.Frequency;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
+
+import com.majordomo.adapter.out.persistence.AuditTimestampListener;
 import jakarta.persistence.Entity;
 
 import jakarta.persistence.EnumType;

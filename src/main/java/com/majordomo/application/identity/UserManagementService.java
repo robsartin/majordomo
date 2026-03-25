@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.time.Instant;
 
 /**
  * Application service for user management. Only organization OWNER or ADMIN
@@ -96,7 +97,7 @@ public class UserManagementService implements ManageUserUseCase {
 
         eventPublisher.publish(new UserCreated(
                 savedUser.getId(), organizationId,
-                savedUser.getUsername(), now));
+                savedUser.getUsername(), Instant.now()));
 
         return savedUser;
     }
