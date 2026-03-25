@@ -14,24 +14,28 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Spring Security configuration for Majordomo.
  *
- * <p>Configures form-based login at {@code /login}, API key authentication via
- * the {@code X-API-Key} header, permits public access to the root URL and
- * Swagger UI, and requires authentication for all API endpoints.
- * Designed to be extended with OAuth2 support in the future.</p>
+ * <p>Configures form-based login at {@code /login}, OAuth2 login with Google,
+ * API key authentication via the {@code X-API-Key} header, permits public access
+ * to the root URL and Swagger UI, and requires authentication for all API
+ * endpoints.</p>
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final ApiKeyRepository apiKeyRepository;
+    private final OAuth2UserService oAuth2UserService;
 
     /**
-     * Constructs the security configuration with the API key repository.
+     * Constructs the security configuration.
      *
-     * @param apiKeyRepository the outbound port for API key lookups
+     * @param apiKeyRepository  the outbound port for API key lookups
+     * @param oAuth2UserService the custom service that links OAuth2 identities to users
      */
-    public SecurityConfig(ApiKeyRepository apiKeyRepository) {
+    public SecurityConfig(ApiKeyRepository apiKeyRepository,
+                          OAuth2UserService oAuth2UserService) {
         this.apiKeyRepository = apiKeyRepository;
+        this.oAuth2UserService = oAuth2UserService;
     }
 
     /**
@@ -56,6 +60,12 @@ public class SecurityConfig {
                 .loginPage("/login")
                 .defaultSuccessUrl("/", true)
                 .permitAll()
+            )
+            .oauth2Login(oauth -> oauth
+                .loginPage("/login")
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(oAuth2UserService))
+                .defaultSuccessUrl("/", true)
             )
             .logout(logout -> logout
                 .logoutSuccessUrl("/")
