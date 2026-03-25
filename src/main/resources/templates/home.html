@@ -1,30 +1,47 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-      lang="en">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Majordomo</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-
-    <div th:replace="~{fragments/header :: header}"></div>
-
-    <div class="flex min-h-screen">
-        <div th:replace="~{fragments/sidebar :: sidebar('')}"></div>
-
-        <main class="flex-1 p-6">
-            <div sec:authorize="!isAuthenticated()">
-                <p><a href="/login" class="text-indigo-600 hover:underline font-medium">Sign in</a></p>
-            </div>
+<body class="min-h-screen bg-gray-100">
+    <header class="bg-white shadow-sm">
+        <div class="mx-auto max-w-4xl px-4 py-4 flex items-center justify-between">
+            <span class="text-xl font-bold text-indigo-700 tracking-tight">Majordomo</span>
             <div sec:authorize="isAuthenticated()">
-                <p class="mb-4">Welcome, <span sec:authentication="name" class="font-semibold">User</span></p>
-                <p><a th:href="@{/dashboard}" class="text-indigo-600 hover:underline font-medium">Go to Dashboard</a></p>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit"
+                            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm
+                                   font-medium text-gray-700 shadow-sm hover:bg-gray-50
+                                   focus:outline-none focus:ring-2 focus:ring-indigo-500
+                                   focus:ring-offset-2 transition">
+                        Sign out
+                    </button>
+                </form>
             </div>
-        </main>
-    </div>
+        </div>
+    </header>
 
+    <main class="mx-auto max-w-4xl px-4 py-16 text-center">
+        <div sec:authorize="!isAuthenticated()">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Welcome to Majordomo</h2>
+            <p class="text-gray-500 mb-8">Your personal home management assistant.</p>
+            <a href="/login"
+               class="inline-block rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold
+                      text-white shadow hover:bg-indigo-700 focus:outline-none focus:ring-2
+                      focus:ring-indigo-500 focus:ring-offset-2 transition">
+                Sign in
+            </a>
+        </div>
+
+        <div sec:authorize="isAuthenticated()">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-2">
+                Welcome, <span class="text-indigo-700" sec:authentication="name">User</span>
+            </h2>
+            <p class="text-gray-500">You are signed in to Majordomo.</p>
+        </div>
+    </main>
 </body>
 </html>
