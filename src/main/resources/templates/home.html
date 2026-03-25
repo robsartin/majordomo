@@ -1,20 +1,30 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Majordomo</h1>
-    <div sec:authorize="!isAuthenticated()">
-        <p><a href="/login">Sign in</a></p>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('')}"></div>
+
+        <main class="flex-1 p-6">
+            <div sec:authorize="!isAuthenticated()">
+                <p><a href="/login" class="text-indigo-600 hover:underline font-medium">Sign in</a></p>
+            </div>
+            <div sec:authorize="isAuthenticated()">
+                <p class="mb-4">Welcome, <span sec:authentication="name" class="font-semibold">User</span></p>
+                <p><a th:href="@{/dashboard}" class="text-indigo-600 hover:underline font-medium">Go to Dashboard</a></p>
+            </div>
+        </main>
     </div>
-    <div sec:authorize="isAuthenticated()">
-        <p>Welcome, <span sec:authentication="name">User</span></p>
-        <p><a href="/dashboard">Go to Dashboard</a></p>
-        <form th:action="@{/logout}" method="post">
-            <button type="submit">Sign out</button>
-        </form>
-    </div>
+
 </body>
 </html>
