@@ -1,14 +1,18 @@
 package com.majordomo.adapter.out.persistence.concierge;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 
-import com.majordomo.adapter.out.persistence.AuditTimestampListener;
 import jakarta.persistence.Id;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
+import jakarta.persistence.EntityListeners;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -17,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@EntityListeners(AuditTimestampListener.class)
 @Entity
 @Table(name = "contacts")
 public class ContactEntity {

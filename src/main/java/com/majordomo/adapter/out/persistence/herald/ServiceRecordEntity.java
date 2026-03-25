@@ -1,18 +1,21 @@
 package com.majordomo.adapter.out.persistence.herald;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 
-import com.majordomo.adapter.out.persistence.AuditTimestampListener;
 import jakarta.persistence.Id;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
+import jakarta.persistence.EntityListeners;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+@EntityListeners(AuditTimestampListener.class)
 @Entity
 @Table(name = "service_records")
 public class ServiceRecordEntity {

@@ -1,16 +1,19 @@
 package com.majordomo.adapter.out.persistence.identity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 
-import com.majordomo.adapter.out.persistence.AuditTimestampListener;
 import jakarta.persistence.Id;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
+import jakarta.persistence.EntityListeners;
 
 import java.time.Instant;
 import java.util.UUID;
 
+@EntityListeners(AuditTimestampListener.class)
 @Entity
 @Table(name = "api_keys")
 public class ApiKeyEntity {
