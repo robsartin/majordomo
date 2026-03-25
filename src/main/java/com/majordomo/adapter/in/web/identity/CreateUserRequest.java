@@ -1,5 +1,7 @@
 package com.majordomo.adapter.in.web.identity;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
  * Request body for creating a new user within an organization.
  *
@@ -8,7 +10,7 @@ package com.majordomo.adapter.in.web.identity;
  * @param password the plaintext password (will be hashed with Argon2id)
  */
 public record CreateUserRequest(
-    String username,
-    String email,
-    String password
+    @NotBlank String username,
+    @NotBlank String email,
+    @NotBlank String password
 ) {}

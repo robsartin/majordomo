@@ -1,5 +1,7 @@
 package com.majordomo.domain.model.concierge;
 
+import jakarta.validation.constraints.NotBlank;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -12,6 +14,7 @@ public class Contact {
 
     private UUID id;
     private UUID organizationId;
+    @NotBlank
     private String formattedName;
     private String familyName;
     private String givenName;
