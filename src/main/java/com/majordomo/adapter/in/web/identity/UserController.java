@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.identity;
 
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.identity.ManageUserUseCase;
 import com.majordomo.domain.port.out.identity.UserRepository;
@@ -30,17 +31,21 @@ public class UserController {
 
     private final ManageUserUseCase manageUserUseCase;
     private final UserRepository userRepository;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
      * Constructs the controller with required dependencies.
      *
-     * @param manageUserUseCase the inbound port for user management
-     * @param userRepository    the port for looking up the authenticated caller
+     * @param manageUserUseCase         the inbound port for user management
+     * @param userRepository            the port for looking up the authenticated caller
+     * @param organizationAccessService the service for verifying organization membership
      */
     public UserController(ManageUserUseCase manageUserUseCase,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          OrganizationAccessService organizationAccessService) {
         this.manageUserUseCase = manageUserUseCase;
         this.userRepository = userRepository;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
@@ -57,6 +62,7 @@ public class UserController {
             @PathVariable UUID orgId,
             @Valid @RequestBody CreateUserRequest request,
             @AuthenticationPrincipal UserDetails principal) {
+        organizationAccessService.verifyAccess(orgId);
         var caller = userRepository.findByUsername(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException(
                         "Authenticated user not found"));
