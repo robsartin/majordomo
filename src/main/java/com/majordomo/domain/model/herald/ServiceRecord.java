@@ -4,6 +4,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Records a completed service or maintenance event performed on a property.
+ * May optionally reference the {@link MaintenanceSchedule} that prompted the work.
+ */
 public class ServiceRecord {
 
     private UUID id;

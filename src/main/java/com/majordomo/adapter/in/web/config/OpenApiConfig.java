@@ -9,11 +9,24 @@ import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * SpringDoc / OpenAPI 3 configuration for the Majordomo API.
+ *
+ * <p>Defines the top-level API metadata, injects the {@code X-API-Version} header parameter
+ * into every operation via an {@link OperationCustomizer}, and groups endpoints by domain
+ * (concierge, steward, herald) for organised Swagger UI navigation.</p>
+ */
 @Configuration
 public class OpenApiConfig {
 
+    /** Name of the HTTP header used to communicate the API version. */
     public static final String API_VERSION_HEADER = "X-API-Version";
 
+    /**
+     * Produces the root {@link OpenAPI} bean containing global API metadata.
+     *
+     * @return an {@link OpenAPI} instance with title, description, and current version
+     */
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
@@ -23,6 +36,13 @@ public class OpenApiConfig {
                         .version("1"));
     }
 
+    /**
+     * Returns an {@link OperationCustomizer} that appends the optional
+     * {@value #API_VERSION_HEADER} header parameter to every API operation in the
+     * generated OpenAPI document.
+     *
+     * @return the operation customizer bean
+     */
     @Bean
     public OperationCustomizer apiVersionHeaderCustomizer() {
         return (operation, handlerMethod) -> {
@@ -36,6 +56,11 @@ public class OpenApiConfig {
         };
     }
 
+    /**
+     * Groups the Concierge (contacts) endpoints under a dedicated Swagger UI section.
+     *
+     * @return a {@link GroupedOpenApi} covering {@code /api/contacts/**}
+     */
     @Bean
     public GroupedOpenApi conciergeApi() {
         return GroupedOpenApi.builder()
@@ -45,6 +70,11 @@ public class OpenApiConfig {
                 .build();
     }
 
+    /**
+     * Groups the Steward (properties) endpoints under a dedicated Swagger UI section.
+     *
+     * @return a {@link GroupedOpenApi} covering {@code /api/properties/**}
+     */
     @Bean
     public GroupedOpenApi stewardApi() {
         return GroupedOpenApi.builder()
@@ -54,6 +84,11 @@ public class OpenApiConfig {
                 .build();
     }
 
+    /**
+     * Groups the Herald (schedules) endpoints under a dedicated Swagger UI section.
+     *
+     * @return a {@link GroupedOpenApi} covering {@code /api/schedules/**}
+     */
     @Bean
     public GroupedOpenApi heraldApi() {
         return GroupedOpenApi.builder()

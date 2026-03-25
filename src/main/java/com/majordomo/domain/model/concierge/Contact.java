@@ -4,6 +4,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * A person or company in the organization's address book, modeled after the vCard standard.
+ * Contacts may serve as vendors, service providers, or other roles linked to managed properties.
+ */
 public class Contact {
 
     private UUID id;

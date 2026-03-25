@@ -4,6 +4,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Represents a managed asset or property item owned by an organization.
+ * Properties may be nested hierarchically via {@code parentId} and track acquisition,
+ * warranty, and lifecycle status information.
+ */
 public class Property {
 
     private UUID id;

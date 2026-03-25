@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Persistence adapter that fulfills the {@link com.majordomo.domain.port.out.herald.ServiceRecordRepository}
+ * output port by delegating to {@link JpaServiceRecordRepository}.
+ */
 @Repository
 public class ServiceRecordRepositoryAdapter implements ServiceRecordRepository {
 

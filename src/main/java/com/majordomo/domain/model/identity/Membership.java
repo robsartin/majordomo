@@ -3,6 +3,10 @@ package com.majordomo.domain.model.identity;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents the association between a {@link User} and an {@link Organization},
+ * capturing the user's assigned {@link MemberRole} within that organization.
+ */
 public class Membership {
 
     private UUID id;

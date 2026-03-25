@@ -8,6 +8,10 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Persistence adapter that fulfills the {@link com.majordomo.domain.port.out.identity.CredentialRepository}
+ * output port by delegating to {@link JpaCredentialRepository}.
+ */
 @Repository
 public class CredentialRepositoryAdapter implements CredentialRepository {
 

@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Persistence adapter that fulfills the {@link com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository}
+ * output port by delegating to {@link JpaMaintenanceScheduleRepository}.
+ */
 @Repository
 public class MaintenanceScheduleRepositoryAdapter implements MaintenanceScheduleRepository {
 

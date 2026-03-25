@@ -3,6 +3,10 @@ package com.majordomo.domain.model.identity;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Stores the hashed authentication credential for a {@link User}.
+ * A credential is scoped to a single user and may be archived when superseded.
+ */
 public class Credential {
 
     private UUID id;

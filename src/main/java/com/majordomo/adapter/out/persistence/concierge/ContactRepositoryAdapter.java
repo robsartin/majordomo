@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Persistence adapter that fulfills the {@link com.majordomo.domain.port.out.concierge.ContactRepository}
+ * output port by delegating to {@link JpaContactRepository}.
+ */
 @Repository
 public class ContactRepositoryAdapter implements ContactRepository {
 
