@@ -1,5 +1,6 @@
 package com.majordomo.domain.port.in.steward;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 
 import java.util.List;
@@ -34,6 +35,16 @@ public interface ManagePropertyUseCase {
      * @return list of properties
      */
     List<Property> findByOrganizationId(UUID organizationId);
+
+    /**
+     * Lists properties for an organization with cursor-based pagination.
+     *
+     * @param organizationId the organization ID
+     * @param cursor         the cursor UUID (null for first page)
+     * @param limit          max results per page (1-100)
+     * @return a page of properties
+     */
+    Page<Property> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
 
     /**
      * Lists all direct child properties of the specified parent.

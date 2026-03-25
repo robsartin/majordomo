@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.herald;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
@@ -42,14 +43,19 @@ public class ScheduleController {
     }
 
     /**
-     * Returns all maintenance schedules associated with the specified property.
+     * Returns schedules associated with the specified property with cursor-based pagination.
      *
      * @param propertyId the UUID of the property whose schedules are retrieved
-     * @return a list of matching schedules; empty if none exist
+     * @param cursor     optional cursor for the next page (exclusive start)
+     * @param limit      maximum number of results per page (default 20)
+     * @return a page of matching schedules
      */
     @GetMapping
-    public List<MaintenanceSchedule> listByProperty(@RequestParam UUID propertyId) {
-        return scheduleUseCase.findByPropertyId(propertyId);
+    public Page<MaintenanceSchedule> listByProperty(
+            @RequestParam UUID propertyId,
+            @RequestParam(required = false) UUID cursor,
+            @RequestParam(defaultValue = "20") int limit) {
+        return scheduleUseCase.findByPropertyId(propertyId, cursor, limit);
     }
 
     /**

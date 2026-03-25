@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.concierge;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -38,14 +38,19 @@ public class ContactController {
     }
 
     /**
-     * Returns all contacts belonging to the specified organization.
+     * Returns contacts belonging to the specified organization with cursor-based pagination.
      *
      * @param organizationId the UUID of the organization whose contacts are retrieved
-     * @return a list of matching contacts; empty if none exist
+     * @param cursor         optional cursor for the next page (exclusive start)
+     * @param limit          maximum number of results per page (default 20)
+     * @return a page of matching contacts
      */
     @GetMapping
-    public List<Contact> listByOrganization(@RequestParam UUID organizationId) {
-        return contactUseCase.findByOrganizationId(organizationId);
+    public Page<Contact> listByOrganization(
+            @RequestParam UUID organizationId,
+            @RequestParam(required = false) UUID cursor,
+            @RequestParam(defaultValue = "20") int limit) {
+        return contactUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 
     /**
