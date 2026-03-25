@@ -9,12 +9,14 @@ import java.time.Instant;
  * @param status    HTTP status code
  * @param error     HTTP status reason phrase
  * @param message   human-readable error description
- * @param path      the request path that caused the error
+ * @param path          the request path that caused the error
+ * @param correlationId the correlation ID for the request
  */
 public record ErrorResponse(
     Instant timestamp,
     int status,
     String error,
     String message,
-    String path
+    String path,
+    String correlationId
 ) { }
