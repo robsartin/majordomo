@@ -3,6 +3,7 @@ package com.majordomo.application.herald;
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 
@@ -33,11 +34,15 @@ class ScheduleServiceTest {
     @Mock
     private ServiceRecordRepository serviceRecordRepository;
 
+    @Mock
+    private EventPublisher eventPublisher;
+
     private ScheduleService scheduleService;
 
     @BeforeEach
     void setUp() {
-        scheduleService = new ScheduleService(scheduleRepository, serviceRecordRepository);
+        scheduleService = new ScheduleService(scheduleRepository, serviceRecordRepository,
+                eventPublisher);
     }
 
     @Test
