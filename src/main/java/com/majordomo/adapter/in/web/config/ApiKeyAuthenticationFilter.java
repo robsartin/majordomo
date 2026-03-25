@@ -66,7 +66,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
      * @param input the string to hash
      * @return the lowercase hex-encoded SHA-256 digest
      */
-    static String sha256(String input) {
+    public static String sha256(String input) {
         try {
             var digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
