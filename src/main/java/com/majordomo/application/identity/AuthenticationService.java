@@ -8,6 +8,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Bridges Spring Security authentication to the Majordomo domain model.
  *
@@ -42,10 +44,18 @@ public class AuthenticationService implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        userRepository.findByUsername(username)
+        var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException(
                         "User not found: " + username));
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        var credential = credentialRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new UsernameNotFoundException(
+                        "No credential for user: " + username));
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(credential.getHashedPassword())
+                .authorities(List.of())
+                .build();
     }
 }
