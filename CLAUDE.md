@@ -9,24 +9,32 @@ Majordomo is a service-based personal information and property management system
 - **Java 25** (ADR-0005) — records, sealed classes, pattern matching, virtual threads
 - **Spring Boot 3.5** (ADR-0006) — auto-config, Web, Data JPA, Security, Actuator
 - **PostgreSQL 18** (ADR-0011) — arrays, JSONB, UUIDv7
+- **Redis 7** — cache layer (spring.cache.type=redis), TTL 5 min, key prefix `majordomo:`
 - **Flyway** (ADR-0011) — forward-only versioned SQL migrations
 - **Argon2id** (ADR-0016) — password hashing via Spring Security
-- **Thymeleaf** — server-rendered pages (login, home)
+- **Resilience4j** — circuit breaker and retry on notification sending
+- **Thymeleaf + Tailwind CSS** (ADR-0019) — server-rendered pages (login, home, dashboard)
 - **SpringDoc OpenAPI** (ADR-0013) — auto-generated API docs at /swagger-ui.html
 - **SLF4J** (ADR-0007) — logging API
 - **Checkstyle** (ADR-0014) — Google-based style, enforced at build time
+- **ArchUnit** (ADR-0017) — architecture fitness functions enforced at test time
 
 ## Architecture (ADR-0002, ADR-0004)
 
 Hexagonal (ports and adapters). Dependencies point inward.
 
 ```
-domain/model/          — Pure domain classes, no framework deps
-domain/port/in/        — Inbound port interfaces (use cases)
-domain/port/out/       — Outbound port interfaces (repositories)
-application/           — Use case implementations
-adapter/in/web/        — REST controllers, Thymeleaf controllers
+domain/model/            — Pure domain classes, no framework deps
+domain/model/event/      — Domain events (records)
+domain/port/in/          — Inbound port interfaces (use cases)
+domain/port/out/         — Outbound port interfaces (repositories)
+application/             — Use case implementations
+adapter/in/web/          — REST controllers, Thymeleaf controllers
+adapter/in/event/        — Spring event listeners (audit)
 adapter/out/persistence/ — JPA entities, mappers, repository adapters
+adapter/out/notification/ — Email/notification adapters (Resilience4j protected)
+adapter/out/storage/     — File storage adapters (attachments)
+adapter/out/event/       — Domain event publishers
 ```
 
 ## Service Naming (ADR-0002)
@@ -37,6 +45,8 @@ adapter/out/persistence/ — JPA entities, mappers, repository adapters
 | The Concierge | Contact management | `concierge` |
 | The Herald | Scheduling & notifications | `herald` |
 | The Ledger | Finance & cost tracking | `ledger` |
+| Identity | Users, auth, API keys | `identity` |
+| The Dashboard | Aggregated summary | (top-level controllers) |
 
 ## Development Workflow (ADR-0003, ADR-0010)
 
@@ -52,28 +62,35 @@ adapter/out/persistence/ — JPA entities, mappers, repository adapters
 ./mvnw compile           # Compile
 ./mvnw test              # Run tests
 ./mvnw verify            # Full build (compile + checkstyle + test)
-./mvnw spring-boot:run   # Start app (requires PostgreSQL on localhost:5432)
+./mvnw spring-boot:run   # Start app (requires PostgreSQL + Redis)
 ```
 
 ## Known Trade-offs
 
 - **Jakarta Validation in domain models**: Domain models (`Contact`, `Property`, `MaintenanceSchedule`, `ServiceRecord`) use `@NotBlank` and `@NotNull` from Jakarta Validation. Strictly, hexagonal architecture says domain should have zero framework dependencies. We accept this pragmatic trade-off because: (1) Jakarta Validation is a spec, not a framework implementation; (2) moving annotations to adapter-layer DTOs would duplicate every field definition; (3) the coupling is shallow — annotations are metadata only, with no behavioral dependency on a framework runtime. If this becomes problematic, extract validation to request DTOs in the adapter layer.
 
+- **SHA-256 for API key hashing**: API keys use SHA-256 (not Argon2id) for fast O(1) lookup on every request. This is acceptable because API keys are high-entropy random values (32 bytes), unlike user-chosen passwords. Argon2id's memory-hard cost is unnecessary and would add latency to every authenticated API call.
+
 ## Conventions
 
 - **Javadoc** (ADR-0015): Required on all public classes and methods. Getters/setters/entities exempt.
 - **Mermaid diagrams** (ADR-0015): Use in docs and package-info.java where they aid understanding.
 - **Soft delete**: Set `archived_at` timestamp, never hard delete.
-- **UUIDv7**: All entity IDs. Time-sortable, used for cursor-based pagination.
+- **UUIDv7** (ADR-0018): All entity IDs via `UuidFactory.newId()`. Time-sortable, used for cursor-based pagination. No `UUID.randomUUID()` in production code.
 - **API versioning** (ADR-0012): `X-API-Version` request header, defaults to latest.
 - **Password hashing**: Argon2id only, no BCrypt.
+- **ArchUnit** (ADR-0017): Architecture fitness functions enforce hexagonal layer boundaries at test time.
+- **Correlation IDs**: Every HTTP request gets an `X-Correlation-ID` header (generated if not provided). Included in all error responses and log entries via `CorrelationIdFilter`.
+- **Resilience4j**: Circuit breaker and retry on notification adapter. Config in `application.yml` under `resilience4j:`.
+- **Notification categories**: `MAINTENANCE_DUE`, `WARRANTY_EXPIRING`, `SITE_UPDATES`. Users can disable categories via `UserPreferences`.
+- **Redis caching**: Dashboard summaries and spend calculations cached in Redis with 5-minute TTL. Cache evicted on domain events.
+- **Audit logging** (ADR-0020): All state-changing domain events produce `AuditLogEntry` records via `AuditEventListener`.
 
 ## Running Locally
 
-Requires PostgreSQL:
+Requires PostgreSQL and Redis:
 ```bash
-# With docker-compose (when available):
-docker-compose up -d
+docker-compose up -d    # PostgreSQL 18 + Redis 7
 ./mvnw spring-boot:run
 
 # Access:
@@ -104,3 +121,7 @@ See `doc/adr/` for all architecture decision records:
 | 0014 | Checkstyle for code style |
 | 0015 | Javadoc on public methods, Mermaid diagrams |
 | 0016 | Spring Security with form login, extensible to OAuth2 |
+| 0017 | ArchUnit for architecture fitness functions |
+| 0018 | UUIDv7 for entity identifiers |
+| 0019 | Tailwind CSS for server-rendered UI |
+| 0020 | Audit logging strategy |
