@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'${property.name} - Majordomo'">Property Detail - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Header -->
+    <nav class="bg-indigo-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-white text-xl font-bold tracking-wide">Majordomo</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-indigo-200 text-sm" th:text="'Signed in as ' + ${username}">Signed in as user</span>
+                    <form th:action="@{/logout}" method="post" class="inline">
+                        <button type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-md transition">
+                            Sign out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Breadcrumb -->
+        <nav class="mb-6" aria-label="Breadcrumb">
+            <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                <li>
+                    <a href="/" class="hover:text-indigo-600 transition">Home</a>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <span>&rsaquo;</span>
+                    <a href="/dashboard" class="hover:text-indigo-600 transition">Properties</a>
+                </li>
+                <li class="flex items-center space-x-2">
+                    <span>&rsaquo;</span>
+                    <span class="text-gray-900 font-medium" th:text="${property.name}">Property Name</span>
+                </li>
+            </ol>
+        </nav>
+
+        <!-- Property Info Card -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900" th:text="${property.name}">Property Name</h1>
+                <!-- Status badge -->
+                <span th:if="${property.status != null}"
+                      th:text="${property.status}"
+                      th:classappend="${property.status.name() == 'ACTIVE'} ? 'bg-green-100 text-green-800' :
+                                     (${property.status.name() == 'IN_SERVICE'} ? 'bg-blue-100 text-blue-800' :
+                                     (${property.status.name() == 'STORED'} ? 'bg-yellow-100 text-yellow-800' :
+                                     'bg-gray-100 text-gray-800'))"
+                      class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium">
+                </span>
+            </div>
+            <div class="p-6">
+                <p th:if="${property.description != null}" class="text-gray-600 mb-6" th:text="${property.description}"></p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+                    <div th:if="${property.category != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Category</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.category}"></dd>
+                    </div>
+
+                    <div th:if="${property.location != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.location}"></dd>
+                    </div>
+
+                    <div th:if="${property.manufacturer != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Manufacturer</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.manufacturer}"></dd>
+                    </div>
+
+                    <div th:if="${property.modelNumber != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Model Number</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.modelNumber}"></dd>
+                    </div>
+
+                    <div th:if="${property.serialNumber != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Serial Number</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.serialNumber}"></dd>
+                    </div>
+
+                    <div th:if="${property.acquiredOn != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Acquired On</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.acquiredOn}"></dd>
+                    </div>
+
+                    <div th:if="${property.warrantyExpiresOn != null}">
+                        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Warranty Expires</dt>
+                        <dd class="mt-1 text-sm text-gray-900" th:text="${property.warrantyExpiresOn}"></dd>
+                    </div>
+
+                </div>
+
+                <!-- Parent property link -->
+                <div th:if="${parent != null}" class="mt-6 pt-6 border-t border-gray-100">
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Parent Property</dt>
+                    <dd>
+                        <a th:href="@{/properties/{id}(id=${parent.id})}"
+                           th:text="${parent.name}"
+                           class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+                        </a>
+                    </dd>
+                </div>
+
+                <!-- Child properties -->
+                <div th:if="${!#lists.isEmpty(children)}" class="mt-6 pt-6 border-t border-gray-100">
+                    <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Child Properties</dt>
+                    <dd>
+                        <ul class="space-y-1">
+                            <li th:each="child : ${children}">
+                                <a th:href="@{/properties/{id}(id=${child.id})}"
+                                   th:text="${child.name}"
+                                   class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+                                </a>
+                            </li>
+                        </ul>
+                    </dd>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Linked Contacts -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Linked Contacts</h2>
+            </div>
+            <div class="p-6">
+                <p th:if="${#lists.isEmpty(contacts)}" class="text-gray-400 text-sm">No contacts linked to this property.</p>
+                <div th:unless="${#lists.isEmpty(contacts)}" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr th:each="contact, iterStat : ${contacts}">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                                    th:text="${contact.formattedName}">Contact Name</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <span th:if="${propertyContacts[iterStat.index].role != null}"
+                                          th:text="${propertyContacts[iterStat.index].role}"></span>
+                                    <span th:unless="${propertyContacts[iterStat.index].role != null}" class="text-gray-400">—</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <span th:if="${!#lists.isEmpty(contact.emails)}" th:text="${contact.emails[0]}"></span>
+                                    <span th:if="${#lists.isEmpty(contact.emails)}" class="text-gray-400">—</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <span th:if="${!#lists.isEmpty(contact.telephones)}" th:text="${contact.telephones[0]}"></span>
+                                    <span th:if="${#lists.isEmpty(contact.telephones)}" class="text-gray-400">—</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Schedules -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Maintenance Schedules</h2>
+            </div>
+            <div class="p-6">
+                <p th:if="${#lists.isEmpty(schedules)}" class="text-gray-400 text-sm">No maintenance schedules for this property.</p>
+                <div th:unless="${#lists.isEmpty(schedules)}" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Due</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr th:each="schedule : ${schedules}">
+                                <td class="px-6 py-4 text-sm text-gray-900" th:text="${schedule.description}">Task</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" th:text="${schedule.frequency}">Frequency</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm"
+                                    th:classappend="${#temporals.createToday().isAfter(schedule.nextDue)} ? 'text-red-600 font-semibold' :
+                                                   (${#temporals.createToday().plusDays(7).isAfter(schedule.nextDue)} ? 'text-yellow-600 font-medium' : 'text-gray-700')"
+                                    th:text="${schedule.nextDue}">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Attachments</h2>
+            </div>
+            <div class="p-6">
+                <p th:if="${#lists.isEmpty(attachments)}" class="text-gray-400 text-sm">No attachments for this property.</p>
+                <ul th:unless="${#lists.isEmpty(attachments)}" class="divide-y divide-gray-100">
+                    <li th:each="attachment : ${attachments}" class="flex items-center justify-between py-3">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate" th:text="${attachment.filename}">filename.pdf</p>
+                                <p class="text-xs text-gray-500">
+                                    <span th:text="${attachment.contentType}">application/pdf</span>
+                                    &middot;
+                                    <span th:text="${#numbers.formatDecimal(attachment.sizeBytes / 1024.0, 1, 1)} + ' KB'">0 KB</span>
+                                </p>
+                            </div>
+                        </div>
+                        <a th:href="@{/api/attachments/{id}(id=${attachment.id})}"
+                           class="ml-4 text-sm text-indigo-600 hover:text-indigo-800 font-medium transition whitespace-nowrap">
+                            Download
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>
