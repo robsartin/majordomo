@@ -143,4 +143,22 @@ public class PropertyController {
         propertyUseCase.archive(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Transfers a property and all associated data to another organization.
+     * The authenticated user must be OWNER of the source organization and
+     * OWNER or ADMIN of the target organization.
+     *
+     * @param id               the UUID of the property to transfer
+     * @param toOrganizationId the UUID of the target organization
+     * @return {@code 200 OK} with the updated property
+     */
+    @PostMapping("/{id}/transfer")
+    public ResponseEntity<Property> transfer(
+            @PathVariable UUID id,
+            @RequestParam UUID toOrganizationId) {
+        UUID callerUserId = organizationAccessService.getAuthenticatedUserId();
+        var transferred = propertyUseCase.transfer(id, toOrganizationId, callerUserId);
+        return ResponseEntity.ok(transferred);
+    }
 }

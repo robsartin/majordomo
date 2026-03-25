@@ -84,4 +84,16 @@ public interface ManagePropertyUseCase {
      * @param id the property ID
      */
     void archive(UUID id);
+
+    /**
+     * Transfers a property and all its associated data from its current organization
+     * to a target organization. The caller must be OWNER of the source organization
+     * and OWNER or ADMIN of the target organization.
+     *
+     * @param propertyId       the ID of the property to transfer
+     * @param toOrganizationId the target organization ID
+     * @param callerUserId     the ID of the user initiating the transfer
+     * @return the updated property with the new organization ID
+     */
+    Property transfer(UUID propertyId, UUID toOrganizationId, UUID callerUserId);
 }

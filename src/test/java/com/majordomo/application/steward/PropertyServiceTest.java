@@ -4,6 +4,10 @@ import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
 import com.majordomo.domain.port.out.EventPublisher;
+import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
+import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
+import com.majordomo.domain.port.out.identity.MembershipRepository;
+import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,11 +37,25 @@ class PropertyServiceTest {
     @Mock
     private EventPublisher eventPublisher;
 
+    @Mock
+    private MembershipRepository membershipRepository;
+
+    @Mock
+    private PropertyContactRepository propertyContactRepository;
+
+    @Mock
+    private MaintenanceScheduleRepository maintenanceScheduleRepository;
+
+    @Mock
+    private ServiceRecordRepository serviceRecordRepository;
+
     private PropertyService propertyService;
 
     @BeforeEach
     void setUp() {
-        propertyService = new PropertyService(propertyRepository, eventPublisher);
+        propertyService = new PropertyService(propertyRepository, eventPublisher,
+                membershipRepository, propertyContactRepository,
+                maintenanceScheduleRepository, serviceRecordRepository);
     }
 
     @Test
