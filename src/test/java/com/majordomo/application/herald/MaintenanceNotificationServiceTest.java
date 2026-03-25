@@ -5,10 +5,12 @@ import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.identity.MemberRole;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
+import com.majordomo.domain.model.identity.UserPreferences;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.herald.NotificationPort;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
+import com.majordomo.domain.port.out.identity.UserPreferencesRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
@@ -47,6 +49,9 @@ class MaintenanceNotificationServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private UserPreferencesRepository preferencesRepository;
+
+    @Mock
     private NotificationPort notificationPort;
 
     private MaintenanceNotificationService service;
@@ -55,7 +60,7 @@ class MaintenanceNotificationServiceTest {
     void setUp() {
         service = new MaintenanceNotificationService(
                 scheduleRepository, propertyRepository, membershipRepository,
-                userRepository, notificationPort);
+                userRepository, preferencesRepository, notificationPort);
     }
 
     @Test
@@ -88,6 +93,8 @@ class MaintenanceNotificationServiceTest {
                 .thenReturn(List.of(membership));
         when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
+        when(preferencesRepository.findByUserId(userId))
+                .thenReturn(Optional.empty());
         when(scheduleRepository.save(any(MaintenanceSchedule.class)))
                 .thenReturn(schedule);
 
@@ -128,5 +135,48 @@ class MaintenanceNotificationServiceTest {
 
         verify(notificationPort, never()).send(anyString(), anyString(), anyString());
         verify(scheduleRepository, never()).save(any());
+    }
+
+    @Test
+    void checkAndNotifySkipsUserWithMaintenanceDueDisabled() {
+        var propertyId = UUID.randomUUID();
+        var orgId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setPropertyId(propertyId);
+        schedule.setDescription("HVAC filter replacement");
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.now().plusDays(3));
+
+        var property = new Property();
+        property.setId(propertyId);
+        property.setOrganizationId(orgId);
+        property.setName("Main Building");
+
+        var membership = new Membership(UUID.randomUUID(), userId, orgId, MemberRole.OWNER);
+        var user = new User(userId, "admin", "admin@example.com");
+
+        var prefs = new UserPreferences();
+        prefs.setNotificationsEnabled(true);
+        prefs.setNotificationCategoriesDisabled(List.of("MAINTENANCE_DUE"));
+
+        when(scheduleRepository.findDueBefore(any(LocalDate.class)))
+                .thenReturn(List.of(schedule));
+        when(propertyRepository.findById(propertyId))
+                .thenReturn(Optional.of(property));
+        when(membershipRepository.findByOrganizationId(orgId))
+                .thenReturn(List.of(membership));
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
+        when(preferencesRepository.findByUserId(userId))
+                .thenReturn(Optional.of(prefs));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
+                .thenReturn(schedule);
+
+        service.checkAndNotify();
+
+        verify(notificationPort, never()).send(anyString(), anyString(), anyString());
     }
 }

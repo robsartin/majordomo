@@ -3,9 +3,11 @@ package com.majordomo.application.steward;
 import com.majordomo.domain.model.identity.MemberRole;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
+import com.majordomo.domain.model.identity.UserPreferences;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.out.herald.NotificationPort;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
+import com.majordomo.domain.port.out.identity.UserPreferencesRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
@@ -41,6 +43,9 @@ class WarrantyAlertServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private UserPreferencesRepository preferencesRepository;
+
+    @Mock
     private NotificationPort notificationPort;
 
     private WarrantyAlertService service;
@@ -48,7 +53,8 @@ class WarrantyAlertServiceTest {
     @BeforeEach
     void setUp() {
         service = new WarrantyAlertService(
-                propertyRepository, membershipRepository, userRepository, notificationPort);
+                propertyRepository, membershipRepository, userRepository,
+                preferencesRepository, notificationPort);
     }
 
     @Test
@@ -72,6 +78,8 @@ class WarrantyAlertServiceTest {
                 .thenReturn(List.of(membership));
         when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
+        when(preferencesRepository.findByUserId(userId))
+                .thenReturn(Optional.empty());
         when(propertyRepository.save(any(Property.class)))
                 .thenReturn(property);
 
@@ -111,5 +119,40 @@ class WarrantyAlertServiceTest {
 
         verify(notificationPort, never()).send(anyString(), anyString(), anyString());
         verify(propertyRepository, never()).save(any());
+    }
+
+    @Test
+    void checkAndNotifySkipsUserWithWarrantyExpiringDisabled() {
+        var propertyId = UUID.randomUUID();
+        var orgId = UUID.randomUUID();
+        var userId = UUID.randomUUID();
+
+        var property = new Property();
+        property.setId(propertyId);
+        property.setOrganizationId(orgId);
+        property.setName("HVAC Unit");
+        property.setWarrantyExpiresOn(LocalDate.now().plusDays(15));
+
+        var membership = new Membership(UUID.randomUUID(), userId, orgId, MemberRole.ADMIN);
+        var user = new User(userId, "admin", "admin@example.com");
+
+        var prefs = new UserPreferences();
+        prefs.setNotificationsEnabled(true);
+        prefs.setNotificationCategoriesDisabled(List.of("WARRANTY_EXPIRING"));
+
+        when(propertyRepository.findWithWarrantyExpiringBefore(any(LocalDate.class)))
+                .thenReturn(List.of(property));
+        when(membershipRepository.findByOrganizationId(orgId))
+                .thenReturn(List.of(membership));
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
+        when(preferencesRepository.findByUserId(userId))
+                .thenReturn(Optional.of(prefs));
+        when(propertyRepository.save(any(Property.class)))
+                .thenReturn(property);
+
+        service.checkAndNotify();
+
+        verify(notificationPort, never()).send(anyString(), anyString(), anyString());
     }
 }

@@ -1,8 +1,10 @@
 package com.majordomo.application.steward;
 
 import com.majordomo.domain.model.identity.MemberRole;
+import com.majordomo.domain.model.identity.NotificationCategory;
 import com.majordomo.domain.port.out.herald.NotificationPort;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
+import com.majordomo.domain.port.out.identity.UserPreferencesRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
@@ -26,23 +28,27 @@ public class WarrantyAlertService {
     private final PropertyRepository propertyRepository;
     private final MembershipRepository membershipRepository;
     private final UserRepository userRepository;
+    private final UserPreferencesRepository preferencesRepository;
     private final NotificationPort notificationPort;
 
     /**
      * Constructs the warranty alert service with required dependencies.
      *
-     * @param propertyRepository   repository for properties
-     * @param membershipRepository repository for organization memberships
-     * @param userRepository       repository for users
-     * @param notificationPort     outbound port for sending notifications
+     * @param propertyRepository    repository for properties
+     * @param membershipRepository  repository for organization memberships
+     * @param userRepository        repository for users
+     * @param preferencesRepository repository for user notification preferences
+     * @param notificationPort      outbound port for sending notifications
      */
     public WarrantyAlertService(PropertyRepository propertyRepository,
                                 MembershipRepository membershipRepository,
                                 UserRepository userRepository,
+                                UserPreferencesRepository preferencesRepository,
                                 NotificationPort notificationPort) {
         this.propertyRepository = propertyRepository;
         this.membershipRepository = membershipRepository;
         this.userRepository = userRepository;
+        this.preferencesRepository = preferencesRepository;
         this.notificationPort = notificationPort;
     }
 
@@ -67,12 +73,19 @@ public class WarrantyAlertService {
                     continue;
                 }
                 var user = userRepository.findById(membership.getUserId());
-                user.ifPresent(u -> notificationPort.send(
-                        u.getEmail(),
-                        "Warranty expiring soon: " + property.getName(),
-                        "The warranty for " + property.getName()
-                                + " expires on " + property.getWarrantyExpiresOn()
-                                + ". Please take action if renewal or replacement is needed."));
+                user.ifPresent(u -> {
+                    var prefs = preferencesRepository.findByUserId(u.getId());
+                    if (prefs.isPresent()
+                            && !prefs.get().isCategoryEnabled(NotificationCategory.WARRANTY_EXPIRING)) {
+                        return;
+                    }
+                    notificationPort.send(
+                            u.getEmail(),
+                            "Warranty expiring soon: " + property.getName(),
+                            "The warranty for " + property.getName()
+                                    + " expires on " + property.getWarrantyExpiresOn()
+                                    + ". Please take action if renewal or replacement is needed.");
+                });
             }
 
             property.setWarrantyNotificationSentAt(Instant.now());
