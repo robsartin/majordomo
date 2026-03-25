@@ -26,6 +26,7 @@ public class MaintenanceSchedule {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant archivedAt;
+    private Instant notificationSentAt;
 
     public MaintenanceSchedule() {}
 
@@ -58,4 +59,7 @@ public class MaintenanceSchedule {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    public Instant getNotificationSentAt() { return notificationSentAt; }
+    public void setNotificationSentAt(Instant notificationSentAt) { this.notificationSentAt = notificationSentAt; }
 }

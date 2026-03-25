@@ -18,6 +18,7 @@ final class MaintenanceScheduleMapper {
         entity.setCreatedAt(schedule.getCreatedAt());
         entity.setUpdatedAt(schedule.getUpdatedAt());
         entity.setArchivedAt(schedule.getArchivedAt());
+        entity.setNotificationSentAt(schedule.getNotificationSentAt());
         return entity;
     }
 
@@ -33,6 +34,7 @@ final class MaintenanceScheduleMapper {
         schedule.setCreatedAt(entity.getCreatedAt());
         schedule.setUpdatedAt(entity.getUpdatedAt());
         schedule.setArchivedAt(entity.getArchivedAt());
+        schedule.setNotificationSentAt(entity.getNotificationSentAt());
         return schedule;
     }
 }
