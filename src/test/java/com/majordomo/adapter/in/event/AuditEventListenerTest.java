@@ -50,7 +50,7 @@ class AuditEventListenerTest {
 
         AuditLogEntry entry = captor.getValue();
         assertNotNull(entry.getId());
-        assertEquals("ServiceRecord", entry.getEntityType());
+        assertEquals("SERVICE_RECORD", entry.getEntityType());
         assertEquals(recordId, entry.getEntityId());
         assertEquals("CREATE", entry.getAction());
         assertEquals(now, entry.getOccurredAt());
@@ -70,7 +70,7 @@ class AuditEventListenerTest {
 
         AuditLogEntry entry = captor.getValue();
         assertNotNull(entry.getId());
-        assertEquals("Property", entry.getEntityType());
+        assertEquals("PROPERTY", entry.getEntityType());
         assertEquals(propertyId, entry.getEntityId());
         assertEquals("ARCHIVE", entry.getAction());
         assertEquals(now, entry.getOccurredAt());
@@ -90,7 +90,7 @@ class AuditEventListenerTest {
 
         AuditLogEntry entry = captor.getValue();
         assertNotNull(entry.getId());
-        assertEquals("User", entry.getEntityType());
+        assertEquals("USER", entry.getEntityType());
         assertEquals(userId, entry.getEntityId());
         assertEquals("CREATE", entry.getAction());
         assertEquals(now, entry.getOccurredAt());

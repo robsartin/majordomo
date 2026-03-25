@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web;
 
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.AuditLogEntry;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.out.AuditLogRepository;
@@ -32,17 +33,21 @@ public class AuditController {
 
     private final AuditLogRepository auditLogRepository;
     private final PropertyRepository propertyRepository;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
-     * Constructs the controller with required repositories.
+     * Constructs the controller with required dependencies.
      *
-     * @param auditLogRepository the outbound port for audit log queries
-     * @param propertyRepository the outbound port for property queries
+     * @param auditLogRepository        the outbound port for audit log queries
+     * @param propertyRepository        the outbound port for property queries
+     * @param organizationAccessService the service for verifying organization membership
      */
     public AuditController(AuditLogRepository auditLogRepository,
-                           PropertyRepository propertyRepository) {
+                           PropertyRepository propertyRepository,
+                           OrganizationAccessService organizationAccessService) {
         this.auditLogRepository = auditLogRepository;
         this.propertyRepository = propertyRepository;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
@@ -70,6 +75,7 @@ public class AuditController {
      */
     @GetMapping("/organizations/{orgId}")
     public ResponseEntity<List<AuditLogEntry>> organizationFeed(@PathVariable UUID orgId) {
+        organizationAccessService.verifyAccess(orgId);
         List<Property> properties = propertyRepository.findByOrganizationId(orgId);
         List<AuditLogEntry> allEntries = new ArrayList<>();
         for (Property property : properties) {

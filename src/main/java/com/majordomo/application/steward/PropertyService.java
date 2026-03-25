@@ -1,6 +1,7 @@
 package com.majordomo.application.steward;
 
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.event.PropertyArchived;
 import com.majordomo.domain.model.event.PropertyTransferred;
@@ -111,7 +112,7 @@ public class PropertyService implements ManagePropertyUseCase {
     @CacheEvict(value = "properties", allEntries = true)
     public Property update(UUID id, Property property) {
         var existing = propertyRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Property", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.PROPERTY.name(), id));
         property.setId(existing.getId());
         property.setCreatedAt(existing.getCreatedAt());
         return propertyRepository.save(property);
@@ -121,7 +122,7 @@ public class PropertyService implements ManagePropertyUseCase {
     @CacheEvict(value = "properties", allEntries = true)
     public void archive(UUID id) {
         var existing = propertyRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Property", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.PROPERTY.name(), id));
         existing.setArchivedAt(Instant.now());
         propertyRepository.save(existing);
         eventPublisher.publish(new PropertyArchived(
@@ -133,7 +134,7 @@ public class PropertyService implements ManagePropertyUseCase {
     @CacheEvict(value = "properties", allEntries = true)
     public Property transfer(UUID propertyId, UUID toOrganizationId, UUID callerUserId) {
         var property = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new EntityNotFoundException("Property", propertyId));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.PROPERTY.name(), propertyId));
 
         UUID fromOrgId = property.getOrganizationId();
 

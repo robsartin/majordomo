@@ -110,9 +110,11 @@ class DashboardServiceTest {
 
         MaintenanceSchedule orgSchedule = new MaintenanceSchedule();
         orgSchedule.setPropertyId(propertyId);
+        orgSchedule.setNextDue(LocalDate.now().plusDays(5));
 
         MaintenanceSchedule otherSchedule = new MaintenanceSchedule();
         otherSchedule.setPropertyId(UUID.randomUUID());
+        otherSchedule.setNextDue(LocalDate.now().plusDays(5));
 
         when(scheduleRepository.findDueBefore(any(LocalDate.class)))
                 .thenReturn(List.of(orgSchedule, otherSchedule));
@@ -136,9 +138,11 @@ class DashboardServiceTest {
 
         MaintenanceSchedule overdueSchedule = new MaintenanceSchedule();
         overdueSchedule.setPropertyId(propertyId);
+        overdueSchedule.setNextDue(LocalDate.now().minusDays(1));
 
         MaintenanceSchedule otherSchedule = new MaintenanceSchedule();
         otherSchedule.setPropertyId(UUID.randomUUID());
+        otherSchedule.setNextDue(LocalDate.now().minusDays(1));
 
         when(scheduleRepository.findDueBefore(any(LocalDate.class)))
                 .thenReturn(List.of(overdueSchedule, otherSchedule));
@@ -229,7 +233,6 @@ class DashboardServiceTest {
         verify(propertyRepository).findByOrganizationId(orgId);
         verify(contactRepository).findByOrganizationId(orgId);
         verify(scheduleRepository).findDueBefore(LocalDate.now().plusDays(30));
-        verify(scheduleRepository).findDueBefore(LocalDate.now());
         verify(serviceRecordRepository).findRecentByPropertyIds(anyList(), eq(10));
         verify(ledgerQueryRepository).totalMaintenanceCostByOrganization(orgId);
     }

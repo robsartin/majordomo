@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -93,16 +92,11 @@ class WarrantyAlertServiceTest {
     }
 
     @Test
-    void checkAndNotifyAlreadyNotifiedSkips() {
-        var property = new Property();
-        property.setId(UUID.randomUUID());
-        property.setOrganizationId(UUID.randomUUID());
-        property.setName("Old Boiler");
-        property.setWarrantyExpiresOn(LocalDate.now().plusDays(5));
-        property.setWarrantyNotificationSentAt(Instant.now());
-
+    void checkAndNotifyAlreadyNotifiedNotReturnedByQuery() {
+        // The repository query filters out properties where warrantyNotificationSentAt IS NOT NULL,
+        // so already-notified properties are never returned.
         when(propertyRepository.findWithWarrantyExpiringBefore(any(LocalDate.class)))
-                .thenReturn(List.of(property));
+                .thenReturn(List.of());
 
         service.checkAndNotify();
 

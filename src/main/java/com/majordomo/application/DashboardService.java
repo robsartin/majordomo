@@ -1,7 +1,6 @@
 package com.majordomo.application;
 
 import com.majordomo.domain.model.DashboardSummary;
-import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.DashboardUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
@@ -10,6 +9,7 @@ import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 import com.majordomo.domain.port.out.ledger.LedgerQueryRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -58,6 +58,7 @@ public class DashboardService implements DashboardUseCase {
         this.ledgerQueryRepository = ledgerQueryRepository;
     }
 
+    @Cacheable(value = "dashboard", key = "#organizationId")
     @Override
     public DashboardSummary getSummary(UUID organizationId) {
         var properties = propertyRepository.findByOrganizationId(organizationId);
@@ -69,17 +70,12 @@ public class DashboardService implements DashboardUseCase {
 
         LocalDate today = LocalDate.now();
 
-        List<MaintenanceSchedule> upcomingMaintenance = scheduleRepository
-                .findDueBefore(today.plusDays(UPCOMING_DAYS))
-                .stream()
-                .filter(s -> propertyIds.contains(s.getPropertyId()))
-                .toList();
-
-        List<MaintenanceSchedule> overdueItems = scheduleRepository
-                .findDueBefore(today)
-                .stream()
-                .filter(s -> propertyIds.contains(s.getPropertyId()))
-                .toList();
+        var allDueSoon = scheduleRepository.findDueBefore(today.plusDays(UPCOMING_DAYS))
+                .stream().filter(s -> propertyIds.contains(s.getPropertyId())).toList();
+        var overdueItems = allDueSoon.stream()
+                .filter(s -> s.getNextDue().isBefore(today)).toList();
+        var upcomingMaintenance = allDueSoon.stream()
+                .filter(s -> !s.getNextDue().isBefore(today)).toList();
 
         var recentServiceRecords = serviceRecordRepository
                 .findRecentByPropertyIds(List.copyOf(propertyIds), RECENT_RECORDS_LIMIT);

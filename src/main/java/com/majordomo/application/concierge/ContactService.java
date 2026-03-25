@@ -1,6 +1,7 @@
 package com.majordomo.application.concierge;
 
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
@@ -71,7 +72,7 @@ public class ContactService implements ManageContactUseCase {
     @CacheEvict(value = "contacts", allEntries = true)
     public Contact update(UUID id, Contact contact) {
         var existing = contactRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Contact", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
         contact.setId(existing.getId());
         contact.setCreatedAt(existing.getCreatedAt());
         return contactRepository.save(contact);
@@ -81,7 +82,7 @@ public class ContactService implements ManageContactUseCase {
     @CacheEvict(value = "contacts", allEntries = true)
     public void archive(UUID id) {
         var existing = contactRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Contact", id));
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
         existing.setArchivedAt(Instant.now());
         contactRepository.save(existing);
     }

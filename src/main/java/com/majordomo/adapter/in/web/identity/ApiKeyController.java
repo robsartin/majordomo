@@ -38,6 +38,7 @@ public class ApiKeyController {
 
     private static final String KEY_PREFIX = "mjd_";
     private static final int KEY_RANDOM_BYTES = 32;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final ApiKeyRepository apiKeyRepository;
 
@@ -129,9 +130,8 @@ public class ApiKeyController {
     }
 
     private String generateRawKey() {
-        var random = new SecureRandom();
         byte[] bytes = new byte[KEY_RANDOM_BYTES];
-        random.nextBytes(bytes);
+        SECURE_RANDOM.nextBytes(bytes);
         return KEY_PREFIX + HexFormat.of().formatHex(bytes);
     }
 

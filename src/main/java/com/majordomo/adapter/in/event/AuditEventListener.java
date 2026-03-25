@@ -1,6 +1,8 @@
 package com.majordomo.adapter.in.event;
 
+import com.majordomo.domain.model.AuditAction;
 import com.majordomo.domain.model.AuditLogEntry;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.event.PropertyArchived;
 import com.majordomo.domain.model.event.ServiceRecordCreated;
@@ -41,7 +43,8 @@ public class AuditEventListener {
      */
     @EventListener
     public void onServiceRecordCreated(ServiceRecordCreated event) {
-        log("ServiceRecord", event.serviceRecordId(), "CREATE", event.occurredAt());
+        log(EntityType.SERVICE_RECORD.name(), event.serviceRecordId(),
+                AuditAction.CREATE.name(), event.occurredAt());
     }
 
     /**
@@ -51,7 +54,8 @@ public class AuditEventListener {
      */
     @EventListener
     public void onPropertyArchived(PropertyArchived event) {
-        log("Property", event.propertyId(), "ARCHIVE", event.occurredAt());
+        log(EntityType.PROPERTY.name(), event.propertyId(),
+                AuditAction.ARCHIVE.name(), event.occurredAt());
     }
 
     /**
@@ -61,7 +65,8 @@ public class AuditEventListener {
      */
     @EventListener
     public void onUserCreated(UserCreated event) {
-        log("User", event.userId(), "CREATE", event.occurredAt());
+        log(EntityType.USER.name(), event.userId(),
+                AuditAction.CREATE.name(), event.occurredAt());
     }
 
     private void log(String entityType, UUID entityId, String action, Instant occurredAt) {
