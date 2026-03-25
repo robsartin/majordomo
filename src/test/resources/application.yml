@@ -11,6 +11,14 @@ spring:
     enabled: false
   cache:
     type: none
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope: openid,email,profile
 
 springdoc:
   api-docs:

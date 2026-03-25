@@ -27,6 +27,15 @@ spring:
       key-prefix: "majordomo:"
       use-key-prefix: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:placeholder}
+            client-secret: ${GOOGLE_CLIENT_SECRET:placeholder}
+            scope: openid,email,profile
+
 management:
   endpoints:
     web:
