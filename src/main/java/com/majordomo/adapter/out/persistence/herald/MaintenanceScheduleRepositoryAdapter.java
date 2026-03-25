@@ -3,6 +3,7 @@ package com.majordomo.adapter.out.persistence.herald;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -37,6 +38,18 @@ public class MaintenanceScheduleRepositoryAdapter implements MaintenanceSchedule
     @Override
     public List<MaintenanceSchedule> findByPropertyId(UUID propertyId) {
         return jpa.findByPropertyId(propertyId).stream().map(MaintenanceScheduleMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit) {
+        List<MaintenanceScheduleEntity> entities;
+        if (cursor == null) {
+            entities = jpa.findByPropertyIdOrderById(propertyId, PageRequest.of(0, limit));
+        } else {
+            entities = jpa.findByPropertyIdAndIdGreaterThanOrderById(
+                    propertyId, cursor, PageRequest.of(0, limit));
+        }
+        return entities.stream().map(MaintenanceScheduleMapper::toDomain).toList();
     }
 
     @Override

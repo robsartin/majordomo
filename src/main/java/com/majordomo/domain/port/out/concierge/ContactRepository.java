@@ -36,4 +36,14 @@ public interface ContactRepository {
      * @return list of contacts for that organization, or an empty list if none exist
      */
     List<Contact> findByOrganizationId(UUID organizationId);
+
+    /**
+     * Returns contacts for an organization with cursor-based pagination.
+     *
+     * @param organizationId the organization ID
+     * @param cursor         exclusive start cursor (null for first page)
+     * @param limit          maximum number of results
+     * @return list of contacts after the cursor, ordered by ID
+     */
+    List<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
 }

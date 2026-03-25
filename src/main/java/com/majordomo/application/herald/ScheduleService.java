@@ -1,5 +1,6 @@
 package com.majordomo.application.herald;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
@@ -54,6 +55,18 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public List<MaintenanceSchedule> findByPropertyId(UUID propertyId) {
         return scheduleRepository.findByPropertyId(propertyId);
+    }
+
+    @Override
+    public Page<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = scheduleRepository.findByPropertyId(propertyId, cursor, clampedLimit + 1);
+        boolean hasMore = items.size() > clampedLimit;
+        if (hasMore) {
+            items = items.subList(0, clampedLimit);
+        }
+        UUID nextCursor = hasMore ? items.get(items.size() - 1).getId() : null;
+        return new Page<>(items, nextCursor, hasMore);
     }
 
     @Override

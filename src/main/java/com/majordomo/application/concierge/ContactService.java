@@ -1,5 +1,6 @@
 package com.majordomo.application.concierge;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
@@ -45,5 +46,17 @@ public class ContactService implements ManageContactUseCase {
     @Override
     public List<Contact> findByOrganizationId(UUID organizationId) {
         return contactRepository.findByOrganizationId(organizationId);
+    }
+
+    @Override
+    public Page<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = contactRepository.findByOrganizationId(organizationId, cursor, clampedLimit + 1);
+        boolean hasMore = items.size() > clampedLimit;
+        if (hasMore) {
+            items = items.subList(0, clampedLimit);
+        }
+        UUID nextCursor = hasMore ? items.get(items.size() - 1).getId() : null;
+        return new Page<>(items, nextCursor, hasMore);
     }
 }

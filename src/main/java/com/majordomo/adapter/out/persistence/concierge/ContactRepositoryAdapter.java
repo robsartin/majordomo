@@ -3,6 +3,7 @@ package com.majordomo.adapter.out.persistence.concierge;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,5 +37,17 @@ public class ContactRepositoryAdapter implements ContactRepository {
     @Override
     public List<Contact> findByOrganizationId(UUID organizationId) {
         return jpa.findByOrganizationId(organizationId).stream().map(ContactMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
+        List<ContactEntity> entities;
+        if (cursor == null) {
+            entities = jpa.findByOrganizationIdOrderById(organizationId, PageRequest.of(0, limit));
+        } else {
+            entities = jpa.findByOrganizationIdAndIdGreaterThanOrderById(
+                    organizationId, cursor, PageRequest.of(0, limit));
+        }
+        return entities.stream().map(ContactMapper::toDomain).toList();
     }
 }

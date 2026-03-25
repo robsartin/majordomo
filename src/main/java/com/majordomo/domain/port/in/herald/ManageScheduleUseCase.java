@@ -1,5 +1,6 @@
 package com.majordomo.domain.port.in.herald;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 
@@ -36,6 +37,16 @@ public interface ManageScheduleUseCase {
      * @return list of schedules
      */
     List<MaintenanceSchedule> findByPropertyId(UUID propertyId);
+
+    /**
+     * Lists schedules for a property with cursor-based pagination.
+     *
+     * @param propertyId the property ID
+     * @param cursor     the cursor UUID (null for first page)
+     * @param limit      max results per page (1-100)
+     * @return a page of schedules
+     */
+    Page<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit);
 
     /**
      * Lists all schedules due before the given date.
