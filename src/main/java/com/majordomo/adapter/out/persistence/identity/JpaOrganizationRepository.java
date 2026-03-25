@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public interface JpaOrganizationRepository extends JpaRepository<OrganizationEntity, UUID> {
 
-    @Query("SELECT o FROM OrganizationEntity o JOIN MembershipEntity m ON o.id = m.organizationId WHERE m.userId = :userId")
+    @Query("SELECT o FROM OrganizationEntity o JOIN MembershipEntity m"
+            + " ON o.id = m.organizationId WHERE m.userId = :userId")
     List<OrganizationEntity> findByUserId(UUID userId);
 }

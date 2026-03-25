@@ -19,7 +19,9 @@ final class MembershipMapper {
     }
 
     static Membership toDomain(MembershipEntity entity) {
-        var membership = new Membership(entity.getId(), entity.getUserId(), entity.getOrganizationId(), entity.getRole());
+        var membership = new Membership(
+                entity.getId(), entity.getUserId(),
+                entity.getOrganizationId(), entity.getRole());
         membership.setCreatedAt(entity.getCreatedAt());
         membership.setUpdatedAt(entity.getUpdatedAt());
         membership.setArchivedAt(entity.getArchivedAt());

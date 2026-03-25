@@ -27,8 +27,9 @@ public class ScheduleController {
     private final MaintenanceScheduleRepository scheduleRepository;
     private final ServiceRecordRepository serviceRecordRepository;
 
-    public ScheduleController(MaintenanceScheduleRepository scheduleRepository,
-                              ServiceRecordRepository serviceRecordRepository) {
+    public ScheduleController(
+            MaintenanceScheduleRepository scheduleRepository,
+            ServiceRecordRepository serviceRecordRepository) {
         this.scheduleRepository = scheduleRepository;
         this.serviceRecordRepository = serviceRecordRepository;
     }
@@ -60,8 +61,9 @@ public class ScheduleController {
     }
 
     @PostMapping("/{id}/records")
-    public ResponseEntity<ServiceRecord> recordService(@PathVariable UUID id,
-                                                       @RequestBody ServiceRecord record) {
+    public ResponseEntity<ServiceRecord> recordService(
+            @PathVariable UUID id,
+            @RequestBody ServiceRecord record) {
         record.setId(UUID.randomUUID());
         record.setScheduleId(id);
         record.setCreatedAt(Instant.now());
