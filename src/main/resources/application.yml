@@ -20,10 +20,49 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,prometheus,circuitbreakers,retries
   endpoint:
     health:
       show-details: when-authorized
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state:
+          seconds: 10
+        permitted-number-of-calls-in-half-open-state: 3
+    instances:
+      notification:
+        base-config: default
+      fileStorage:
+        base-config: default
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration:
+          millis: 500
+        exponential-backoff-multiplier: 2
+    instances:
+      notification:
+        base-config: default
+      fileStorage:
+        base-config: default
+        max-attempts: 2
+  timelimiter:
+    configs:
+      default:
+        timeout-duration:
+          seconds: 5
+    instances:
+      notification:
+        base-config: default
+      fileStorage:
+        timeout-duration:
+          seconds: 10
 
 springdoc:
   api-docs:
