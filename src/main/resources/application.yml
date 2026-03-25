@@ -36,6 +36,10 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET:placeholder}
             scope: openid,email,profile
 
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{correlationId}] %-5level %logger{36} - %msg%n"
+
 management:
   endpoints:
     web:

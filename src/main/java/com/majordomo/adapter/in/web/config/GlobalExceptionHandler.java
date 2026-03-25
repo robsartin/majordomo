@@ -102,7 +102,8 @@ public class GlobalExceptionHandler {
                 status.value(),
                 status.getReasonPhrase(),
                 message,
-                request.getRequestURI()
+                request.getRequestURI(),
+                CorrelationIdContext.current()
         );
         return ResponseEntity.status(status).body(body);
     }
