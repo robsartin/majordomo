@@ -24,6 +24,7 @@ final class PropertyMapper {
         entity.setCreatedAt(property.getCreatedAt());
         entity.setUpdatedAt(property.getUpdatedAt());
         entity.setArchivedAt(property.getArchivedAt());
+        entity.setPurchasePrice(property.getPurchasePrice());
         return entity;
     }
 
@@ -45,6 +46,7 @@ final class PropertyMapper {
         property.setCreatedAt(entity.getCreatedAt());
         property.setUpdatedAt(entity.getUpdatedAt());
         property.setArchivedAt(entity.getArchivedAt());
+        property.setPurchasePrice(entity.getPurchasePrice());
         return property;
     }
 }
