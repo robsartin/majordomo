@@ -52,8 +52,7 @@ public class LedgerController {
     @GetMapping("/properties/{propertyId}/spend")
     public SpendSummary spendForProperty(@PathVariable UUID propertyId) {
         var property = propertyRepository.findById(propertyId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Property not found: " + propertyId));
+                .orElseThrow(() -> new EntityNotFoundException("Property", propertyId));
         organizationAccessService.verifyAccess(property.getOrganizationId());
         return querySpendUseCase.spendForProperty(propertyId);
     }
