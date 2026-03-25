@@ -1,0 +1,6 @@
+# Copy to docker-compose.override.yml for local customization
+# This file is gitignored
+services:
+  db:
+    ports:
+      - "5433:5432"  # Use 5433 if 5432 is already in use

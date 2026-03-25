@@ -50,3 +50,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Docker ###
+docker-compose.override.yml
