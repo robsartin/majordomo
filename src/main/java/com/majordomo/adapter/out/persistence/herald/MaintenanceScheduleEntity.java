@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -51,6 +52,9 @@ public class MaintenanceScheduleEntity {
     @Column(name = "notification_sent_at")
     private Instant notificationSentAt;
 
+    @Column(name = "estimated_cost", precision = 12, scale = 2)
+    private BigDecimal estimatedCost;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -83,4 +87,7 @@ public class MaintenanceScheduleEntity {
 
     public Instant getNotificationSentAt() { return notificationSentAt; }
     public void setNotificationSentAt(Instant notificationSentAt) { this.notificationSentAt = notificationSentAt; }
+
+    public BigDecimal getEstimatedCost() { return estimatedCost; }
+    public void setEstimatedCost(BigDecimal estimatedCost) { this.estimatedCost = estimatedCost; }
 }

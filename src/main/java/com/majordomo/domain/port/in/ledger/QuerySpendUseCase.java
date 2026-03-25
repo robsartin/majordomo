@@ -2,6 +2,7 @@ package com.majordomo.domain.port.in.ledger;
 
 import com.majordomo.domain.model.ledger.SpendSummary;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -24,4 +25,12 @@ public interface QuerySpendUseCase {
      * @return the aggregated spend summary
      */
     SpendSummary spendForOrganization(UUID organizationId);
+
+    /**
+     * Returns projected annual maintenance spend for an organization.
+     *
+     * @param organizationId the organization ID
+     * @return projected annual cost based on schedule frequencies and estimated costs
+     */
+    BigDecimal projectedAnnualSpend(UUID organizationId);
 }
