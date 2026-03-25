@@ -1,5 +1,8 @@
 package com.majordomo.domain.model.herald;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,7 +18,9 @@ public class ServiceRecord {
     private UUID propertyId;
     private UUID contactId;
     private UUID scheduleId;
+    @NotNull
     private LocalDate performedOn;
+    @NotBlank
     private String description;
     private String notes;
     private Instant createdAt;

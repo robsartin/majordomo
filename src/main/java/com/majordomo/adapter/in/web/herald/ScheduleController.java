@@ -5,6 +5,8 @@ import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -90,7 +92,7 @@ public class ScheduleController {
      * @return {@code 201 Created} with the persisted schedule and a {@code Location} header
      */
     @PostMapping
-    public ResponseEntity<MaintenanceSchedule> create(@RequestBody MaintenanceSchedule schedule) {
+    public ResponseEntity<MaintenanceSchedule> create(@Valid @RequestBody MaintenanceSchedule schedule) {
         var saved = scheduleUseCase.create(schedule);
         return ResponseEntity.created(URI.create("/api/schedules/" + saved.getId())).body(saved);
     }
@@ -108,7 +110,7 @@ public class ScheduleController {
     @PostMapping("/{id}/records")
     public ResponseEntity<ServiceRecord> recordService(
             @PathVariable UUID id,
-            @RequestBody ServiceRecord record) {
+            @Valid @RequestBody ServiceRecord record) {
         var saved = scheduleUseCase.recordService(id, record);
         return ResponseEntity.created(URI.create("/api/schedules/" + id + "/records/" + saved.getId())).body(saved);
     }

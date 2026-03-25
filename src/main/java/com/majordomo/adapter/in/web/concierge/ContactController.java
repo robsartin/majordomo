@@ -4,6 +4,8 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,7 +75,7 @@ public class ContactController {
      * @return {@code 201 Created} with the persisted contact and a {@code Location} header
      */
     @PostMapping
-    public ResponseEntity<Contact> create(@RequestBody Contact contact) {
+    public ResponseEntity<Contact> create(@Valid @RequestBody Contact contact) {
         var saved = contactUseCase.create(contact);
         return ResponseEntity.created(URI.create("/api/contacts/" + saved.getId())).body(saved);
     }
