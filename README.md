@@ -46,6 +46,27 @@ authentication methods per user.
 
 For detailed developer documentation, see [doc/authentication.md](doc/authentication.md).
 
+## Getting Started
+
+```bash
+# Start PostgreSQL
+docker-compose up -d
+
+# Run the application
+./mvnw spring-boot:run
+
+# Access
+# App:     http://localhost:8080
+# Login:   http://localhost:8080/login (robsartin / xyzzyPLAN9)
+# Swagger: http://localhost:8080/swagger-ui.html
+```
+
+To stop:
+```bash
+docker-compose down        # Stop containers (keep data)
+docker-compose down -v     # Stop and remove data volume
+```
+
 ## Status
 
 Early development. Architecture decisions are being recorded in `doc/adr/`.
