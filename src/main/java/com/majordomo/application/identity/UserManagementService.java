@@ -1,10 +1,12 @@
 package com.majordomo.application.identity;
 
+import com.majordomo.domain.model.event.UserCreated;
 import com.majordomo.domain.model.identity.Credential;
 import com.majordomo.domain.model.identity.MemberRole;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.identity.ManageUserUseCase;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.identity.CredentialRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
@@ -28,6 +30,7 @@ public class UserManagementService implements ManageUserUseCase {
     private final CredentialRepository credentialRepository;
     private final MembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the service with required dependencies.
@@ -36,15 +39,18 @@ public class UserManagementService implements ManageUserUseCase {
      * @param credentialRepository port for credential persistence
      * @param membershipRepository port for membership persistence
      * @param passwordEncoder      encoder for hashing passwords
+     * @param eventPublisher       port for publishing domain events
      */
     public UserManagementService(UserRepository userRepository,
                                   CredentialRepository credentialRepository,
                                   MembershipRepository membershipRepository,
-                                  PasswordEncoder passwordEncoder) {
+                                  PasswordEncoder passwordEncoder,
+                                  EventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.credentialRepository = credentialRepository;
         this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -93,6 +99,10 @@ public class UserManagementService implements ManageUserUseCase {
         membership.setCreatedAt(now);
         membership.setUpdatedAt(now);
         membershipRepository.save(membership);
+
+        eventPublisher.publish(new UserCreated(
+                savedUser.getId(), organizationId,
+                savedUser.getUsername(), now));
 
         return savedUser;
     }

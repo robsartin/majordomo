@@ -2,9 +2,11 @@ package com.majordomo.application.steward;
 
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.Page;
+import com.majordomo.domain.model.event.PropertyArchived;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.springframework.stereotype.Service;
@@ -22,14 +24,18 @@ import java.util.UUID;
 public class PropertyService implements ManagePropertyUseCase {
 
     private final PropertyRepository propertyRepository;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the service with the property repository port.
      *
      * @param propertyRepository the outbound port for property persistence
+     * @param eventPublisher     the outbound port for publishing domain events
      */
-    public PropertyService(PropertyRepository propertyRepository) {
+    public PropertyService(PropertyRepository propertyRepository,
+                           EventPublisher eventPublisher) {
         this.propertyRepository = propertyRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -81,5 +87,8 @@ public class PropertyService implements ManagePropertyUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("Property", id));
         existing.setArchivedAt(Instant.now());
         propertyRepository.save(existing);
+        eventPublisher.publish(new PropertyArchived(
+                existing.getId(), existing.getOrganizationId(),
+                existing.getArchivedAt()));
     }
 }

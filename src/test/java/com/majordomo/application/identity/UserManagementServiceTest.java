@@ -4,6 +4,7 @@ import com.majordomo.domain.model.identity.Credential;
 import com.majordomo.domain.model.identity.MemberRole;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.identity.CredentialRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
@@ -47,6 +48,9 @@ class UserManagementServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private EventPublisher eventPublisher;
+
     private UserManagementService service;
 
     private final UUID callerUserId = UUID.randomUUID();
@@ -57,7 +61,7 @@ class UserManagementServiceTest {
     void setUp() {
         service = new UserManagementService(
                 userRepository, credentialRepository,
-                membershipRepository, passwordEncoder);
+                membershipRepository, passwordEncoder, eventPublisher);
     }
 
     /** Verifies that an ADMIN caller can create a user, credential, and membership. */
