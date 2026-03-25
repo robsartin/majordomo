@@ -62,7 +62,7 @@ final class VCardMapper {
         }
         if (contact.getNicknames() != null && !contact.getNicknames().isEmpty()) {
             var nickname = new Nickname();
-            contact.getNicknames().forEach(nickname::addValue);
+            nickname.getValues().addAll(contact.getNicknames());
             vcard.addNickname(nickname);
         }
 
@@ -110,7 +110,9 @@ final class VCardMapper {
         }
 
         var nicknames = new ArrayList<String>();
-        vcard.getNickname().forEach(n -> nicknames.addAll(n.getValues()));
+        for (var n : vcard.getNicknames()) {
+            nicknames.addAll(n.getValues());
+        }
         contact.setNicknames(nicknames);
 
         contact.setAddresses(List.of());
