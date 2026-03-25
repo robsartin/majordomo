@@ -2,8 +2,7 @@ package com.majordomo.adapter.in.web.herald;
 
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
-import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
-import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
+import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -26,27 +24,21 @@ import java.util.UUID;
  *
  * <p>Exposes schedule CRUD operations and service-record tracking under
  * {@code /api/schedules}. Acts as an inbound adapter in the hexagonal architecture,
- * delegating persistence to {@link MaintenanceScheduleRepository} and
- * {@link ServiceRecordRepository}.</p>
+ * delegating to {@link ManageScheduleUseCase}.</p>
  */
 @RestController
 @RequestMapping("/api/schedules")
 public class ScheduleController {
 
-    private final MaintenanceScheduleRepository scheduleRepository;
-    private final ServiceRecordRepository serviceRecordRepository;
+    private final ManageScheduleUseCase scheduleUseCase;
 
     /**
-     * Constructs a {@code ScheduleController} with the required repositories.
+     * Constructs a {@code ScheduleController} with the required use case.
      *
-     * @param scheduleRepository      the port used to store and retrieve maintenance schedules
-     * @param serviceRecordRepository the port used to store and retrieve service records
+     * @param scheduleUseCase the inbound port for schedule management
      */
-    public ScheduleController(
-            MaintenanceScheduleRepository scheduleRepository,
-            ServiceRecordRepository serviceRecordRepository) {
-        this.scheduleRepository = scheduleRepository;
-        this.serviceRecordRepository = serviceRecordRepository;
+    public ScheduleController(ManageScheduleUseCase scheduleUseCase) {
+        this.scheduleUseCase = scheduleUseCase;
     }
 
     /**
@@ -57,7 +49,7 @@ public class ScheduleController {
      */
     @GetMapping
     public List<MaintenanceSchedule> listByProperty(@RequestParam UUID propertyId) {
-        return scheduleRepository.findByPropertyId(propertyId);
+        return scheduleUseCase.findByPropertyId(propertyId);
     }
 
     /**
@@ -68,7 +60,7 @@ public class ScheduleController {
      */
     @GetMapping("/upcoming")
     public List<MaintenanceSchedule> listUpcoming(@RequestParam(defaultValue = "30") int days) {
-        return scheduleRepository.findDueBefore(LocalDate.now().plusDays(days));
+        return scheduleUseCase.findDueBefore(LocalDate.now().plusDays(days));
     }
 
     /**
@@ -79,31 +71,29 @@ public class ScheduleController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<MaintenanceSchedule> getById(@PathVariable UUID id) {
-        return scheduleRepository.findById(id)
+        return scheduleUseCase.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Creates a new maintenance schedule, assigning a generated ID and audit timestamps.
+     * Creates a new maintenance schedule, delegating ID generation and timestamps
+     * to the service layer.
      *
      * @param schedule the schedule data provided in the request body
      * @return {@code 201 Created} with the persisted schedule and a {@code Location} header
      */
     @PostMapping
     public ResponseEntity<MaintenanceSchedule> create(@RequestBody MaintenanceSchedule schedule) {
-        schedule.setId(UUID.randomUUID());
-        schedule.setCreatedAt(Instant.now());
-        schedule.setUpdatedAt(Instant.now());
-        var saved = scheduleRepository.save(schedule);
+        var saved = scheduleUseCase.create(schedule);
         return ResponseEntity.created(URI.create("/api/schedules/" + saved.getId())).body(saved);
     }
 
     /**
      * Records a completed service event against an existing maintenance schedule.
      *
-     * <p>The new record is linked to the given schedule ID and assigned a generated ID
-     * and audit timestamps before being persisted.</p>
+     * <p>The new record is linked to the given schedule ID by the service layer and assigned
+     * a generated ID and audit timestamps before being persisted.</p>
      *
      * @param id     the UUID of the maintenance schedule being serviced
      * @param record the service record data provided in the request body
@@ -113,11 +103,7 @@ public class ScheduleController {
     public ResponseEntity<ServiceRecord> recordService(
             @PathVariable UUID id,
             @RequestBody ServiceRecord record) {
-        record.setId(UUID.randomUUID());
-        record.setScheduleId(id);
-        record.setCreatedAt(Instant.now());
-        record.setUpdatedAt(Instant.now());
-        var saved = serviceRecordRepository.save(record);
+        var saved = scheduleUseCase.recordService(id, record);
         return ResponseEntity.created(URI.create("/api/schedules/" + id + "/records/" + saved.getId())).body(saved);
     }
 
@@ -129,6 +115,6 @@ public class ScheduleController {
      */
     @GetMapping("/{id}/records")
     public List<ServiceRecord> listRecords(@PathVariable UUID id) {
-        return serviceRecordRepository.findByScheduleId(id);
+        return scheduleUseCase.findRecordsByScheduleId(id);
     }
 }

@@ -1,7 +1,7 @@
 package com.majordomo.adapter.in.web.concierge;
 
 import com.majordomo.domain.model.concierge.Contact;
-import com.majordomo.domain.port.out.concierge.ContactRepository;
+import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,21 +20,21 @@ import java.util.UUID;
  * REST controller for the Concierge domain: manages contacts associated with organizations.
  *
  * <p>Exposes CRUD operations under {@code /api/contacts}. Acts as an inbound adapter in the
- * hexagonal architecture, delegating persistence to {@link ContactRepository}.</p>
+ * hexagonal architecture, delegating to {@link ManageContactUseCase}.</p>
  */
 @RestController
 @RequestMapping("/api/contacts")
 public class ContactController {
 
-    private final ContactRepository contactRepository;
+    private final ManageContactUseCase contactUseCase;
 
     /**
-     * Constructs a {@code ContactController} with the given contact repository.
+     * Constructs a {@code ContactController} with the given contact use case.
      *
-     * @param contactRepository the port used to store and retrieve contacts
+     * @param contactUseCase the inbound port for contact management
      */
-    public ContactController(ContactRepository contactRepository) {
-        this.contactRepository = contactRepository;
+    public ContactController(ManageContactUseCase contactUseCase) {
+        this.contactUseCase = contactUseCase;
     }
 
     /**
@@ -46,7 +45,7 @@ public class ContactController {
      */
     @GetMapping
     public List<Contact> listByOrganization(@RequestParam UUID organizationId) {
-        return contactRepository.findByOrganizationId(organizationId);
+        return contactUseCase.findByOrganizationId(organizationId);
     }
 
     /**
@@ -57,23 +56,20 @@ public class ContactController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<Contact> getById(@PathVariable UUID id) {
-        return contactRepository.findById(id)
+        return contactUseCase.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Creates a new contact, assigning a generated ID and audit timestamps.
+     * Creates a new contact, delegating ID generation and timestamps to the service layer.
      *
      * @param contact the contact data provided in the request body
      * @return {@code 201 Created} with the persisted contact and a {@code Location} header
      */
     @PostMapping
     public ResponseEntity<Contact> create(@RequestBody Contact contact) {
-        contact.setId(UUID.randomUUID());
-        contact.setCreatedAt(Instant.now());
-        contact.setUpdatedAt(Instant.now());
-        var saved = contactRepository.save(contact);
+        var saved = contactUseCase.create(contact);
         return ResponseEntity.created(URI.create("/api/contacts/" + saved.getId())).body(saved);
     }
 }
