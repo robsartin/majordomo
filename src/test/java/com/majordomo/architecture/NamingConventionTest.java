@@ -14,7 +14,7 @@ class NamingConventionTest {
 
     /** Application service classes should end with Service. */
     @ArchTest
-    static final ArchRule applicationClassesNamedService = classes()
+    static final ArchRule APPLICATION_CLASSES_NAMED_SERVICE = classes()
             .that().resideInAPackage("..application..")
             .should().haveSimpleNameEndingWith("Service");
 }
