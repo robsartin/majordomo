@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: majordomo
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/majordomo
+    username: majordomo
+    password: majordomo
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
