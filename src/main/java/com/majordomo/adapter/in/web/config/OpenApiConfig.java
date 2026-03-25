@@ -111,4 +111,18 @@ public class OpenApiConfig {
                 .pathsToMatch("/api/ledger/**")
                 .build();
     }
+
+    /**
+     * Groups the Dashboard (overview) endpoints under a dedicated Swagger UI section.
+     *
+     * @return a {@link GroupedOpenApi} covering {@code /api/dashboard/**}
+     */
+    @Bean
+    public GroupedOpenApi dashboardApi() {
+        return GroupedOpenApi.builder()
+                .group("dashboard")
+                .displayName("Dashboard (Overview)")
+                .pathsToMatch("/api/dashboard/**")
+                .build();
+    }
 }

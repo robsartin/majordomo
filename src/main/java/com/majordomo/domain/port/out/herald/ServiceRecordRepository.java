@@ -45,4 +45,13 @@ public interface ServiceRecordRepository {
      * @return list of service records for that schedule, or an empty list if none exist
      */
     List<ServiceRecord> findByScheduleId(UUID scheduleId);
+
+    /**
+     * Returns the most recent service records across all properties in an organization.
+     *
+     * @param propertyIds the property IDs to search across
+     * @param limit       max results
+     * @return recent service records ordered by performedOn descending
+     */
+    List<ServiceRecord> findRecentByPropertyIds(List<UUID> propertyIds, int limit);
 }
