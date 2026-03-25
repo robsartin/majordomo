@@ -1,9 +1,12 @@
 package com.majordomo.adapter.out.persistence.concierge;
 
+import com.majordomo.adapter.out.persistence.CursorSpecifications;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -41,26 +44,20 @@ public class ContactRepositoryAdapter implements ContactRepository {
 
     @Override
     public List<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
-        List<ContactEntity> entities;
-        if (cursor == null) {
-            entities = jpa.findByOrganizationIdOrderById(organizationId, PageRequest.of(0, limit));
-        } else {
-            entities = jpa.findByOrganizationIdAndIdGreaterThanOrderById(
-                    organizationId, cursor, PageRequest.of(0, limit));
-        }
-        return entities.stream().map(ContactMapper::toDomain).toList();
+        var spec = Specification.where(
+                        CursorSpecifications.<ContactEntity>fieldEquals("organizationId", organizationId))
+                .and(CursorSpecifications.afterCursor(cursor));
+        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
+        return page.stream().map(ContactMapper::toDomain).toList();
     }
 
     @Override
     public List<Contact> search(UUID organizationId, String query, UUID cursor, int limit) {
-        List<ContactEntity> entities;
-        if (cursor == null) {
-            entities = jpa.searchByOrganizationIdOrderById(
-                    organizationId, query, PageRequest.of(0, limit));
-        } else {
-            entities = jpa.searchByOrganizationIdAndIdGreaterThanOrderById(
-                    organizationId, query, cursor, PageRequest.of(0, limit));
-        }
-        return entities.stream().map(ContactMapper::toDomain).toList();
+        var spec = Specification.where(
+                        CursorSpecifications.<ContactEntity>fieldEquals("organizationId", organizationId))
+                .and(CursorSpecifications.afterCursor(cursor))
+                .and(CursorSpecifications.searchAcrossFields(query, "formattedName", "givenName", "familyName"));
+        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
+        return page.stream().map(ContactMapper::toDomain).toList();
     }
 }

@@ -1,10 +1,13 @@
 package com.majordomo.adapter.out.persistence.herald;
 
+import com.majordomo.adapter.out.persistence.CursorSpecifications;
 import com.majordomo.domain.model.herald.Frequency;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -43,14 +46,11 @@ public class MaintenanceScheduleRepositoryAdapter implements MaintenanceSchedule
 
     @Override
     public List<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit) {
-        List<MaintenanceScheduleEntity> entities;
-        if (cursor == null) {
-            entities = jpa.findByPropertyIdOrderById(propertyId, PageRequest.of(0, limit));
-        } else {
-            entities = jpa.findByPropertyIdAndIdGreaterThanOrderById(
-                    propertyId, cursor, PageRequest.of(0, limit));
-        }
-        return entities.stream().map(MaintenanceScheduleMapper::toDomain).toList();
+        var spec = Specification.where(
+                        CursorSpecifications.<MaintenanceScheduleEntity>fieldEquals("propertyId", propertyId))
+                .and(CursorSpecifications.afterCursor(cursor));
+        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
+        return page.stream().map(MaintenanceScheduleMapper::toDomain).toList();
     }
 
     @Override
@@ -62,14 +62,12 @@ public class MaintenanceScheduleRepositoryAdapter implements MaintenanceSchedule
     public List<MaintenanceSchedule> search(UUID propertyId, String query, String frequency,
                                             UUID cursor, int limit) {
         var freqEnum = frequency != null ? Frequency.valueOf(frequency) : null;
-        List<MaintenanceScheduleEntity> entities;
-        if (cursor == null) {
-            entities = jpa.searchByPropertyIdOrderById(
-                    propertyId, query, freqEnum, PageRequest.of(0, limit));
-        } else {
-            entities = jpa.searchByPropertyIdAndIdGreaterThanOrderById(
-                    propertyId, query, freqEnum, cursor, PageRequest.of(0, limit));
-        }
-        return entities.stream().map(MaintenanceScheduleMapper::toDomain).toList();
+        var spec = Specification.where(
+                        CursorSpecifications.<MaintenanceScheduleEntity>fieldEquals("propertyId", propertyId))
+                .and(CursorSpecifications.afterCursor(cursor))
+                .and(CursorSpecifications.searchAcrossFields(query, "description"))
+                .and(CursorSpecifications.fieldEquals("frequency", freqEnum));
+        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
+        return page.stream().map(MaintenanceScheduleMapper::toDomain).toList();
     }
 }
