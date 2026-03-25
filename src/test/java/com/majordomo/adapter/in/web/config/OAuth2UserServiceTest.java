@@ -59,10 +59,6 @@ class OAuth2UserServiceTest {
         UUID userId = UUID.randomUUID();
         var existingUser = new User(userId, "robsartin", "rob@example.com");
 
-        when(oauthLinkRepository.findByProviderAndExternalId("google", "google-sub-123"))
-                .thenReturn(Optional.empty());
-        when(userRepository.findByEmail("rob@example.com"))
-                .thenReturn(Optional.of(existingUser));
         when(oauthLinkRepository.save(any(OAuthLink.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
