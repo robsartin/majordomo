@@ -48,6 +48,10 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+    env:
+      enabled: false
+    configprops:
+      enabled: false
 
 resilience4j:
   circuitbreaker:
