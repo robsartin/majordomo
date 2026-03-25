@@ -2,30 +2,70 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Sign in</h1>
-    <div th:if="${param.error}" style="color: red;">
-        <p>Invalid username or password.</p>
-    </div>
-    <div th:if="${param.logout}" style="color: green;">
-        <p>You have been signed out.</p>
-    </div>
-    <form th:action="@{/login}" method="post">
-        <div>
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" autofocus required>
+<body class="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-indigo-700 tracking-tight">Majordomo</h1>
+            <p class="mt-1 text-sm text-gray-500">Sign in to your account</p>
         </div>
-        <div>
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required>
+
+        <div th:if="${param.error}"
+             class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            Invalid username or password.
         </div>
-        <button type="submit">Sign in</button>
-    </form>
-    <hr>
-    <div>
-        <a href="/oauth2/authorization/google">Sign in with Google</a>
+        <div th:if="${param.logout}"
+             class="mb-4 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
+            You have been signed out.
+        </div>
+
+        <form th:action="@{/login}" method="post" class="space-y-5">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <input type="text" id="username" name="username" autofocus required
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900
+                              placeholder-gray-400 shadow-sm
+                              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+                              transition">
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input type="password" id="password" name="password" required
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900
+                              placeholder-gray-400 shadow-sm
+                              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+                              transition">
+            </div>
+            <button type="submit"
+                    class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white
+                           shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                           focus:ring-offset-2 transition">
+                Sign in
+            </button>
+        </form>
+
+        <div class="mt-6">
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-200"></div>
+                </div>
+                <div class="relative flex justify-center text-xs text-gray-400">
+                    <span class="bg-white px-2">or</span>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a th:href="@{/oauth2/authorization/google}" href="/oauth2/authorization/google"
+                   class="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300
+                          bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm
+                          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500
+                          focus:ring-offset-2 transition">
+                    Sign in with Google
+                </a>
+            </div>
+        </div>
     </div>
 </body>
 </html>
