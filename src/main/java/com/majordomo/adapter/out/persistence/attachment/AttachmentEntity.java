@@ -3,12 +3,9 @@ package com.majordomo.adapter.out.persistence.attachment;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
 
 import jakarta.persistence.Id;
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
-import jakarta.persistence.EntityListeners;
 
 import java.time.Instant;
 import java.util.UUID;

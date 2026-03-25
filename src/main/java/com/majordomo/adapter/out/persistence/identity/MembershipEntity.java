@@ -3,16 +3,11 @@ package com.majordomo.adapter.out.persistence.identity;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
 
 import jakarta.persistence.EnumType;
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Table;
-import jakarta.persistence.EntityListeners;
 
 import com.majordomo.domain.model.identity.MemberRole;
 
