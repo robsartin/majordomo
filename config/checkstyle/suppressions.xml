@@ -10,4 +10,18 @@
     <suppress checks="LeftCurly" files=".*model[/\\].*\.java"/>
     <suppress checks="LeftCurly" files=".*Entity\.java"/>
     <suppress checks="LeftCurly" files=".*Mapper\.java"/>
+
+    <!-- Javadoc exemptions for boilerplate accessors and framework classes -->
+    <suppress checks="MissingJavadocMethod" files=".*Entity\.java"/>
+    <suppress checks="MissingJavadocMethod" files=".*Mapper\.java"/>
+    <suppress checks="MissingJavadocMethod" files=".*model[/\\].*\.java"/>
+    <suppress checks="MissingJavadocType" files=".*Entity\.java"/>
+    <suppress checks="MissingJavadocType" files=".*Mapper\.java"/>
+    <suppress checks="JavadocMethod" files=".*Entity\.java"/>
+    <suppress checks="JavadocMethod" files=".*Mapper\.java"/>
+    <suppress checks="JavadocMethod" files=".*model[/\\].*\.java"/>
+
+    <!-- Test classes -->
+    <suppress checks="MissingJavadocMethod" files=".*Tests?\.java"/>
+    <suppress checks="MissingJavadocType" files=".*Tests?\.java"/>
 </suppressions>

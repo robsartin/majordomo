@@ -8,6 +8,10 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Persistence adapter that fulfills the {@link com.majordomo.domain.port.out.identity.UserRepository}
+ * output port by delegating to {@link JpaUserRepository}.
+ */
 @Repository
 public class UserRepositoryAdapter implements UserRepository {
 

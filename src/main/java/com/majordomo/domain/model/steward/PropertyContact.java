@@ -5,6 +5,10 @@ import com.majordomo.domain.model.concierge.ContactRole;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Associates a {@link com.majordomo.domain.model.concierge.Contact} with a {@link Property}
+ * in a specific {@link com.majordomo.domain.model.concierge.ContactRole}, such as vendor or installer.
+ */
 public class PropertyContact {
 
     private UUID id;

@@ -3,6 +3,10 @@ package com.majordomo.domain.model.identity;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents an individual user account identified by a unique username and email address.
+ * Authentication is managed separately through {@link Credential}.
+ */
 public class User {
 
     private UUID id;

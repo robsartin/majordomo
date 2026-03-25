@@ -4,6 +4,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
+/**
+ * Defines a recurring maintenance task for a property, specifying the responsible contact,
+ * recurrence {@link Frequency}, and the next due date.
+ */
 public class MaintenanceSchedule {
 
     private UUID id;

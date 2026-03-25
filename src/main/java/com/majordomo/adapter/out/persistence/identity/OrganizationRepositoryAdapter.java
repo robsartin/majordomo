@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Persistence adapter that fulfills the {@link com.majordomo.domain.port.out.identity.OrganizationRepository}
+ * output port by delegating to {@link JpaOrganizationRepository}.
+ */
 @Repository
 public class OrganizationRepositoryAdapter implements OrganizationRepository {
 

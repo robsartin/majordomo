@@ -6,6 +6,10 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Spring Data JPA repository for {@link OrganizationEntity}, providing persistence operations
+ * used by {@link OrganizationRepositoryAdapter}.
+ */
 public interface JpaOrganizationRepository extends JpaRepository<OrganizationEntity, UUID> {
 
     @Query("SELECT o FROM OrganizationEntity o JOIN MembershipEntity m"

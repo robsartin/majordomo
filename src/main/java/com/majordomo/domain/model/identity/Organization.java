@@ -3,6 +3,10 @@ package com.majordomo.domain.model.identity;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * A tenant organization that owns properties and contacts within Majordomo.
+ * Users belong to an organization via {@link Membership}.
+ */
 public class Organization {
 
     private UUID id;
