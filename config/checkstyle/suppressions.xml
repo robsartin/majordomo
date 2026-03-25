@@ -1,0 +1,13 @@
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- JPA entities have many fields and accessors by nature -->
+    <suppress checks="FileLength" files=".*Entity\.java"/>
+
+    <!-- Allow single-line getters/setters in domain models and JPA entities -->
+    <suppress checks="LeftCurly" files=".*model[/\\].*\.java"/>
+    <suppress checks="LeftCurly" files=".*Entity\.java"/>
+    <suppress checks="LeftCurly" files=".*Mapper\.java"/>
+</suppressions>

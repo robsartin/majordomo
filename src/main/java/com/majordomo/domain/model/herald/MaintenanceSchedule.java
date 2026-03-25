@@ -1,0 +1,51 @@
+package com.majordomo.domain.model.herald;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.UUID;
+
+public class MaintenanceSchedule {
+
+    private UUID id;
+    private UUID propertyId;
+    private UUID contactId;
+    private String description;
+    private Frequency frequency;
+    private Integer customIntervalDays;
+    private LocalDate nextDue;
+    private Instant createdAt;
+    private Instant updatedAt;
+    private Instant archivedAt;
+
+    public MaintenanceSchedule() {}
+
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+
+    public UUID getPropertyId() { return propertyId; }
+    public void setPropertyId(UUID propertyId) { this.propertyId = propertyId; }
+
+    public UUID getContactId() { return contactId; }
+    public void setContactId(UUID contactId) { this.contactId = contactId; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public Frequency getFrequency() { return frequency; }
+    public void setFrequency(Frequency frequency) { this.frequency = frequency; }
+
+    public Integer getCustomIntervalDays() { return customIntervalDays; }
+    public void setCustomIntervalDays(Integer customIntervalDays) { this.customIntervalDays = customIntervalDays; }
+
+    public LocalDate getNextDue() { return nextDue; }
+    public void setNextDue(LocalDate nextDue) { this.nextDue = nextDue; }
+
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    public Instant getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public Instant getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+}
