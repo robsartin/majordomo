@@ -4,12 +4,14 @@ import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 /**
  * Spring Security configuration for Majordomo.
@@ -70,6 +72,17 @@ public class SecurityConfig {
             .logout(logout -> logout
                 .logoutSuccessUrl("/")
                 .permitAll()
+            )
+            .headers(headers -> headers
+                .contentTypeOptions(Customizer.withDefaults())
+                .frameOptions(frame -> frame.deny())
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000))
+            )
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
             );
 
         return http.build();
