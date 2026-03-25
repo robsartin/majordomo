@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
@@ -68,5 +69,17 @@ public class LedgerController {
             @PathVariable UUID organizationId) {
         organizationAccessService.verifyAccess(organizationId);
         return querySpendUseCase.spendForOrganization(organizationId);
+    }
+
+    /**
+     * Returns the projected annual maintenance spend for an organization.
+     *
+     * @param organizationId the organization UUID
+     * @return projected annual cost based on schedule frequencies and estimated costs
+     */
+    @GetMapping("/organizations/{organizationId}/projected-annual")
+    public BigDecimal projectedAnnualSpend(@PathVariable UUID organizationId) {
+        organizationAccessService.verifyAccess(organizationId);
+        return querySpendUseCase.projectedAnnualSpend(organizationId);
     }
 }

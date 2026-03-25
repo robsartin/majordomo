@@ -2,6 +2,7 @@ package com.majordomo.application.ledger;
 
 import com.majordomo.domain.model.ledger.SpendSummary;
 import com.majordomo.domain.model.steward.Property;
+import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.ledger.LedgerQueryRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
@@ -32,13 +33,16 @@ class LedgerServiceTest {
     @Mock
     private LedgerQueryRepository ledgerQueryRepository;
 
+    @Mock
+    private MaintenanceScheduleRepository maintenanceScheduleRepository;
+
     private LedgerService ledgerService;
 
     /** Sets up the service under test with mocked dependencies. */
     @BeforeEach
     void setUp() {
         ledgerService = new LedgerService(propertyRepository,
-                ledgerQueryRepository);
+                ledgerQueryRepository, maintenanceScheduleRepository);
     }
 
     /** Verifies that spendForProperty returns the correct summary. */
