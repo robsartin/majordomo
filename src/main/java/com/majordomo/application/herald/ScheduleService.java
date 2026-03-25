@@ -72,6 +72,14 @@ public class ScheduleService implements ManageScheduleUseCase {
     }
 
     @Override
+    public Page<MaintenanceSchedule> search(UUID propertyId, String query, String frequency,
+                                            UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = scheduleRepository.search(propertyId, query, frequency, cursor, clampedLimit + 1);
+        return Page.fromOverfetch(items, limit, MaintenanceSchedule::getId);
+    }
+
+    @Override
     public List<MaintenanceSchedule> findDueBefore(LocalDate date) {
         return scheduleRepository.findDueBefore(date);
     }

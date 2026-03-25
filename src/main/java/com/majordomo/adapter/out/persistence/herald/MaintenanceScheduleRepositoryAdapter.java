@@ -1,5 +1,6 @@
 package com.majordomo.adapter.out.persistence.herald;
 
+import com.majordomo.domain.model.herald.Frequency;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 
@@ -55,5 +56,20 @@ public class MaintenanceScheduleRepositoryAdapter implements MaintenanceSchedule
     @Override
     public List<MaintenanceSchedule> findDueBefore(LocalDate date) {
         return jpa.findByNextDueBefore(date).stream().map(MaintenanceScheduleMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<MaintenanceSchedule> search(UUID propertyId, String query, String frequency,
+                                            UUID cursor, int limit) {
+        var freqEnum = frequency != null ? Frequency.valueOf(frequency) : null;
+        List<MaintenanceScheduleEntity> entities;
+        if (cursor == null) {
+            entities = jpa.searchByPropertyIdOrderById(
+                    propertyId, query, freqEnum, PageRequest.of(0, limit));
+        } else {
+            entities = jpa.searchByPropertyIdAndIdGreaterThanOrderById(
+                    propertyId, query, freqEnum, cursor, PageRequest.of(0, limit));
+        }
+        return entities.stream().map(MaintenanceScheduleMapper::toDomain).toList();
     }
 }
