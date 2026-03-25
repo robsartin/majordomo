@@ -91,6 +91,7 @@ majordomo:
     allowed-types: image/jpeg,image/png,application/pdf,text/plain
   notifications:
     cron: "0 0 8 * * *"
+    warranty-cron: "0 0 9 * * *"
 
 springdoc:
   api-docs:

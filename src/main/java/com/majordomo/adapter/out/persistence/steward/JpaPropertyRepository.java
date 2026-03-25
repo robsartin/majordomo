@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,4 +88,16 @@ public interface JpaPropertyRepository extends JpaRepository<PropertyEntity, UUI
             @Param("orgId") UUID orgId, @Param("q") String query,
             @Param("category") String category, @Param("status") PropertyStatus status,
             @Param("cursor") UUID cursor, Pageable pageable);
+
+    /**
+     * Returns all properties whose warranty expires before the given date
+     * and whose warranty notification has not yet been sent.
+     *
+     * @param date the upper bound date for warranty expiration
+     * @return list of matching property entities
+     */
+    @Query("SELECT p FROM PropertyEntity p WHERE p.warrantyExpiresOn IS NOT NULL "
+            + "AND p.warrantyExpiresOn < :date "
+            + "AND p.warrantyNotificationSentAt IS NULL")
+    List<PropertyEntity> findWithWarrantyExpiringBefore(@Param("date") LocalDate date);
 }
