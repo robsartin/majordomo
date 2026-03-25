@@ -7,6 +7,7 @@ import com.majordomo.domain.port.out.steward.PropertyRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,6 +56,11 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
     @Override
     public List<Property> findByParentId(UUID parentId) {
         return jpa.findByParentId(parentId).stream().map(PropertyMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Property> findWithWarrantyExpiringBefore(LocalDate date) {
+        return jpa.findWithWarrantyExpiringBefore(date).stream().map(PropertyMapper::toDomain).toList();
     }
 
     @Override

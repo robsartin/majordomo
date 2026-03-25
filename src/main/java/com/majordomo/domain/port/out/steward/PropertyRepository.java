@@ -2,6 +2,7 @@ package com.majordomo.domain.port.out.steward;
 
 import com.majordomo.domain.model.steward.Property;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -71,4 +72,13 @@ public interface PropertyRepository {
      */
     List<Property> search(UUID organizationId, String query, String category,
                           String status, UUID cursor, int limit);
+
+    /**
+     * Returns all properties whose warranty expires before the given date
+     * and whose warranty notification has not yet been sent.
+     *
+     * @param date properties with {@code warrantyExpiresOn} before this date are returned
+     * @return list of matching properties, or an empty list if none exist
+     */
+    List<Property> findWithWarrantyExpiringBefore(LocalDate date);
 }

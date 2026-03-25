@@ -25,6 +25,7 @@ final class PropertyMapper {
         entity.setUpdatedAt(property.getUpdatedAt());
         entity.setArchivedAt(property.getArchivedAt());
         entity.setPurchasePrice(property.getPurchasePrice());
+        entity.setWarrantyNotificationSentAt(property.getWarrantyNotificationSentAt());
         return entity;
     }
 
@@ -47,6 +48,7 @@ final class PropertyMapper {
         property.setUpdatedAt(entity.getUpdatedAt());
         property.setArchivedAt(entity.getArchivedAt());
         property.setPurchasePrice(entity.getPurchasePrice());
+        property.setWarrantyNotificationSentAt(entity.getWarrantyNotificationSentAt());
         return property;
     }
 }

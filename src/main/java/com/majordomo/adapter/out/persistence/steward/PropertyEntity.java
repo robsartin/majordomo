@@ -64,6 +64,9 @@ public class PropertyEntity {
     @Column(name = "purchase_price")
     private BigDecimal purchasePrice;
 
+    @Column(name = "warranty_notification_sent_at")
+    private Instant warrantyNotificationSentAt;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -117,4 +120,12 @@ public class PropertyEntity {
 
     /** Sets the purchase price. */
     public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
+
+    /** Returns the warranty notification sent timestamp. */
+    public Instant getWarrantyNotificationSentAt() { return warrantyNotificationSentAt; }
+
+    /** Sets the warranty notification sent timestamp. */
+    public void setWarrantyNotificationSentAt(Instant warrantyNotificationSentAt) {
+        this.warrantyNotificationSentAt = warrantyNotificationSentAt;
+    }
 }

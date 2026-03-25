@@ -32,6 +32,7 @@ public class Property {
     private Instant updatedAt;
     private Instant archivedAt;
     private BigDecimal purchasePrice;
+    private Instant warrantyNotificationSentAt;
 
     public Property() {}
 
@@ -88,4 +89,12 @@ public class Property {
 
     /** Sets the purchase price of the property. */
     public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
+
+    /** Returns the timestamp when the warranty expiration notification was sent, or null if not yet sent. */
+    public Instant getWarrantyNotificationSentAt() { return warrantyNotificationSentAt; }
+
+    /** Sets the timestamp when the warranty expiration notification was sent. */
+    public void setWarrantyNotificationSentAt(Instant warrantyNotificationSentAt) {
+        this.warrantyNotificationSentAt = warrantyNotificationSentAt;
+    }
 }
