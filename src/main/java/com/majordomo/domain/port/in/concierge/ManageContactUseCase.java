@@ -45,4 +45,20 @@ public interface ManageContactUseCase {
      * @return a page of contacts
      */
     Page<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
+
+    /**
+     * Updates an existing contact.
+     *
+     * @param id      the contact ID
+     * @param contact the updated contact data
+     * @return the updated contact
+     */
+    Contact update(UUID id, Contact contact);
+
+    /**
+     * Archives a contact by setting archived_at.
+     *
+     * @param id the contact ID
+     */
+    void archive(UUID id);
 }
