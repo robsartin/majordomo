@@ -1,10 +1,13 @@
 package com.majordomo.adapter.out.persistence.steward;
 
+import com.majordomo.adapter.out.persistence.CursorSpecifications;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -43,14 +46,11 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
 
     @Override
     public List<Property> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
-        List<PropertyEntity> entities;
-        if (cursor == null) {
-            entities = jpa.findByOrganizationIdOrderById(organizationId, PageRequest.of(0, limit));
-        } else {
-            entities = jpa.findByOrganizationIdAndIdGreaterThanOrderById(
-                    organizationId, cursor, PageRequest.of(0, limit));
-        }
-        return entities.stream().map(PropertyMapper::toDomain).toList();
+        var spec = Specification.where(
+                        CursorSpecifications.<PropertyEntity>fieldEquals("organizationId", organizationId))
+                .and(CursorSpecifications.afterCursor(cursor));
+        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
+        return page.stream().map(PropertyMapper::toDomain).toList();
     }
 
     @Override
@@ -67,14 +67,13 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
     public List<Property> search(UUID organizationId, String query, String category,
                                  String status, UUID cursor, int limit) {
         var statusEnum = status != null ? PropertyStatus.valueOf(status) : null;
-        List<PropertyEntity> entities;
-        if (cursor == null) {
-            entities = jpa.searchByOrganizationIdOrderById(
-                    organizationId, query, category, statusEnum, PageRequest.of(0, limit));
-        } else {
-            entities = jpa.searchByOrganizationIdAndIdGreaterThanOrderById(
-                    organizationId, query, category, statusEnum, cursor, PageRequest.of(0, limit));
-        }
-        return entities.stream().map(PropertyMapper::toDomain).toList();
+        var spec = Specification.where(
+                        CursorSpecifications.<PropertyEntity>fieldEquals("organizationId", organizationId))
+                .and(CursorSpecifications.afterCursor(cursor))
+                .and(CursorSpecifications.searchAcrossFields(query, "name", "description", "location"))
+                .and(CursorSpecifications.fieldEquals("category", category))
+                .and(CursorSpecifications.fieldEquals("status", statusEnum));
+        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
+        return page.stream().map(PropertyMapper::toDomain).toList();
     }
 }
