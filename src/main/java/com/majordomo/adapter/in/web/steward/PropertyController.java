@@ -1,8 +1,7 @@
 package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.domain.model.steward.Property;
-import com.majordomo.domain.model.steward.PropertyStatus;
-import com.majordomo.domain.port.out.steward.PropertyRepository;
+import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,23 +20,23 @@ import java.util.UUID;
  * REST controller for the Steward domain: manages properties within organizations.
  *
  * <p>Exposes CRUD operations and hierarchy traversal under {@code /api/properties}. Acts as
- * an inbound adapter in the hexagonal architecture, delegating persistence to
- * {@link PropertyRepository}. Properties may be nested; a property can have a parent and
+ * an inbound adapter in the hexagonal architecture, delegating to
+ * {@link ManagePropertyUseCase}. Properties may be nested; a property can have a parent and
  * zero or more child properties.</p>
  */
 @RestController
 @RequestMapping("/api/properties")
 public class PropertyController {
 
-    private final PropertyRepository propertyRepository;
+    private final ManagePropertyUseCase propertyUseCase;
 
     /**
-     * Constructs a {@code PropertyController} with the given property repository.
+     * Constructs a {@code PropertyController} with the given property use case.
      *
-     * @param propertyRepository the port used to store and retrieve properties
+     * @param propertyUseCase the inbound port for property management
      */
-    public PropertyController(PropertyRepository propertyRepository) {
-        this.propertyRepository = propertyRepository;
+    public PropertyController(ManagePropertyUseCase propertyUseCase) {
+        this.propertyUseCase = propertyUseCase;
     }
 
     /**
@@ -49,7 +47,7 @@ public class PropertyController {
      */
     @GetMapping
     public List<Property> listByOrganization(@RequestParam UUID organizationId) {
-        return propertyRepository.findByOrganizationId(organizationId);
+        return propertyUseCase.findByOrganizationId(organizationId);
     }
 
     /**
@@ -60,7 +58,7 @@ public class PropertyController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<Property> getById(@PathVariable UUID id) {
-        return propertyRepository.findById(id)
+        return propertyUseCase.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -73,25 +71,19 @@ public class PropertyController {
      */
     @GetMapping("/{id}/children")
     public List<Property> getChildren(@PathVariable UUID id) {
-        return propertyRepository.findByParentId(id);
+        return propertyUseCase.findByParentId(id);
     }
 
     /**
-     * Creates a new property, assigning a generated ID, a default status of
-     * {@link PropertyStatus#ACTIVE} if none is provided, and audit timestamps.
+     * Creates a new property, delegating ID generation, default status, and timestamps
+     * to the service layer.
      *
      * @param property the property data provided in the request body
      * @return {@code 201 Created} with the persisted property and a {@code Location} header
      */
     @PostMapping
     public ResponseEntity<Property> create(@RequestBody Property property) {
-        property.setId(UUID.randomUUID());
-        if (property.getStatus() == null) {
-            property.setStatus(PropertyStatus.ACTIVE);
-        }
-        property.setCreatedAt(Instant.now());
-        property.setUpdatedAt(Instant.now());
-        var saved = propertyRepository.save(property);
+        var saved = propertyUseCase.create(property);
         return ResponseEntity.created(URI.create("/api/properties/" + saved.getId())).body(saved);
     }
 }
