@@ -62,4 +62,17 @@ class AuthenticationServiceTest {
         assertEquals("robsartin", details.getUsername());
         assertEquals("$2a$10$hashedpassword", details.getPassword());
     }
+
+    /** Verifies that a known user without a credential throws {@link UsernameNotFoundException}. */
+    @Test
+    void loadUserByUsernameThrowsWhenNoCredential() {
+        UUID userId = UUID.randomUUID();
+        var user = new User(userId, "robsartin", "rob@example.com");
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(credentialRepository.findByUserId(userId)).thenReturn(Optional.empty());
+
+        assertThrows(UsernameNotFoundException.class,
+                () -> authService.loadUserByUsername("robsartin"));
+    }
 }
