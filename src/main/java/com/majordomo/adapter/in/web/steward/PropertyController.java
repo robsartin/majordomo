@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.steward;
 
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
@@ -37,14 +38,18 @@ import java.util.UUID;
 public class PropertyController {
 
     private final ManagePropertyUseCase propertyUseCase;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
-     * Constructs a {@code PropertyController} with the given property use case.
+     * Constructs a {@code PropertyController} with the given dependencies.
      *
-     * @param propertyUseCase the inbound port for property management
+     * @param propertyUseCase           the inbound port for property management
+     * @param organizationAccessService the service for verifying organization membership
      */
-    public PropertyController(ManagePropertyUseCase propertyUseCase) {
+    public PropertyController(ManagePropertyUseCase propertyUseCase,
+                              OrganizationAccessService organizationAccessService) {
         this.propertyUseCase = propertyUseCase;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
@@ -60,6 +65,7 @@ public class PropertyController {
             @RequestParam UUID organizationId,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
+        organizationAccessService.verifyAccess(organizationId);
         return propertyUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 
@@ -96,6 +102,7 @@ public class PropertyController {
      */
     @PostMapping
     public ResponseEntity<Property> create(@Valid @RequestBody Property property) {
+        organizationAccessService.verifyAccess(property.getOrganizationId());
         var saved = propertyUseCase.create(property);
         return ResponseEntity.created(URI.create("/api/properties/" + saved.getId())).body(saved);
     }

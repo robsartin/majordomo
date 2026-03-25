@@ -32,6 +32,10 @@ import java.util.UUID;
  * <p>Exposes schedule CRUD operations and service-record tracking under
  * {@code /api/schedules}. Acts as an inbound adapter in the hexagonal architecture,
  * delegating to {@link ManageScheduleUseCase}.</p>
+ *
+ * <p>TODO: Schedules are scoped by propertyId, not organizationId directly. Organization-level
+ * access control should be enforced by resolving the property's organization and verifying
+ * membership. See GitHub issue #55.</p>
  */
 @RestController
 @RequestMapping("/api/schedules")
