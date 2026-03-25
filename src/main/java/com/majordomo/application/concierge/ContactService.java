@@ -39,8 +39,6 @@ public class ContactService implements ManageContactUseCase {
     @CacheEvict(value = "contacts", allEntries = true)
     public Contact create(Contact contact) {
         contact.setId(UuidFactory.newId());
-        contact.setCreatedAt(Instant.now());
-        contact.setUpdatedAt(Instant.now());
         return contactRepository.save(contact);
     }
 
@@ -76,7 +74,6 @@ public class ContactService implements ManageContactUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("Contact", id));
         contact.setId(existing.getId());
         contact.setCreatedAt(existing.getCreatedAt());
-        contact.setUpdatedAt(Instant.now());
         return contactRepository.save(contact);
     }
 

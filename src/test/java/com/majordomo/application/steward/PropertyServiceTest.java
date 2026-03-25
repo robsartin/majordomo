@@ -79,14 +79,10 @@ class PropertyServiceTest {
         var result = propertyService.create(property);
 
         assertNotNull(result.getId());
-        assertNotNull(result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
 
         ArgumentCaptor<Property> captor = ArgumentCaptor.forClass(Property.class);
         verify(propertyRepository).save(captor.capture());
         assertNotNull(captor.getValue().getId());
-        assertNotNull(captor.getValue().getCreatedAt());
-        assertNotNull(captor.getValue().getUpdatedAt());
     }
 
     @Test
@@ -109,7 +105,6 @@ class PropertyServiceTest {
 
         assertEquals(id, result.getId());
         assertEquals(originalCreatedAt, result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
         assertEquals("New Name", result.getName());
         verify(propertyRepository).save(updated);
     }

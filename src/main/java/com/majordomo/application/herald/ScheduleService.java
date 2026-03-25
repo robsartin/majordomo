@@ -51,8 +51,6 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public MaintenanceSchedule create(MaintenanceSchedule schedule) {
         schedule.setId(UuidFactory.newId());
-        schedule.setCreatedAt(Instant.now());
-        schedule.setUpdatedAt(Instant.now());
         return scheduleRepository.save(schedule);
     }
 
@@ -90,8 +88,6 @@ public class ScheduleService implements ManageScheduleUseCase {
     public ServiceRecord recordService(UUID scheduleId, ServiceRecord record) {
         record.setId(UuidFactory.newId());
         record.setScheduleId(scheduleId);
-        record.setCreatedAt(Instant.now());
-        record.setUpdatedAt(Instant.now());
         var saved = serviceRecordRepository.save(record);
         eventPublisher.publish(new ServiceRecordCreated(
                 saved.getId(), saved.getPropertyId(),
@@ -110,7 +106,6 @@ public class ScheduleService implements ManageScheduleUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("MaintenanceSchedule", id));
         schedule.setId(existing.getId());
         schedule.setCreatedAt(existing.getCreatedAt());
-        schedule.setUpdatedAt(Instant.now());
         return scheduleRepository.save(schedule);
     }
 
@@ -128,7 +123,6 @@ public class ScheduleService implements ManageScheduleUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("ServiceRecord", id));
         record.setId(existing.getId());
         record.setCreatedAt(existing.getCreatedAt());
-        record.setUpdatedAt(Instant.now());
         return serviceRecordRepository.save(record);
     }
 

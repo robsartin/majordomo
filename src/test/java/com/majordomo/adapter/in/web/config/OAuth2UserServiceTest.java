@@ -72,7 +72,6 @@ class OAuth2UserServiceTest {
         assertEquals("google", saved.getProvider());
         assertEquals("google-sub-123", saved.getExternalId());
         assertEquals("rob@example.com", saved.getEmail());
-        assertNotNull(saved.getCreatedAt());
     }
 
     /** Verifies that a new user and personal org are created on first OAuth login. */
@@ -89,7 +88,6 @@ class OAuth2UserServiceTest {
 
         assertNotNull(created);
         assertEquals("rob@example.com", created.getEmail());
-        assertNotNull(created.getCreatedAt());
 
         ArgumentCaptor<Organization> orgCaptor = ArgumentCaptor.forClass(Organization.class);
         verify(organizationRepository).save(orgCaptor.capture());

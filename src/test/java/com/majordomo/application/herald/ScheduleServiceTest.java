@@ -56,15 +56,11 @@ class ScheduleServiceTest {
         var result = scheduleService.create(schedule);
 
         assertNotNull(result.getId());
-        assertNotNull(result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
 
         ArgumentCaptor<MaintenanceSchedule> captor =
                 ArgumentCaptor.forClass(MaintenanceSchedule.class);
         verify(scheduleRepository).save(captor.capture());
         assertNotNull(captor.getValue().getId());
-        assertNotNull(captor.getValue().getCreatedAt());
-        assertNotNull(captor.getValue().getUpdatedAt());
     }
 
     @Test
@@ -80,8 +76,6 @@ class ScheduleServiceTest {
 
         assertNotNull(result.getId());
         assertEquals(scheduleId, result.getScheduleId());
-        assertNotNull(result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
 
         ArgumentCaptor<ServiceRecord> captor = ArgumentCaptor.forClass(ServiceRecord.class);
         verify(serviceRecordRepository).save(captor.capture());
@@ -109,7 +103,6 @@ class ScheduleServiceTest {
 
         assertEquals(id, result.getId());
         assertEquals(originalCreatedAt, result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
         assertEquals("New Description", result.getDescription());
         verify(scheduleRepository).save(updated);
     }
@@ -171,7 +164,6 @@ class ScheduleServiceTest {
 
         assertEquals(id, result.getId());
         assertEquals(originalCreatedAt, result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
         assertEquals("New Description", result.getDescription());
         verify(serviceRecordRepository).save(updated);
     }

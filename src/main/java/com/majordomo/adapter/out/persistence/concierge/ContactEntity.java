@@ -3,6 +3,9 @@ package com.majordomo.adapter.out.persistence.concierge;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+
+import com.majordomo.adapter.out.persistence.AuditTimestampListener;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;

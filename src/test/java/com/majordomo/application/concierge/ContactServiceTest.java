@@ -46,14 +46,10 @@ class ContactServiceTest {
         var result = contactService.create(contact);
 
         assertNotNull(result.getId());
-        assertNotNull(result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
 
         ArgumentCaptor<Contact> captor = ArgumentCaptor.forClass(Contact.class);
         verify(contactRepository).save(captor.capture());
         assertNotNull(captor.getValue().getId());
-        assertNotNull(captor.getValue().getCreatedAt());
-        assertNotNull(captor.getValue().getUpdatedAt());
     }
 
     @Test
@@ -103,7 +99,6 @@ class ContactServiceTest {
 
         assertEquals(id, result.getId());
         assertEquals(originalCreatedAt, result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
         assertEquals("New Name", result.getFormattedName());
         verify(contactRepository).save(updated);
     }
