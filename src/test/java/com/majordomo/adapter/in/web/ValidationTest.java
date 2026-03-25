@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,6 +28,7 @@ class ValidationTest {
     @WithMockUser
     void createContactBlankNameReturns400() throws Exception {
         mockMvc.perform(post("/api/contacts")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"formattedName\":\"\","
                         + "\"organizationId\":\"019606a0-0000-7000-8000-000000000003\"}"))
@@ -39,6 +41,7 @@ class ValidationTest {
     @WithMockUser
     void createPropertyBlankNameReturns400() throws Exception {
         mockMvc.perform(post("/api/properties")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"\","
                         + "\"organizationId\":\"019606a0-0000-7000-8000-000000000003\"}"))
@@ -51,6 +54,7 @@ class ValidationTest {
     @WithMockUser
     void createScheduleMissingFieldsReturns400() throws Exception {
         mockMvc.perform(post("/api/schedules")
+                .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"propertyId\":\"019606a0-0000-7000-8000-000000000001\"}"))
                 .andExpect(status().isBadRequest())
