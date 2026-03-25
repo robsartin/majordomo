@@ -1,5 +1,6 @@
 package com.majordomo.domain.model.herald;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -20,6 +21,7 @@ public class ServiceRecord {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant archivedAt;
+    private BigDecimal cost;
 
     public ServiceRecord() {}
 
@@ -52,4 +54,10 @@ public class ServiceRecord {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    /** Returns the cost of the service. */
+    public BigDecimal getCost() { return cost; }
+
+    /** Sets the cost of the service. */
+    public void setCost(BigDecimal cost) { this.cost = cost; }
 }

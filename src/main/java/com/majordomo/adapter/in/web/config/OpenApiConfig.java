@@ -97,4 +97,18 @@ public class OpenApiConfig {
                 .pathsToMatch("/api/schedules/**")
                 .build();
     }
+
+    /**
+     * Groups the Ledger (finance) endpoints under a dedicated Swagger UI section.
+     *
+     * @return a {@link GroupedOpenApi} covering {@code /api/ledger/**}
+     */
+    @Bean
+    public GroupedOpenApi ledgerApi() {
+        return GroupedOpenApi.builder()
+                .group("ledger")
+                .displayName("The Ledger (Finance)")
+                .pathsToMatch("/api/ledger/**")
+                .build();
+    }
 }

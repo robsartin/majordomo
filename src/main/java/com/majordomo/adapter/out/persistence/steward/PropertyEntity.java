@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -60,6 +61,9 @@ public class PropertyEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "purchase_price")
+    private BigDecimal purchasePrice;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -107,4 +111,10 @@ public class PropertyEntity {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    /** Returns the purchase price. */
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+
+    /** Sets the purchase price. */
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
 }
