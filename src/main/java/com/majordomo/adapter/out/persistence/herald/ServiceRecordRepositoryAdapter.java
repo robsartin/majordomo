@@ -3,6 +3,7 @@ package com.majordomo.adapter.out.persistence.herald;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -41,5 +42,14 @@ public class ServiceRecordRepositoryAdapter implements ServiceRecordRepository {
     @Override
     public List<ServiceRecord> findByScheduleId(UUID scheduleId) {
         return jpa.findByScheduleId(scheduleId).stream().map(ServiceRecordMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<ServiceRecord> findRecentByPropertyIds(List<UUID> propertyIds, int limit) {
+        if (propertyIds.isEmpty()) {
+            return List.of();
+        }
+        return jpa.findRecentByPropertyIds(propertyIds, PageRequest.of(0, limit))
+                .stream().map(ServiceRecordMapper::toDomain).toList();
     }
 }
