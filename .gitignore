@@ -51,5 +51,8 @@ out/
 ### VS Code ###
 .vscode/
 
+### Data ###
+data/
+
 ### Docker ###
 docker-compose.override.yml
