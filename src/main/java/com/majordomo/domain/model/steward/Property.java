@@ -1,5 +1,6 @@
 package com.majordomo.domain.model.steward;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -27,6 +28,7 @@ public class Property {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant archivedAt;
+    private BigDecimal purchasePrice;
 
     public Property() {}
 
@@ -77,4 +79,10 @@ public class Property {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    /** Returns the purchase price of the property. */
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+
+    /** Sets the purchase price of the property. */
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
 }

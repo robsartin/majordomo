@@ -18,6 +18,7 @@ final class ServiceRecordMapper {
         entity.setCreatedAt(record.getCreatedAt());
         entity.setUpdatedAt(record.getUpdatedAt());
         entity.setArchivedAt(record.getArchivedAt());
+        entity.setCost(record.getCost());
         return entity;
     }
 
@@ -33,6 +34,7 @@ final class ServiceRecordMapper {
         record.setCreatedAt(entity.getCreatedAt());
         record.setUpdatedAt(entity.getUpdatedAt());
         record.setArchivedAt(entity.getArchivedAt());
+        record.setCost(entity.getCost());
         return record;
     }
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -42,6 +43,9 @@ public class ServiceRecordEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "cost")
+    private BigDecimal cost;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -71,4 +75,10 @@ public class ServiceRecordEntity {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    /** Returns the cost of the service record. */
+    public BigDecimal getCost() { return cost; }
+
+    /** Sets the cost of the service record. */
+    public void setCost(BigDecimal cost) { this.cost = cost; }
 }
