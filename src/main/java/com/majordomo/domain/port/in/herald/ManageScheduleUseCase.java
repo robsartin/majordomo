@@ -49,6 +49,20 @@ public interface ManageScheduleUseCase {
     Page<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit);
 
     /**
+     * Searches schedules for a property by a case-insensitive query, with an optional
+     * frequency filter and cursor-based pagination.
+     *
+     * @param propertyId the property ID
+     * @param query      the search term
+     * @param frequency  optional frequency filter (null to skip)
+     * @param cursor     the cursor UUID (null for first page)
+     * @param limit      max results per page (1-100)
+     * @return a page of matching schedules
+     */
+    Page<MaintenanceSchedule> search(UUID propertyId, String query, String frequency,
+                                     UUID cursor, int limit);
+
+    /**
      * Lists all schedules due before the given date.
      *
      * @param date the exclusive upper bound for the due date

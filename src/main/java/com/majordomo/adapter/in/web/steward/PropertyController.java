@@ -54,8 +54,14 @@ public class PropertyController {
 
     /**
      * Returns properties belonging to the specified organization with cursor-based pagination.
+     * When a search query is provided via {@code q}, results are filtered by a case-insensitive
+     * match across key text fields. Optional {@code category} and {@code status} parameters
+     * enable exact-match filtering.
      *
      * @param organizationId the UUID of the organization whose properties are retrieved
+     * @param q              optional search query for case-insensitive filtering
+     * @param category       optional exact-match category filter
+     * @param status         optional exact-match status filter (e.g. ACTIVE, DISPOSED)
      * @param cursor         optional cursor for the next page (exclusive start)
      * @param limit          maximum number of results per page (default 20)
      * @return a page of matching properties
@@ -63,9 +69,15 @@ public class PropertyController {
     @GetMapping
     public Page<Property> listByOrganization(
             @RequestParam UUID organizationId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
         organizationAccessService.verifyAccess(organizationId);
+        if (q != null && !q.isBlank()) {
+            return propertyUseCase.search(organizationId, q, category, status, cursor, limit);
+        }
         return propertyUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 

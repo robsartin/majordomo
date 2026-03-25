@@ -51,8 +51,11 @@ public class ContactController {
 
     /**
      * Returns contacts belonging to the specified organization with cursor-based pagination.
+     * When a search query is provided via {@code q}, results are filtered by a case-insensitive
+     * match across key text fields.
      *
      * @param organizationId the UUID of the organization whose contacts are retrieved
+     * @param q              optional search query for case-insensitive filtering
      * @param cursor         optional cursor for the next page (exclusive start)
      * @param limit          maximum number of results per page (default 20)
      * @return a page of matching contacts
@@ -60,9 +63,13 @@ public class ContactController {
     @GetMapping
     public Page<Contact> listByOrganization(
             @RequestParam UUID organizationId,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
         organizationAccessService.verifyAccess(organizationId);
+        if (q != null && !q.isBlank()) {
+            return contactUseCase.search(organizationId, q, cursor, limit);
+        }
         return contactUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 

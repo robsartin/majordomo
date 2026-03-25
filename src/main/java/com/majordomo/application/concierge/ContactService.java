@@ -61,6 +61,13 @@ public class ContactService implements ManageContactUseCase {
     }
 
     @Override
+    public Page<Contact> search(UUID organizationId, String query, UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = contactRepository.search(organizationId, query, cursor, clampedLimit + 1);
+        return Page.fromOverfetch(items, limit, Contact::getId);
+    }
+
+    @Override
     @CacheEvict(value = "contacts", allEntries = true)
     public Contact update(UUID id, Contact contact) {
         var existing = contactRepository.findById(id)
