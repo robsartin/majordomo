@@ -2,9 +2,11 @@ package com.majordomo.application.herald;
 
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.Page;
+import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 
@@ -26,18 +28,22 @@ public class ScheduleService implements ManageScheduleUseCase {
 
     private final MaintenanceScheduleRepository scheduleRepository;
     private final ServiceRecordRepository serviceRecordRepository;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the service with the required repository ports.
      *
      * @param scheduleRepository      the outbound port for schedule persistence
      * @param serviceRecordRepository the outbound port for service record persistence
+     * @param eventPublisher          the outbound port for publishing domain events
      */
     public ScheduleService(
             MaintenanceScheduleRepository scheduleRepository,
-            ServiceRecordRepository serviceRecordRepository) {
+            ServiceRecordRepository serviceRecordRepository,
+            EventPublisher eventPublisher) {
         this.scheduleRepository = scheduleRepository;
         this.serviceRecordRepository = serviceRecordRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -76,7 +82,11 @@ public class ScheduleService implements ManageScheduleUseCase {
         record.setScheduleId(scheduleId);
         record.setCreatedAt(Instant.now());
         record.setUpdatedAt(Instant.now());
-        return serviceRecordRepository.save(record);
+        var saved = serviceRecordRepository.save(record);
+        eventPublisher.publish(new ServiceRecordCreated(
+                saved.getId(), saved.getPropertyId(),
+                saved.getScheduleId(), saved.getCreatedAt()));
+        return saved;
     }
 
     @Override
