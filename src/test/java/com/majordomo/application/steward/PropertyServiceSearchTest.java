@@ -2,6 +2,7 @@ package com.majordomo.application.steward;
 
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,11 +32,14 @@ class PropertyServiceSearchTest {
     @Mock
     private PropertyRepository propertyRepository;
 
+    @Mock
+    private EventPublisher eventPublisher;
+
     private PropertyService propertyService;
 
     @BeforeEach
     void setUp() {
-        propertyService = new PropertyService(propertyRepository);
+        propertyService = new PropertyService(propertyRepository, eventPublisher);
     }
 
     @Test
