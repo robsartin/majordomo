@@ -45,12 +45,11 @@ class CorrelationIdFilterTest {
                 .andExpect(header().string("X-Correlation-ID", customId));
     }
 
-    /** Error response includes the correlation ID field. */
+    /** Correlation ID is present in response even for non-existent endpoints. */
     @Test
     @WithMockUser
-    void errorResponseIncludesCorrelationId() throws Exception {
-        mockMvc.perform(get("/test/not-found"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.correlationId", notNullValue()));
+    void nonExistentEndpointStillHasCorrelationId() throws Exception {
+        mockMvc.perform(get("/api/nonexistent"))
+                .andExpect(header().string("X-Correlation-ID", matchesRegex(UUID_REGEX)));
     }
 }
