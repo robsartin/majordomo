@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Error - Majordomo</title>
+</head>
+<body>
+    <h1>Something went wrong</h1>
+    <p th:text="${message ?: 'An unexpected error occurred.'}">Error message</p>
+    <p><a href="/">Return home</a></p>
+</body>
+</html>
