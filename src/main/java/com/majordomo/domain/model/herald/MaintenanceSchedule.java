@@ -1,5 +1,8 @@
 package com.majordomo.domain.model.herald;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -13,9 +16,12 @@ public class MaintenanceSchedule {
     private UUID id;
     private UUID propertyId;
     private UUID contactId;
+    @NotBlank
     private String description;
+    @NotNull
     private Frequency frequency;
     private Integer customIntervalDays;
+    @NotNull
     private LocalDate nextDue;
     private Instant createdAt;
     private Instant updatedAt;

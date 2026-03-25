@@ -4,6 +4,8 @@ import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.identity.ManageUserUseCase;
 import com.majordomo.domain.port.out.identity.UserRepository;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -50,7 +52,7 @@ public class UserController {
     @PostMapping("/{orgId}/users")
     public ResponseEntity<User> createUser(
             @PathVariable UUID orgId,
-            @RequestBody CreateUserRequest request,
+            @Valid @RequestBody CreateUserRequest request,
             @AuthenticationPrincipal UserDetails principal) {
         var caller = userRepository.findByUsername(principal.getUsername())
                 .orElseThrow(() -> new IllegalStateException(

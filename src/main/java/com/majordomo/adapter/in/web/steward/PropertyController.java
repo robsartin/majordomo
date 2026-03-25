@@ -4,6 +4,8 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -90,7 +92,7 @@ public class PropertyController {
      * @return {@code 201 Created} with the persisted property and a {@code Location} header
      */
     @PostMapping
-    public ResponseEntity<Property> create(@RequestBody Property property) {
+    public ResponseEntity<Property> create(@Valid @RequestBody Property property) {
         var saved = propertyUseCase.create(property);
         return ResponseEntity.created(URI.create("/api/properties/" + saved.getId())).body(saved);
     }

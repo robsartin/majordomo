@@ -1,5 +1,7 @@
 package com.majordomo.domain.model.steward;
 
+import jakarta.validation.constraints.NotBlank;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,6 +17,7 @@ public class Property {
     private UUID id;
     private UUID organizationId;
     private UUID parentId;
+    @NotBlank
     private String name;
     private String description;
     private String serialNumber;
