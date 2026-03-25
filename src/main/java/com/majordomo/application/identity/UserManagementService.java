@@ -11,6 +11,8 @@ import com.majordomo.domain.port.out.identity.CredentialRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -81,20 +83,20 @@ public class UserManagementService implements ManageUserUseCase {
 
         // Create user
         Instant now = Instant.now();
-        var user = new User(UUID.randomUUID(), username, email);
+        var user = new User(UuidFactory.newId(), username, email);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         var savedUser = userRepository.save(user);
 
         // Create credential
-        var credential = new Credential(UUID.randomUUID(), savedUser.getId(),
+        var credential = new Credential(UuidFactory.newId(), savedUser.getId(),
                 passwordEncoder.encode(plainPassword));
         credential.setCreatedAt(now);
         credential.setUpdatedAt(now);
         credentialRepository.save(credential);
 
         // Create membership as MEMBER
-        var membership = new Membership(UUID.randomUUID(), savedUser.getId(),
+        var membership = new Membership(UuidFactory.newId(), savedUser.getId(),
                 organizationId, MemberRole.MEMBER);
         membership.setCreatedAt(now);
         membership.setUpdatedAt(now);

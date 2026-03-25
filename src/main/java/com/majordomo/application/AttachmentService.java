@@ -6,6 +6,8 @@ import com.majordomo.domain.port.in.ManageAttachmentUseCase;
 import com.majordomo.domain.port.out.AttachmentRepository;
 import com.majordomo.domain.port.out.FileStoragePort;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -59,7 +61,7 @@ public class AttachmentService implements ManageAttachmentUseCase {
                     "Content type " + contentType + " is not allowed");
         }
 
-        UUID id = UUID.randomUUID();
+        UUID id = UuidFactory.newId();
         String path = entityType + "/" + entityId + "/" + id + "/" + filename;
         fileStorage.store(path, content);
 

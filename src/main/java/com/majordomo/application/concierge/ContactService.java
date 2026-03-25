@@ -10,6 +10,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +38,7 @@ public class ContactService implements ManageContactUseCase {
     @Override
     @CacheEvict(value = "contacts", allEntries = true)
     public Contact create(Contact contact) {
-        contact.setId(UUID.randomUUID());
+        contact.setId(UuidFactory.newId());
         contact.setCreatedAt(Instant.now());
         contact.setUpdatedAt(Instant.now());
         return contactRepository.save(contact);

@@ -12,6 +12,8 @@ import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 
 import org.springframework.stereotype.Service;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -48,7 +50,7 @@ public class ScheduleService implements ManageScheduleUseCase {
 
     @Override
     public MaintenanceSchedule create(MaintenanceSchedule schedule) {
-        schedule.setId(UUID.randomUUID());
+        schedule.setId(UuidFactory.newId());
         schedule.setCreatedAt(Instant.now());
         schedule.setUpdatedAt(Instant.now());
         return scheduleRepository.save(schedule);
@@ -86,7 +88,7 @@ public class ScheduleService implements ManageScheduleUseCase {
 
     @Override
     public ServiceRecord recordService(UUID scheduleId, ServiceRecord record) {
-        record.setId(UUID.randomUUID());
+        record.setId(UuidFactory.newId());
         record.setScheduleId(scheduleId);
         record.setCreatedAt(Instant.now());
         record.setUpdatedAt(Instant.now());
