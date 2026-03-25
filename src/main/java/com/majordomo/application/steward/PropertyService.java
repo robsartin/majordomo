@@ -13,6 +13,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +45,7 @@ public class PropertyService implements ManagePropertyUseCase {
     @Override
     @CacheEvict(value = "properties", allEntries = true)
     public Property create(Property property) {
-        property.setId(UUID.randomUUID());
+        property.setId(UuidFactory.newId());
         if (property.getStatus() == null) {
             property.setStatus(PropertyStatus.ACTIVE);
         }

@@ -4,6 +4,8 @@ import com.majordomo.adapter.in.web.config.ApiKeyAuthenticationFilter;
 import com.majordomo.domain.model.identity.ApiKey;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import org.springframework.http.ResponseEntity;
@@ -64,7 +66,7 @@ public class ApiKeyController {
         String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
 
         var now = Instant.now();
-        var apiKey = new ApiKey(UUID.randomUUID(), orgId, request.name(), hashedKey);
+        var apiKey = new ApiKey(UuidFactory.newId(), orgId, request.name(), hashedKey);
         apiKey.setCreatedAt(now);
         apiKey.setUpdatedAt(now);
         apiKey.setExpiresAt(request.expiresAt());

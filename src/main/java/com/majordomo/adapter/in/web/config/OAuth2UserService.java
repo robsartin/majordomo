@@ -10,6 +10,8 @@ import com.majordomo.domain.port.out.identity.OAuthLinkRepository;
 import com.majordomo.domain.port.out.identity.OrganizationRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 
+import com.majordomo.domain.model.UuidFactory;
+
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -86,18 +88,18 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
     User createNewUser(String name, String email) {
         Instant now = Instant.now();
 
-        String username = email.split("@")[0] + "-" + UUID.randomUUID().toString().substring(0, 8);
-        var user = new User(UUID.randomUUID(), username, email);
+        String username = email.split("@")[0] + "-" + UuidFactory.newId().toString().substring(0, 8);
+        var user = new User(UuidFactory.newId(), username, email);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
         var savedUser = userRepository.save(user);
 
-        var org = new Organization(UUID.randomUUID(), name + "'s Organization");
+        var org = new Organization(UuidFactory.newId(), name + "'s Organization");
         org.setCreatedAt(now);
         org.setUpdatedAt(now);
         var savedOrg = organizationRepository.save(org);
 
-        var membership = new Membership(UUID.randomUUID(), savedUser.getId(),
+        var membership = new Membership(UuidFactory.newId(), savedUser.getId(),
                 savedOrg.getId(), MemberRole.OWNER);
         membership.setCreatedAt(now);
         membership.setUpdatedAt(now);
@@ -116,7 +118,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
      */
     void createOAuthLink(UUID userId, String provider, String externalId, String email) {
         Instant now = Instant.now();
-        var link = new OAuthLink(UUID.randomUUID(), userId, provider, externalId, email);
+        var link = new OAuthLink(UuidFactory.newId(), userId, provider, externalId, email);
         link.setCreatedAt(now);
         link.setUpdatedAt(now);
         oauthLinkRepository.save(link);
