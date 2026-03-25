@@ -39,6 +39,16 @@ public interface MaintenanceScheduleRepository {
     List<MaintenanceSchedule> findByPropertyId(UUID propertyId);
 
     /**
+     * Returns schedules for a property with cursor-based pagination.
+     *
+     * @param propertyId the property ID
+     * @param cursor     exclusive start cursor (null for first page)
+     * @param limit      maximum number of results
+     * @return list of schedules after the cursor, ordered by ID
+     */
+    List<MaintenanceSchedule> findByPropertyId(UUID propertyId, UUID cursor, int limit);
+
+    /**
      * Returns all maintenance schedules whose next due date falls before the given date.
      * Intended for surfacing overdue or imminently due tasks.
      *

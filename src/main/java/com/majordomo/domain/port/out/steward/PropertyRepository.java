@@ -39,6 +39,16 @@ public interface PropertyRepository {
     List<Property> findByOrganizationId(UUID organizationId);
 
     /**
+     * Returns properties for an organization with cursor-based pagination.
+     *
+     * @param organizationId the organization ID
+     * @param cursor         exclusive start cursor (null for first page)
+     * @param limit          maximum number of results
+     * @return list of properties after the cursor, ordered by ID
+     */
+    List<Property> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
+
+    /**
      * Returns all direct child properties of a given parent property.
      *
      * @param parentId the ID of the parent property

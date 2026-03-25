@@ -1,5 +1,6 @@
 package com.majordomo.application.steward;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
@@ -49,6 +50,18 @@ public class PropertyService implements ManagePropertyUseCase {
     @Override
     public List<Property> findByOrganizationId(UUID organizationId) {
         return propertyRepository.findByOrganizationId(organizationId);
+    }
+
+    @Override
+    public Page<Property> findByOrganizationId(UUID organizationId, UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = propertyRepository.findByOrganizationId(organizationId, cursor, clampedLimit + 1);
+        boolean hasMore = items.size() > clampedLimit;
+        if (hasMore) {
+            items = items.subList(0, clampedLimit);
+        }
+        UUID nextCursor = hasMore ? items.get(items.size() - 1).getId() : null;
+        return new Page<>(items, nextCursor, hasMore);
     }
 
     @Override

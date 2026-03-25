@@ -1,5 +1,6 @@
 package com.majordomo.domain.port.in.concierge;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 
 import java.util.List;
@@ -34,4 +35,14 @@ public interface ManageContactUseCase {
      * @return list of contacts
      */
     List<Contact> findByOrganizationId(UUID organizationId);
+
+    /**
+     * Lists contacts for an organization with cursor-based pagination.
+     *
+     * @param organizationId the organization ID
+     * @param cursor         the cursor UUID (null for first page)
+     * @param limit          max results per page (1-100)
+     * @return a page of contacts
+     */
+    Page<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
 }

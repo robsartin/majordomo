@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.steward;
 
+import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 
@@ -40,14 +41,19 @@ public class PropertyController {
     }
 
     /**
-     * Returns all properties belonging to the specified organization.
+     * Returns properties belonging to the specified organization with cursor-based pagination.
      *
      * @param organizationId the UUID of the organization whose properties are retrieved
-     * @return a list of matching properties; empty if none exist
+     * @param cursor         optional cursor for the next page (exclusive start)
+     * @param limit          maximum number of results per page (default 20)
+     * @return a page of matching properties
      */
     @GetMapping
-    public List<Property> listByOrganization(@RequestParam UUID organizationId) {
-        return propertyUseCase.findByOrganizationId(organizationId);
+    public Page<Property> listByOrganization(
+            @RequestParam UUID organizationId,
+            @RequestParam(required = false) UUID cursor,
+            @RequestParam(defaultValue = "20") int limit) {
+        return propertyUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 
     /**
