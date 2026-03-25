@@ -9,6 +9,8 @@ import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -39,6 +41,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @CacheEvict(value = "properties", allEntries = true)
     public Property create(Property property) {
         property.setId(UUID.randomUUID());
         if (property.getStatus() == null) {
@@ -55,6 +58,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @Cacheable(value = "properties", key = "#organizationId")
     public List<Property> findByOrganizationId(UUID organizationId) {
         return propertyRepository.findByOrganizationId(organizationId);
     }
@@ -72,6 +76,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @CacheEvict(value = "properties", allEntries = true)
     public Property update(UUID id, Property property) {
         var existing = propertyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Property", id));
@@ -82,6 +87,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @CacheEvict(value = "properties", allEntries = true)
     public void archive(UUID id) {
         var existing = propertyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Property", id));
