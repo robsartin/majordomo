@@ -48,6 +48,9 @@ public class MaintenanceScheduleEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "notification_sent_at")
+    private Instant notificationSentAt;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -77,4 +80,7 @@ public class MaintenanceScheduleEntity {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    public Instant getNotificationSentAt() { return notificationSentAt; }
+    public void setNotificationSentAt(Instant notificationSentAt) { this.notificationSentAt = notificationSentAt; }
 }

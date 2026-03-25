@@ -1,5 +1,7 @@
 package com.majordomo.adapter.out.notification;
 
+import com.majordomo.domain.port.out.herald.NotificationPort;
+
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import org.slf4j.Logger;
@@ -11,7 +13,7 @@ import org.springframework.stereotype.Component;
  * Currently logs notifications; will send real emails when SMTP is configured.
  */
 @Component
-public class NotificationAdapter {
+public class NotificationAdapter implements NotificationPort {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotificationAdapter.class);
 
@@ -22,11 +24,12 @@ public class NotificationAdapter {
      * @param subject the notification subject
      * @param body    the notification body
      */
+    @Override
     @CircuitBreaker(name = "notification", fallbackMethod = "sendFallback")
     @Retry(name = "notification")
     public void send(String to, String subject, String body) {
         LOG.info("Notification to={} subject={}", to, subject);
-        // Future: delegate to email sender
+        // Future: delegate to JavaMailSender in prod profile
     }
 
     /**
