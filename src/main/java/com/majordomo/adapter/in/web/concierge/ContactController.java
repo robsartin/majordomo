@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.concierge;
 
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
@@ -34,20 +35,27 @@ import java.util.UUID;
 public class ContactController {
 
     private final ManageContactUseCase contactUseCase;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
-     * Constructs a {@code ContactController} with the given contact use case.
+     * Constructs a {@code ContactController} with the given dependencies.
      *
-     * @param contactUseCase the inbound port for contact management
+     * @param contactUseCase            the inbound port for contact management
+     * @param organizationAccessService the service for verifying organization membership
      */
-    public ContactController(ManageContactUseCase contactUseCase) {
+    public ContactController(ManageContactUseCase contactUseCase,
+                             OrganizationAccessService organizationAccessService) {
         this.contactUseCase = contactUseCase;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
      * Returns contacts belonging to the specified organization with cursor-based pagination.
+     * When a search query is provided via {@code q}, results are filtered by a case-insensitive
+     * match across key text fields.
      *
      * @param organizationId the UUID of the organization whose contacts are retrieved
+     * @param q              optional search query for case-insensitive filtering
      * @param cursor         optional cursor for the next page (exclusive start)
      * @param limit          maximum number of results per page (default 20)
      * @return a page of matching contacts
@@ -55,8 +63,13 @@ public class ContactController {
     @GetMapping
     public Page<Contact> listByOrganization(
             @RequestParam UUID organizationId,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
+        organizationAccessService.verifyAccess(organizationId);
+        if (q != null && !q.isBlank()) {
+            return contactUseCase.search(organizationId, q, cursor, limit);
+        }
         return contactUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 
@@ -81,6 +94,7 @@ public class ContactController {
      */
     @PostMapping
     public ResponseEntity<Contact> create(@Valid @RequestBody Contact contact) {
+        organizationAccessService.verifyAccess(contact.getOrganizationId());
         var saved = contactUseCase.create(contact);
         return ResponseEntity.created(URI.create("/api/contacts/" + saved.getId())).body(saved);
     }

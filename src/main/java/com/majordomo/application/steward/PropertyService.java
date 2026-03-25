@@ -9,6 +9,8 @@ import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -39,6 +41,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @CacheEvict(value = "properties", allEntries = true)
     public Property create(Property property) {
         property.setId(UUID.randomUUID());
         if (property.getStatus() == null) {
@@ -55,6 +58,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @Cacheable(value = "properties", key = "#organizationId")
     public List<Property> findByOrganizationId(UUID organizationId) {
         return propertyRepository.findByOrganizationId(organizationId);
     }
@@ -67,11 +71,21 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    public Page<Property> search(UUID organizationId, String query, String category,
+                                 String status, UUID cursor, int limit) {
+        int clampedLimit = Math.max(1, Math.min(limit, 100));
+        var items = propertyRepository.search(
+                organizationId, query, category, status, cursor, clampedLimit + 1);
+        return Page.fromOverfetch(items, limit, Property::getId);
+    }
+
+    @Override
     public List<Property> findByParentId(UUID parentId) {
         return propertyRepository.findByParentId(parentId);
     }
 
     @Override
+    @CacheEvict(value = "properties", allEntries = true)
     public Property update(UUID id, Property property) {
         var existing = propertyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Property", id));
@@ -82,6 +96,7 @@ public class PropertyService implements ManagePropertyUseCase {
     }
 
     @Override
+    @CacheEvict(value = "properties", allEntries = true)
     public void archive(UUID id) {
         var existing = propertyRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Property", id));

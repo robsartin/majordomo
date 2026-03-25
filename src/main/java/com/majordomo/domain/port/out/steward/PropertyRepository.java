@@ -55,4 +55,20 @@ public interface PropertyRepository {
      * @return list of child properties, or an empty list if the parent has none
      */
     List<Property> findByParentId(UUID parentId);
+
+    /**
+     * Searches properties for an organization by a case-insensitive query across
+     * key text fields (name, description, location), with optional category and status
+     * filters and cursor-based pagination.
+     *
+     * @param organizationId the organization whose properties are searched
+     * @param query          the search term (matched via case-insensitive LIKE)
+     * @param category       optional category filter (exact match, null to skip)
+     * @param status         optional status filter (exact match, null to skip)
+     * @param cursor         exclusive start cursor (null for first page)
+     * @param limit          maximum number of results
+     * @return list of matching properties after the cursor, ordered by ID
+     */
+    List<Property> search(UUID organizationId, String query, String category,
+                          String status, UUID cursor, int limit);
 }

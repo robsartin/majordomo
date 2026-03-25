@@ -2,6 +2,7 @@ package com.majordomo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 
 /**
  * Entry point for the Majordomo Spring Boot application.
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * accessing persistence or external services directly.</p>
  */
 @SpringBootApplication
+@EnableCaching
 public class MajordomoApplication {
 
     /**

@@ -47,6 +47,18 @@ public interface ManageContactUseCase {
     Page<Contact> findByOrganizationId(UUID organizationId, UUID cursor, int limit);
 
     /**
+     * Searches contacts for an organization by a case-insensitive query,
+     * with cursor-based pagination.
+     *
+     * @param organizationId the organization ID
+     * @param query          the search term
+     * @param cursor         the cursor UUID (null for first page)
+     * @param limit          max results per page (1-100)
+     * @return a page of matching contacts
+     */
+    Page<Contact> search(UUID organizationId, String query, UUID cursor, int limit);
+
+    /**
      * Updates an existing contact.
      *
      * @param id      the contact ID

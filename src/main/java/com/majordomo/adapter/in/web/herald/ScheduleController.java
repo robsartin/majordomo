@@ -32,6 +32,10 @@ import java.util.UUID;
  * <p>Exposes schedule CRUD operations and service-record tracking under
  * {@code /api/schedules}. Acts as an inbound adapter in the hexagonal architecture,
  * delegating to {@link ManageScheduleUseCase}.</p>
+ *
+ * <p>TODO: Schedules are scoped by propertyId, not organizationId directly. Organization-level
+ * access control should be enforced by resolving the property's organization and verifying
+ * membership. See GitHub issue #55.</p>
  */
 @RestController
 @RequestMapping("/api/schedules")
@@ -51,8 +55,13 @@ public class ScheduleController {
 
     /**
      * Returns schedules associated with the specified property with cursor-based pagination.
+     * When a search query is provided via {@code q}, results are filtered by a case-insensitive
+     * match on the description. An optional {@code frequency} parameter enables exact-match
+     * filtering.
      *
      * @param propertyId the UUID of the property whose schedules are retrieved
+     * @param q          optional search query for case-insensitive filtering
+     * @param frequency  optional exact-match frequency filter (e.g. WEEKLY, ANNUAL)
      * @param cursor     optional cursor for the next page (exclusive start)
      * @param limit      maximum number of results per page (default 20)
      * @return a page of matching schedules
@@ -60,8 +69,13 @@ public class ScheduleController {
     @GetMapping
     public Page<MaintenanceSchedule> listByProperty(
             @RequestParam UUID propertyId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String frequency,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
+        if (q != null && !q.isBlank()) {
+            return scheduleUseCase.search(propertyId, q, frequency, cursor, limit);
+        }
         return scheduleUseCase.findByPropertyId(propertyId, cursor, limit);
     }
 

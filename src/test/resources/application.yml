@@ -9,6 +9,8 @@ spring:
       ddl-auto: create-drop
   flyway:
     enabled: false
+  cache:
+    type: none
 
 springdoc:
   api-docs:

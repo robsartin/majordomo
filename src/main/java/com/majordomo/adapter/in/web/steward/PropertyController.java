@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.steward;
 
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
@@ -37,20 +38,30 @@ import java.util.UUID;
 public class PropertyController {
 
     private final ManagePropertyUseCase propertyUseCase;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
-     * Constructs a {@code PropertyController} with the given property use case.
+     * Constructs a {@code PropertyController} with the given dependencies.
      *
-     * @param propertyUseCase the inbound port for property management
+     * @param propertyUseCase           the inbound port for property management
+     * @param organizationAccessService the service for verifying organization membership
      */
-    public PropertyController(ManagePropertyUseCase propertyUseCase) {
+    public PropertyController(ManagePropertyUseCase propertyUseCase,
+                              OrganizationAccessService organizationAccessService) {
         this.propertyUseCase = propertyUseCase;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
      * Returns properties belonging to the specified organization with cursor-based pagination.
+     * When a search query is provided via {@code q}, results are filtered by a case-insensitive
+     * match across key text fields. Optional {@code category} and {@code status} parameters
+     * enable exact-match filtering.
      *
      * @param organizationId the UUID of the organization whose properties are retrieved
+     * @param q              optional search query for case-insensitive filtering
+     * @param category       optional exact-match category filter
+     * @param status         optional exact-match status filter (e.g. ACTIVE, DISPOSED)
      * @param cursor         optional cursor for the next page (exclusive start)
      * @param limit          maximum number of results per page (default 20)
      * @return a page of matching properties
@@ -58,8 +69,15 @@ public class PropertyController {
     @GetMapping
     public Page<Property> listByOrganization(
             @RequestParam UUID organizationId,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
+        organizationAccessService.verifyAccess(organizationId);
+        if (q != null && !q.isBlank()) {
+            return propertyUseCase.search(organizationId, q, category, status, cursor, limit);
+        }
         return propertyUseCase.findByOrganizationId(organizationId, cursor, limit);
     }
 
@@ -96,6 +114,7 @@ public class PropertyController {
      */
     @PostMapping
     public ResponseEntity<Property> create(@Valid @RequestBody Property property) {
+        organizationAccessService.verifyAccess(property.getOrganizationId());
         var saved = propertyUseCase.create(property);
         return ResponseEntity.created(URI.create("/api/properties/" + saved.getId())).body(saved);
     }
