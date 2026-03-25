@@ -35,4 +35,26 @@ public interface AttachmentRepository {
      * @return list of attachments, or an empty list if none exist
      */
     List<Attachment> findByEntityTypeAndEntityId(String entityType, UUID entityId);
+
+    /**
+     * Returns image attachments (content type starting with {@code image/}) for a given
+     * entity type and entity ID, ordered by {@code sortOrder} ascending.
+     * Archived attachments are excluded.
+     *
+     * @param entityType the type of entity (e.g. "property")
+     * @param entityId   the entity ID
+     * @return ordered list of image attachments, or an empty list if none exist
+     */
+    List<Attachment> findImagesByEntityTypeAndEntityId(String entityType, UUID entityId);
+
+    /**
+     * Returns all non-archived image attachments for the same entity as the given
+     * attachment, i.e. sharing the same {@code entityType} and {@code entityId}.
+     *
+     * @param entityType the entity type
+     * @param entityId   the entity ID
+     * @return list of attachments for the entity, including non-image types
+     */
+    List<Attachment> findByEntityTypeAndEntityIdAndArchivedAtIsNull(
+            String entityType, UUID entityId);
 }

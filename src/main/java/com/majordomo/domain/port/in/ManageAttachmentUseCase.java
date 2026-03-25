@@ -56,4 +56,31 @@ public interface ManageAttachmentUseCase {
      * @param id the attachment ID
      */
     void archive(UUID id);
+
+    /**
+     * Returns the ordered gallery of image attachments for a property.
+     *
+     * @param entityType the entity type (e.g. "property")
+     * @param entityId   the entity ID
+     * @return image attachments ordered by sort_order ascending
+     */
+    List<Attachment> listImages(String entityType, UUID entityId);
+
+    /**
+     * Marks the given attachment as the primary image for its entity,
+     * clearing the primary flag on any previously-primary attachment for the same entity.
+     *
+     * @param id the attachment ID to promote to primary
+     * @return the updated attachment
+     */
+    Attachment setPrimary(UUID id);
+
+    /**
+     * Updates the sort order of an attachment within its entity's gallery.
+     *
+     * @param id        the attachment ID
+     * @param sortOrder the new sort order value
+     * @return the updated attachment
+     */
+    Attachment updateSortOrder(UUID id, int sortOrder);
 }

@@ -45,4 +45,21 @@ public class AttachmentRepositoryAdapter implements AttachmentRepository {
                 .map(AttachmentMapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public List<Attachment> findImagesByEntityTypeAndEntityId(String entityType, UUID entityId) {
+        return jpa.findImagesByEntityTypeAndEntityId(entityType, entityId)
+                .stream()
+                .map(AttachmentMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Attachment> findByEntityTypeAndEntityIdAndArchivedAtIsNull(
+            String entityType, UUID entityId) {
+        return jpa.findByEntityTypeAndEntityIdAndArchivedAtIsNull(entityType, entityId)
+                .stream()
+                .map(AttachmentMapper::toDomain)
+                .toList();
+    }
 }
