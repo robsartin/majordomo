@@ -1,5 +1,6 @@
 package com.majordomo.application.herald;
 
+import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
@@ -86,5 +87,41 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public List<ServiceRecord> findRecordsByScheduleId(UUID scheduleId) {
         return serviceRecordRepository.findByScheduleId(scheduleId);
+    }
+
+    @Override
+    public MaintenanceSchedule update(UUID id, MaintenanceSchedule schedule) {
+        var existing = scheduleRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("MaintenanceSchedule", id));
+        schedule.setId(existing.getId());
+        schedule.setCreatedAt(existing.getCreatedAt());
+        schedule.setUpdatedAt(Instant.now());
+        return scheduleRepository.save(schedule);
+    }
+
+    @Override
+    public void archive(UUID id) {
+        var existing = scheduleRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("MaintenanceSchedule", id));
+        existing.setArchivedAt(Instant.now());
+        scheduleRepository.save(existing);
+    }
+
+    @Override
+    public ServiceRecord updateRecord(UUID id, ServiceRecord record) {
+        var existing = serviceRecordRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("ServiceRecord", id));
+        record.setId(existing.getId());
+        record.setCreatedAt(existing.getCreatedAt());
+        record.setUpdatedAt(Instant.now());
+        return serviceRecordRepository.save(record);
+    }
+
+    @Override
+    public void archiveRecord(UUID id) {
+        var existing = serviceRecordRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("ServiceRecord", id));
+        existing.setArchivedAt(Instant.now());
+        serviceRecordRepository.save(existing);
     }
 }

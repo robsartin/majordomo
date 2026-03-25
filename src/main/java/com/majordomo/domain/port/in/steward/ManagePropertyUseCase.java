@@ -53,4 +53,20 @@ public interface ManagePropertyUseCase {
      * @return list of child properties
      */
     List<Property> findByParentId(UUID parentId);
+
+    /**
+     * Updates an existing property.
+     *
+     * @param id       the property ID
+     * @param property the updated property data
+     * @return the updated property
+     */
+    Property update(UUID id, Property property);
+
+    /**
+     * Archives a property by setting archived_at.
+     *
+     * @param id the property ID
+     */
+    void archive(UUID id);
 }

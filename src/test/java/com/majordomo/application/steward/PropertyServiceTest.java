@@ -1,5 +1,6 @@
 package com.majordomo.application.steward;
 
+import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
@@ -11,8 +12,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,5 +83,64 @@ class PropertyServiceTest {
         assertNotNull(captor.getValue().getId());
         assertNotNull(captor.getValue().getCreatedAt());
         assertNotNull(captor.getValue().getUpdatedAt());
+    }
+
+    @Test
+    void updateExistingPropertyUpdatesAndSaves() {
+        UUID id = UUID.randomUUID();
+        Instant originalCreatedAt = Instant.parse("2025-01-01T00:00:00Z");
+
+        var existing = new Property();
+        existing.setId(id);
+        existing.setCreatedAt(originalCreatedAt);
+        existing.setName("Old Name");
+
+        var updated = new Property();
+        updated.setName("New Name");
+
+        when(propertyRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(propertyRepository.save(any(Property.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = propertyService.update(id, updated);
+
+        assertEquals(id, result.getId());
+        assertEquals(originalCreatedAt, result.getCreatedAt());
+        assertNotNull(result.getUpdatedAt());
+        assertEquals("New Name", result.getName());
+        verify(propertyRepository).save(updated);
+    }
+
+    @Test
+    void updateNonexistentPropertyThrowsEntityNotFoundException() {
+        UUID id = UUID.randomUUID();
+        when(propertyRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> propertyService.update(id, new Property()));
+    }
+
+    @Test
+    void archiveExistingPropertySetsArchivedAt() {
+        UUID id = UUID.randomUUID();
+        var existing = new Property();
+        existing.setId(id);
+
+        when(propertyRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(propertyRepository.save(any(Property.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        propertyService.archive(id);
+
+        ArgumentCaptor<Property> captor = ArgumentCaptor.forClass(Property.class);
+        verify(propertyRepository).save(captor.capture());
+        assertNotNull(captor.getValue().getArchivedAt());
+    }
+
+    @Test
+    void archiveNonexistentPropertyThrowsEntityNotFoundException() {
+        UUID id = UUID.randomUUID();
+        when(propertyRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> propertyService.archive(id));
     }
 }

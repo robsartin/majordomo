@@ -1,5 +1,6 @@
 package com.majordomo.application.concierge;
 
+import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 
@@ -10,12 +11,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -78,5 +81,64 @@ class ContactServiceTest {
         assertEquals(1, result.size());
         assertEquals(contact, result.get(0));
         verify(contactRepository).findByOrganizationId(orgId);
+    }
+
+    @Test
+    void updateExistingContactUpdatesAndSaves() {
+        UUID id = UUID.randomUUID();
+        Instant originalCreatedAt = Instant.parse("2025-01-01T00:00:00Z");
+
+        var existing = new Contact();
+        existing.setId(id);
+        existing.setCreatedAt(originalCreatedAt);
+        existing.setFormattedName("Old Name");
+
+        var updated = new Contact();
+        updated.setFormattedName("New Name");
+
+        when(contactRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(contactRepository.save(any(Contact.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = contactService.update(id, updated);
+
+        assertEquals(id, result.getId());
+        assertEquals(originalCreatedAt, result.getCreatedAt());
+        assertNotNull(result.getUpdatedAt());
+        assertEquals("New Name", result.getFormattedName());
+        verify(contactRepository).save(updated);
+    }
+
+    @Test
+    void updateNonexistentContactThrowsEntityNotFoundException() {
+        UUID id = UUID.randomUUID();
+        when(contactRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> contactService.update(id, new Contact()));
+    }
+
+    @Test
+    void archiveExistingContactSetsArchivedAt() {
+        UUID id = UUID.randomUUID();
+        var existing = new Contact();
+        existing.setId(id);
+
+        when(contactRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(contactRepository.save(any(Contact.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        contactService.archive(id);
+
+        ArgumentCaptor<Contact> captor = ArgumentCaptor.forClass(Contact.class);
+        verify(contactRepository).save(captor.capture());
+        assertNotNull(captor.getValue().getArchivedAt());
+    }
+
+    @Test
+    void archiveNonexistentContactThrowsEntityNotFoundException() {
+        UUID id = UUID.randomUUID();
+        when(contactRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> contactService.archive(id));
     }
 }

@@ -6,9 +6,11 @@ import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -122,5 +124,64 @@ public class ScheduleController {
     @GetMapping("/{id}/records")
     public List<ServiceRecord> listRecords(@PathVariable UUID id) {
         return scheduleUseCase.findRecordsByScheduleId(id);
+    }
+
+    /**
+     * Updates an existing maintenance schedule, preserving its ID and creation timestamp.
+     *
+     * @param id       the UUID of the schedule to update
+     * @param schedule the updated schedule data provided in the request body
+     * @return {@code 200 OK} with the updated schedule
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<MaintenanceSchedule> update(
+            @PathVariable UUID id,
+            @RequestBody MaintenanceSchedule schedule) {
+        var updated = scheduleUseCase.update(id, schedule);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Archives a maintenance schedule by setting its archived_at timestamp (soft delete).
+     *
+     * @param id the UUID of the schedule to archive
+     * @return {@code 204 No Content} on success
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> archive(@PathVariable UUID id) {
+        scheduleUseCase.archive(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Updates an existing service record, preserving its ID and creation timestamp.
+     *
+     * @param id       the UUID of the schedule the record belongs to (unused in lookup)
+     * @param recordId the UUID of the service record to update
+     * @param record   the updated service record data provided in the request body
+     * @return {@code 200 OK} with the updated service record
+     */
+    @PutMapping("/{id}/records/{recordId}")
+    public ResponseEntity<ServiceRecord> updateRecord(
+            @PathVariable UUID id,
+            @PathVariable UUID recordId,
+            @RequestBody ServiceRecord record) {
+        var updated = scheduleUseCase.updateRecord(recordId, record);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Archives a service record by setting its archived_at timestamp (soft delete).
+     *
+     * @param id       the UUID of the schedule the record belongs to (unused in lookup)
+     * @param recordId the UUID of the service record to archive
+     * @return {@code 204 No Content} on success
+     */
+    @DeleteMapping("/{id}/records/{recordId}")
+    public ResponseEntity<Void> archiveRecord(
+            @PathVariable UUID id,
+            @PathVariable UUID recordId) {
+        scheduleUseCase.archiveRecord(recordId);
+        return ResponseEntity.noContent().build();
     }
 }

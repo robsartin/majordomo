@@ -72,4 +72,36 @@ public interface ManageScheduleUseCase {
      * @return list of service records
      */
     List<ServiceRecord> findRecordsByScheduleId(UUID scheduleId);
+
+    /**
+     * Updates an existing maintenance schedule.
+     *
+     * @param id       the schedule ID
+     * @param schedule the updated schedule data
+     * @return the updated schedule
+     */
+    MaintenanceSchedule update(UUID id, MaintenanceSchedule schedule);
+
+    /**
+     * Archives a maintenance schedule by setting archived_at.
+     *
+     * @param id the schedule ID
+     */
+    void archive(UUID id);
+
+    /**
+     * Updates an existing service record.
+     *
+     * @param id     the service record ID
+     * @param record the updated service record data
+     * @return the updated service record
+     */
+    ServiceRecord updateRecord(UUID id, ServiceRecord record);
+
+    /**
+     * Archives a service record by setting archived_at.
+     *
+     * @param id the service record ID
+     */
+    void archiveRecord(UUID id);
 }

@@ -5,9 +5,11 @@ import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -91,5 +93,30 @@ public class PropertyController {
     public ResponseEntity<Property> create(@RequestBody Property property) {
         var saved = propertyUseCase.create(property);
         return ResponseEntity.created(URI.create("/api/properties/" + saved.getId())).body(saved);
+    }
+
+    /**
+     * Updates an existing property, preserving its ID and creation timestamp.
+     *
+     * @param id       the UUID of the property to update
+     * @param property the updated property data provided in the request body
+     * @return {@code 200 OK} with the updated property
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Property> update(@PathVariable UUID id, @RequestBody Property property) {
+        var updated = propertyUseCase.update(id, property);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Archives a property by setting its archived_at timestamp (soft delete).
+     *
+     * @param id the UUID of the property to archive
+     * @return {@code 204 No Content} on success
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> archive(@PathVariable UUID id) {
+        propertyUseCase.archive(id);
+        return ResponseEntity.noContent().build();
     }
 }

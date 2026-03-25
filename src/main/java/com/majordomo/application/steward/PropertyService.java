@@ -1,5 +1,6 @@
 package com.majordomo.application.steward;
 
+import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
@@ -67,5 +68,23 @@ public class PropertyService implements ManagePropertyUseCase {
     @Override
     public List<Property> findByParentId(UUID parentId) {
         return propertyRepository.findByParentId(parentId);
+    }
+
+    @Override
+    public Property update(UUID id, Property property) {
+        var existing = propertyRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Property", id));
+        property.setId(existing.getId());
+        property.setCreatedAt(existing.getCreatedAt());
+        property.setUpdatedAt(Instant.now());
+        return propertyRepository.save(property);
+    }
+
+    @Override
+    public void archive(UUID id) {
+        var existing = propertyRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Property", id));
+        existing.setArchivedAt(Instant.now());
+        propertyRepository.save(existing);
     }
 }
