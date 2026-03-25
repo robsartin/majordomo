@@ -1,7 +1,11 @@
 package com.majordomo.adapter.out.persistence.identity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
+
+import com.majordomo.adapter.out.persistence.AuditTimestampListener;
 import jakarta.persistence.Entity;
+
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
@@ -12,6 +16,7 @@ import com.majordomo.domain.model.identity.MemberRole;
 import java.time.Instant;
 import java.util.UUID;
 
+@EntityListeners(AuditTimestampListener.class)
 @Entity
 @Table(name = "memberships")
 public class MembershipEntity {

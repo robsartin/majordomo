@@ -72,8 +72,6 @@ public class PropertyService implements ManagePropertyUseCase {
         if (property.getStatus() == null) {
             property.setStatus(PropertyStatus.ACTIVE);
         }
-        property.setCreatedAt(Instant.now());
-        property.setUpdatedAt(Instant.now());
         return propertyRepository.save(property);
     }
 
@@ -116,7 +114,6 @@ public class PropertyService implements ManagePropertyUseCase {
                 .orElseThrow(() -> new EntityNotFoundException("Property", id));
         property.setId(existing.getId());
         property.setCreatedAt(existing.getCreatedAt());
-        property.setUpdatedAt(Instant.now());
         return propertyRepository.save(property);
     }
 

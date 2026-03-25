@@ -73,8 +73,6 @@ public class AttachmentService implements ManageAttachmentUseCase {
         attachment.setContentType(contentType);
         attachment.setSizeBytes(size);
         attachment.setStoragePath(path);
-        attachment.setCreatedAt(Instant.now());
-        attachment.setUpdatedAt(Instant.now());
 
         return attachmentRepository.save(attachment);
     }
@@ -102,7 +100,6 @@ public class AttachmentService implements ManageAttachmentUseCase {
         Attachment existing = attachmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Attachment", id));
         existing.setArchivedAt(Instant.now());
-        existing.setUpdatedAt(Instant.now());
         attachmentRepository.save(existing);
     }
 

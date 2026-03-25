@@ -18,8 +18,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
+import java.time.Instant;
 
 /**
  * Application service for user management. Only organization OWNER or ADMIN
@@ -82,29 +82,22 @@ public class UserManagementService implements ManageUserUseCase {
         }
 
         // Create user
-        Instant now = Instant.now();
         var user = new User(UuidFactory.newId(), username, email);
-        user.setCreatedAt(now);
-        user.setUpdatedAt(now);
         var savedUser = userRepository.save(user);
 
         // Create credential
         var credential = new Credential(UuidFactory.newId(), savedUser.getId(),
                 passwordEncoder.encode(plainPassword));
-        credential.setCreatedAt(now);
-        credential.setUpdatedAt(now);
         credentialRepository.save(credential);
 
         // Create membership as MEMBER
         var membership = new Membership(UuidFactory.newId(), savedUser.getId(),
                 organizationId, MemberRole.MEMBER);
-        membership.setCreatedAt(now);
-        membership.setUpdatedAt(now);
         membershipRepository.save(membership);
 
         eventPublisher.publish(new UserCreated(
                 savedUser.getId(), organizationId,
-                savedUser.getUsername(), now));
+                savedUser.getUsername(), Instant.now()));
 
         return savedUser;
     }

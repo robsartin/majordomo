@@ -65,8 +65,6 @@ class AttachmentServiceTest {
         assertEquals("image/jpeg", result.getContentType());
         assertEquals(1024L, result.getSizeBytes());
         assertNotNull(result.getStoragePath());
-        assertNotNull(result.getCreatedAt());
-        assertNotNull(result.getUpdatedAt());
 
         verify(fileStorage).store(anyString(), any(InputStream.class));
         verify(attachmentRepository).save(any(Attachment.class));
@@ -142,7 +140,6 @@ class AttachmentServiceTest {
         ArgumentCaptor<Attachment> captor = ArgumentCaptor.forClass(Attachment.class);
         verify(attachmentRepository).save(captor.capture());
         assertNotNull(captor.getValue().getArchivedAt());
-        assertNotNull(captor.getValue().getUpdatedAt());
     }
 
     @Test
