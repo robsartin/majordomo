@@ -1,0 +1,21 @@
+<nav th:fragment="sidebar(currentPage)"
+     xmlns:th="http://www.thymeleaf.org"
+     class="w-64 bg-white shadow-md hidden md:block shrink-0">
+    <ul class="py-4">
+        <li><a th:href="@{/dashboard}"
+               th:classappend="${currentPage == 'dashboard'} ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600' : 'text-gray-700 hover:bg-gray-50'"
+               class="block px-6 py-3 font-medium">Dashboard</a></li>
+        <li><a th:href="@{/properties}"
+               th:classappend="${currentPage == 'properties'} ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600' : 'text-gray-700 hover:bg-gray-50'"
+               class="block px-6 py-3 font-medium">Properties</a></li>
+        <li><a th:href="@{/contacts}"
+               th:classappend="${currentPage == 'contacts'} ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600' : 'text-gray-700 hover:bg-gray-50'"
+               class="block px-6 py-3 font-medium">Contacts</a></li>
+        <li><a th:href="@{/schedules}"
+               th:classappend="${currentPage == 'schedules'} ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600' : 'text-gray-700 hover:bg-gray-50'"
+               class="block px-6 py-3 font-medium">Schedules</a></li>
+        <li><a th:href="@{/ledger}"
+               th:classappend="${currentPage == 'ledger'} ? 'bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600' : 'text-gray-700 hover:bg-gray-50'"
+               class="block px-6 py-3 font-medium">Ledger</a></li>
+    </ul>
+</nav>
