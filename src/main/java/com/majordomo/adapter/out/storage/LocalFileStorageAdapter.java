@@ -22,6 +22,9 @@ import java.nio.file.StandardCopyOption;
  * Local filesystem implementation of {@link FileStoragePort}.
  * Stores files under a configurable base directory. Protected by
  * Resilience4j circuit breaker and retry for I/O resilience.
+ *
+ * <p>All paths are validated against the base directory to prevent
+ * path traversal attacks.</p>
  */
 @Component
 public class LocalFileStorageAdapter implements FileStoragePort {
@@ -37,7 +40,7 @@ public class LocalFileStorageAdapter implements FileStoragePort {
      */
     public LocalFileStorageAdapter(
             @Value("${majordomo.storage.base-dir:./data/attachments}") String baseDir) {
-        this.baseDir = Paths.get(baseDir);
+        this.baseDir = Paths.get(baseDir).toAbsolutePath().normalize();
     }
 
     @Override
@@ -45,7 +48,7 @@ public class LocalFileStorageAdapter implements FileStoragePort {
     @Retry(name = "fileStorage")
     public String store(String path, InputStream content) {
         try {
-            Path target = baseDir.resolve(path);
+            Path target = safePath(path);
             Files.createDirectories(target.getParent());
             Files.copy(content, target, StandardCopyOption.REPLACE_EXISTING);
             LOG.info("Stored file at {}", target);
@@ -60,7 +63,7 @@ public class LocalFileStorageAdapter implements FileStoragePort {
     @Retry(name = "fileStorage")
     public InputStream load(String path) {
         try {
-            Path target = baseDir.resolve(path);
+            Path target = safePath(path);
             return Files.newInputStream(target);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to load file: " + path, e);
@@ -72,12 +75,28 @@ public class LocalFileStorageAdapter implements FileStoragePort {
     @Retry(name = "fileStorage")
     public void delete(String path) {
         try {
-            Path target = baseDir.resolve(path);
+            Path target = safePath(path);
             Files.deleteIfExists(target);
             LOG.info("Deleted file at {}", target);
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to delete file: " + path, e);
         }
+    }
+
+    /**
+     * Resolves the given path against the base directory and validates it
+     * does not escape via path traversal (e.g. {@code ../}).
+     *
+     * @param path the relative storage path
+     * @return the validated absolute path within the base directory
+     * @throws IllegalArgumentException if the path escapes the base directory
+     */
+    private Path safePath(String path) {
+        Path resolved = baseDir.resolve(path).toAbsolutePath().normalize();
+        if (!resolved.startsWith(baseDir)) {
+            throw new IllegalArgumentException("Path traversal attempt: " + path);
+        }
+        return resolved;
     }
 
     /**
