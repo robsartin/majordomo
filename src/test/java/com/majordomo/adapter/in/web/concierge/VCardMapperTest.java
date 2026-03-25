@@ -42,8 +42,8 @@ class VCardMapperTest {
         assertEquals("Acme Corp", vcard.getOrganization().getValues().get(0));
         assertEquals("Engineer", vcard.getTitles().get(0).getValue());
         assertEquals("A note", vcard.getNotes().get(0).getValue());
-        assertEquals(1, vcard.getNickname().size());
-        assertEquals(List.of("JD"), vcard.getNickname().get(0).getValues());
+        assertEquals(1, vcard.getNicknames().size());
+        assertEquals(List.of("JD"), vcard.getNicknames().get(0).getValues());
     }
 
     /**
@@ -64,7 +64,7 @@ class VCardMapperTest {
         vcard.addTitle("Engineer");
         vcard.addNote("A note");
         var nickname = new Nickname();
-        nickname.addValue("JD");
+        nickname.getValues().add("JD");
         vcard.addNickname(nickname);
 
         var contact = VCardMapper.fromVCard(vcard, ORG_ID);
