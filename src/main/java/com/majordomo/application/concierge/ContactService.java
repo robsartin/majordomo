@@ -6,6 +6,8 @@ import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -32,6 +34,7 @@ public class ContactService implements ManageContactUseCase {
     }
 
     @Override
+    @CacheEvict(value = "contacts", allEntries = true)
     public Contact create(Contact contact) {
         contact.setId(UUID.randomUUID());
         contact.setCreatedAt(Instant.now());
@@ -45,6 +48,7 @@ public class ContactService implements ManageContactUseCase {
     }
 
     @Override
+    @Cacheable(value = "contacts", key = "#organizationId")
     public List<Contact> findByOrganizationId(UUID organizationId) {
         return contactRepository.findByOrganizationId(organizationId);
     }
@@ -57,6 +61,7 @@ public class ContactService implements ManageContactUseCase {
     }
 
     @Override
+    @CacheEvict(value = "contacts", allEntries = true)
     public Contact update(UUID id, Contact contact) {
         var existing = contactRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Contact", id));
@@ -67,6 +72,7 @@ public class ContactService implements ManageContactUseCase {
     }
 
     @Override
+    @CacheEvict(value = "contacts", allEntries = true)
     public void archive(UUID id) {
         var existing = contactRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Contact", id));
