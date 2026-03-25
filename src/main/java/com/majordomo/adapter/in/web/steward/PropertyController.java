@@ -4,6 +4,8 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/properties")
+@Tag(name = "Steward", description = "Property management")
 public class PropertyController {
 
     private final ManagePropertyUseCase propertyUseCase;

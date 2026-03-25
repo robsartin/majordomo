@@ -100,6 +100,7 @@ classDiagram
         +PropertyStatus status
         +LocalDate acquired_on
         +LocalDate warranty_expires_on
+        +BigDecimal purchase_price
         +uuid_v7 parent_id
     }
 
@@ -144,6 +145,7 @@ classDiagram
         +LocalDate performed_on
         +string description
         +string notes
+        +BigDecimal cost
     }
 
     class Frequency {
@@ -164,6 +166,14 @@ classDiagram
     Contact "0..1" --> "*" ServiceRecord
     MaintenanceSchedule "0..1" --> "*" ServiceRecord
     MaintenanceSchedule --> Frequency
+
+    %% ── The Ledger (Finance) ──
+    class SpendSummary {
+        <<record>>
+        +BigDecimal purchase_price
+        +BigDecimal maintenance_cost
+        +BigDecimal total_cost
+    }
 
     %% ── Ownership ──
     Organization "1" --> "*" Property
@@ -193,4 +203,39 @@ sequenceDiagram
     AuthService-->>SpringSecurity: UserDetails
     SpringSecurity->>SpringSecurity: verify password against hash
     SpringSecurity-->>Browser: 302 Redirect to /
+```
+
+## Hexagonal Architecture
+
+```mermaid
+graph TB
+    subgraph "Inbound Adapters"
+        REST[REST Controllers]
+        WEB[Thymeleaf Pages]
+    end
+
+    subgraph "Application Services"
+        CS[ContactService]
+        PS[PropertyService]
+        SS[ScheduleService]
+        LS[LedgerService]
+        AS[AuthenticationService]
+        UMS[UserManagementService]
+    end
+
+    subgraph "Domain"
+        PORTS_IN[Inbound Ports]
+        MODELS[Domain Models]
+        PORTS_OUT[Outbound Ports]
+    end
+
+    subgraph "Outbound Adapters"
+        JPA[JPA Repositories]
+    end
+
+    REST --> PORTS_IN
+    WEB --> PORTS_IN
+    PORTS_IN --> CS & PS & SS & LS & AS & UMS
+    CS & PS & SS & LS & AS & UMS --> PORTS_OUT
+    PORTS_OUT --> JPA
 ```

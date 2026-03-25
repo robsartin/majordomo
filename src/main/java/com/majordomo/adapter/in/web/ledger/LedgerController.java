@@ -3,6 +3,8 @@ package com.majordomo.adapter.in.web.ledger;
 import com.majordomo.domain.model.ledger.SpendSummary;
 import com.majordomo.domain.port.in.ledger.QuerySpendUseCase;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/ledger")
+@Tag(name = "Ledger", description = "Finance and spend tracking")
 public class LedgerController {
 
     private final QuerySpendUseCase querySpendUseCase;
