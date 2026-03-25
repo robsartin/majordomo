@@ -29,6 +29,23 @@ Additional services can be introduced over time (e.g., "The Gardener" for landsc
 - **Relationship-first**: The system models connections between people, assets, and events — not just static records
 - **Lifecycle-aware**: Assets are tracked from acquisition through maintenance to eventual replacement
 
+## Authentication
+
+Majordomo uses Spring Security for authentication with form-based login at `/login`. Passwords
+are hashed using Argon2id, the Password Hashing Competition winner, providing strong resistance
+to GPU and ASIC attacks.
+
+The authentication layer follows the hexagonal architecture: `AuthenticationService` implements
+Spring Security's `UserDetailsService` interface, bridging Spring Security to the domain's
+`UserRepository` and `CredentialRepository` ports. Spring Security concerns remain in the
+adapter layer — the domain model has no dependency on Spring Security.
+
+OAuth2 support (Google, GitHub, etc.) via Spring Security OAuth2 Client is planned for the
+future. The `Credential` table is separated from the `User` table to accommodate multiple
+authentication methods per user.
+
+For detailed developer documentation, see [doc/authentication.md](doc/authentication.md).
+
 ## Status
 
 Early development. Architecture decisions are being recorded in `doc/adr/`.

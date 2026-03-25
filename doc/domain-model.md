@@ -169,3 +169,28 @@ classDiagram
     Organization "1" --> "*" Property
     Organization "1" --> "*" Contact
 ```
+
+## Authentication Sequence
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant LoginController
+    participant SpringSecurity
+    participant AuthService as AuthenticationService
+    participant UserRepo as UserRepository
+    participant CredRepo as CredentialRepository
+
+    Browser->>LoginController: GET /login
+    LoginController-->>Browser: login.html (form)
+
+    Browser->>SpringSecurity: POST /login (username, password)
+    SpringSecurity->>AuthService: loadUserByUsername(username)
+    AuthService->>UserRepo: findByUsername(username)
+    UserRepo-->>AuthService: User
+    AuthService->>CredRepo: findByUserId(user.id)
+    CredRepo-->>AuthService: Credential (Argon2id hash)
+    AuthService-->>SpringSecurity: UserDetails
+    SpringSecurity->>SpringSecurity: verify password against hash
+    SpringSecurity-->>Browser: 302 Redirect to /
+```
