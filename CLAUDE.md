@@ -125,3 +125,4 @@ See `doc/adr/` for all architecture decision records:
 | 0018 | UUIDv7 for entity identifiers |
 | 0019 | Tailwind CSS for server-rendered UI |
 | 0020 | Audit logging strategy |
+| 0021 | Prefer test slices over @SpringBootTest |
