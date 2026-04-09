@@ -3,7 +3,7 @@ spring:
     name: majordomo
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/majordomo
+    url: jdbc:postgresql://localhost:3946/majordomo
     username: majordomo
     password: majordomo
 
@@ -81,13 +81,10 @@ resilience4j:
         base-config: default
         max-attempts: 2
   timelimiter:
-    configs:
-      default:
-        timeout-duration:
-          seconds: 5
     instances:
       notification:
-        base-config: default
+        timeout-duration:
+          seconds: 5
       fileStorage:
         timeout-duration:
           seconds: 10
