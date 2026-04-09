@@ -1,13 +1,15 @@
 package com.majordomo.adapter.in.web.config;
 
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.adapter.in.web.HomeController;
+import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,33 +23,35 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Tests for {@link GlobalExceptionHandler}.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(controllers = HomeController.class)
+@Import({SecurityConfig.class, GlobalExceptionHandlerTest.ErrorTestController.class})
 class GlobalExceptionHandlerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @TestConfiguration
-    static class TestControllerConfig {
+    @MockitoBean
+    private ApiKeyRepository apiKeyRepository;
 
-        @RestController
-        static class ErrorTestController {
+    @MockitoBean
+    private OAuth2UserService oAuth2UserService;
 
-            @GetMapping("/test/not-found")
-            public void notFound() {
-                throw new EntityNotFoundException("Property", UUID.randomUUID());
-            }
+    @RestController
+    static class ErrorTestController {
 
-            @GetMapping("/test/bad-request")
-            public void badRequest() {
-                throw new IllegalArgumentException("Invalid input");
-            }
+        @GetMapping("/test/not-found")
+        public void notFound() {
+            throw new EntityNotFoundException("Property", UUID.randomUUID());
+        }
 
-            @GetMapping("/test/server-error")
-            public void serverError() {
-                throw new RuntimeException("Something broke");
-            }
+        @GetMapping("/test/bad-request")
+        public void badRequest() {
+            throw new IllegalArgumentException("Invalid input");
+        }
+
+        @GetMapping("/test/server-error")
+        public void serverError() {
+            throw new RuntimeException("Something broke");
         }
     }
 

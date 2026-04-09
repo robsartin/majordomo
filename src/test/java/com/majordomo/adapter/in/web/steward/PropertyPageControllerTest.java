@@ -1,5 +1,7 @@
 package com.majordomo.adapter.in.web.steward;
 
+import com.majordomo.adapter.in.web.config.OAuth2UserService;
+import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.model.steward.Property;
@@ -9,14 +11,15 @@ import com.majordomo.domain.port.in.ManageAttachmentUseCase;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
+import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,8 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Tests for {@link PropertyPageController}.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(PropertyPageController.class)
+@Import(SecurityConfig.class)
 class PropertyPageControllerTest {
 
     @Autowired
@@ -61,6 +64,12 @@ class PropertyPageControllerTest {
 
     @MockitoBean
     private MembershipRepository membershipRepository;
+
+    @MockitoBean
+    private ApiKeyRepository apiKeyRepository;
+
+    @MockitoBean
+    private OAuth2UserService oAuth2UserService;
 
     /** Authenticated user requesting an existing property receives 200 and the detail view. */
     @Test
