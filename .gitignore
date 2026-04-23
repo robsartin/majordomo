@@ -53,6 +53,7 @@ out/
 
 ### Claude Code ###
 .claude/
+.worktrees/
 
 ### Data ###
 data/
