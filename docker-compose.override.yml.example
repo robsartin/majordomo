@@ -4,3 +4,10 @@ services:
   db:
     ports:
       - "5433:5432"  # Use 5433 if 5432 is already in use
+
+  app:
+    environment:
+      # Envoy LLM scoring — set ANTHROPIC_API_KEY in your shell or a local .env
+      # file (both are read by `docker compose`). Required for /api/envoy/* calls
+      # to succeed; missing/empty key means scoring requests will 401 at Anthropic.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
