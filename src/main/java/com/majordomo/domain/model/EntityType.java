@@ -10,5 +10,6 @@ public enum EntityType {
     USER,
     MAINTENANCE_SCHEDULE,
     ATTACHMENT,
-    API_KEY
+    API_KEY,
+    JOB_POSTING
 }
