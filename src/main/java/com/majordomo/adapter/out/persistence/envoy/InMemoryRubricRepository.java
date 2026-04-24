@@ -8,7 +8,7 @@ import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.Thresholds;
 import com.majordomo.domain.model.envoy.Tier;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * integration test works without database setup. Deleted in Phase 2.
  */
 @Repository
-@Profile("envoy-memory")
+@ConditionalOnMissingBean(value = RubricRepository.class, ignored = InMemoryRubricRepository.class)
 public class InMemoryRubricRepository implements RubricRepository {
 
     private final Map<UUID, Rubric> byId = new ConcurrentHashMap<>();

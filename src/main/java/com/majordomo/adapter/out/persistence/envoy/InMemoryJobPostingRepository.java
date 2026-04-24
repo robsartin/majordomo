@@ -2,7 +2,7 @@ package com.majordomo.adapter.out.persistence.envoy;
 
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Repository;
 
 import java.util.Map;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Deleted in Phase 2.
  */
 @Repository
-@Profile("envoy-memory")
+@ConditionalOnMissingBean(value = JobPostingRepository.class, ignored = InMemoryJobPostingRepository.class)
 public class InMemoryJobPostingRepository implements JobPostingRepository {
 
     private final Map<UUID, JobPosting> byId = new ConcurrentHashMap<>();

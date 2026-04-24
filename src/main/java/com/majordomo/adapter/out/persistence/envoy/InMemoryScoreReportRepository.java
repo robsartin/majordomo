@@ -4,7 +4,7 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Repository;
 
 import java.util.Comparator;
@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** In-memory {@link ScoreReportRepository} for the Phase-1 vertical slice. */
 @Repository
-@Profile("envoy-memory")
+@ConditionalOnMissingBean(value = ScoreReportRepository.class, ignored = InMemoryScoreReportRepository.class)
 public class InMemoryScoreReportRepository implements ScoreReportRepository {
 
     private final Map<UUID, ScoreReport> byId = new ConcurrentHashMap<>();
