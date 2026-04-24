@@ -67,6 +67,8 @@ resilience4j:
         base-config: default
       fileStorage:
         base-config: default
+      envoy-llm:
+        base-config: default
   retry:
     configs:
       default:
@@ -80,6 +82,11 @@ resilience4j:
       fileStorage:
         base-config: default
         max-attempts: 2
+      envoy-llm:
+        base-config: default
+        max-attempts: 3
+        retry-exceptions:
+          - com.majordomo.application.envoy.LlmScoringException
   timelimiter:
     instances:
       notification:
@@ -97,6 +104,13 @@ majordomo:
   notifications:
     cron: "0 0 8 * * *"
     warranty-cron: "0 0 9 * * *"
+
+envoy:
+  llm:
+    api-key: ${ANTHROPIC_API_KEY:}
+    base-url: https://api.anthropic.com
+    model: claude-sonnet-4-6
+    max-tokens: 4096
 
 springdoc:
   api-docs:

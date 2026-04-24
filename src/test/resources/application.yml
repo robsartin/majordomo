@@ -25,3 +25,10 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+envoy:
+  llm:
+    api-key: test-key
+    base-url: http://localhost
+    model: claude-sonnet-4-6
+    max-tokens: 4096
