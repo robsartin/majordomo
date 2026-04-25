@@ -4,6 +4,8 @@ import com.majordomo.domain.port.out.envoy.JobSource;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
+import com.majordomo.domain.model.event.JobPostingIngested;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import org.junit.jupiter.api.Test;
 
@@ -44,20 +46,25 @@ class JobIngestionServiceTest {
             return p;
         });
 
-        var service = new JobIngestionService(List.of(nonMatching, matching), repo);
+        var publisher = mock(EventPublisher.class);
+        var service = new JobIngestionService(List.of(nonMatching, matching), repo, publisher);
         JobPosting saved = service.ingest(new JobSourceRequest("manual", "body", Map.of()), orgId);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getOrganizationId()).isEqualTo(orgId);
         verify(matching).fetch(any());
         verify(nonMatching, never()).fetch(any());
+        verify(publisher).publish(any(JobPostingIngested.class));
     }
 
     @Test
     void throwsWhenNoSourceSupportsTheRequest() {
         var source = mock(JobSource.class);
         when(source.supports(any())).thenReturn(false);
-        var service = new JobIngestionService(List.of(source), mock(JobPostingRepository.class));
+        var service = new JobIngestionService(
+                List.of(source),
+                mock(JobPostingRepository.class),
+                mock(EventPublisher.class));
 
         assertThatThrownBy(() -> service.ingest(
                 new JobSourceRequest("mystery", "", Map.of()), orgId))
@@ -85,11 +92,13 @@ class JobIngestionServiceTest {
         when(repo.findBySourceAndExternalId("greenhouse", "abc", orgId))
                 .thenReturn(Optional.of(existing));
 
-        var service = new JobIngestionService(List.of(source), repo);
+        var publisher = mock(EventPublisher.class);
+        var service = new JobIngestionService(List.of(source), repo, publisher);
         JobPosting result = service.ingest(
                 new JobSourceRequest("greenhouse", "abc", Map.of()), orgId);
 
         assertThat(result.getId()).isEqualTo(existing.getId());
         verify(repo, never()).save(any());
+        verify(publisher, never()).publish(any());
     }
 }

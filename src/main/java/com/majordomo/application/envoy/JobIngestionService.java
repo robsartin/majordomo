@@ -4,7 +4,9 @@ import com.majordomo.domain.port.out.envoy.JobSource;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
+import com.majordomo.domain.model.event.JobPostingIngested;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import org.springframework.stereotype.Service;
 
@@ -23,17 +25,22 @@ public class JobIngestionService implements IngestJobPostingUseCase {
 
     private final List<JobSource> sources;
     private final JobPostingRepository postings;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the service. Spring injects all {@link JobSource} beans into
      * {@code sources}.
      *
-     * @param sources  the discovered ingestion sources
-     * @param postings outbound port for posting persistence
+     * @param sources        the discovered ingestion sources
+     * @param postings       outbound port for posting persistence
+     * @param eventPublisher domain event publisher
      */
-    public JobIngestionService(List<JobSource> sources, JobPostingRepository postings) {
+    public JobIngestionService(List<JobSource> sources,
+                               JobPostingRepository postings,
+                               EventPublisher eventPublisher) {
         this.sources = sources;
         this.postings = postings;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -59,6 +66,9 @@ public class JobIngestionService implements IngestJobPostingUseCase {
         if (fetched.getId() == null) {
             fetched.setId(UuidFactory.newId());
         }
-        return postings.save(fetched);
+        JobPosting saved = postings.save(fetched);
+        eventPublisher.publish(new JobPostingIngested(
+                saved.getId(), organizationId, saved.getSource(), Instant.now()));
+        return saved;
     }
 }
