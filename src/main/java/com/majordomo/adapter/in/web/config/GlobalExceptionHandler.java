@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import org.springframework.security.access.AccessDeniedException;
 import java.time.Instant;
@@ -78,6 +79,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(
             AccessDeniedException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    /**
+     * Handles missing static resources (e.g. browser-requested {@code /favicon.ico},
+     * mistyped URLs, bot probes). Returns 404 and logs at DEBUG so these don't
+     * fill the log with stack traces from the catch-all handler below.
+     *
+     * @param ex      the exception
+     * @param request the HTTP request
+     * @return 404 response with a generic message
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            NoResourceFoundException ex, HttpServletRequest request) {
+        LOG.debug("Resource not found: {}", request.getRequestURI());
+        return buildResponse(HttpStatus.NOT_FOUND, "Resource not found", request);
     }
 
     /**
