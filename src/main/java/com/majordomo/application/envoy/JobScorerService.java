@@ -22,7 +22,7 @@ import java.util.UUID;
  * interpretive choices.
  */
 @Service
-public class JobScorer implements ScoreJobPostingUseCase {
+public class JobScorerService implements ScoreJobPostingUseCase {
 
     private final RubricRepository rubrics;
     private final JobPostingRepository postings;
@@ -39,7 +39,7 @@ public class JobScorer implements ScoreJobPostingUseCase {
      * @param llm       outbound LLM scoring port
      * @param assembler deterministic LLM-response validator
      */
-    public JobScorer(RubricRepository rubrics,
+    public JobScorerService(RubricRepository rubrics,
                      JobPostingRepository postings,
                      ScoreReportRepository reports,
                      LlmScoringPort llm,

@@ -1,8 +1,11 @@
 package com.majordomo.architecture;
 
-import com.tngtech.archunit.junit.AnalyzeClasses;
-import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
@@ -10,44 +13,74 @@ import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.sli
 /**
  * ArchUnit tests enforcing hexagonal architecture boundaries.
  * Violations fail the build.
+ *
+ * <p>Uses plain JUnit Jupiter {@code @Test} methods rather than ArchUnit's
+ * {@code @ArchTest} static-field discovery, which Surefire was silently
+ * skipping (see issue #122).</p>
  */
-@AnalyzeClasses(packages = "com.majordomo")
 class HexagonalArchitectureTest {
 
+    private static JavaClasses classes;
+
+    @BeforeAll
+    static void importClasses() {
+        classes = new ClassFileImporter()
+                .withImportOption(new ImportOption.DoNotIncludeTests())
+                .importPackages("com.majordomo");
+    }
+
     /** Domain model must not depend on Spring framework. */
-    @ArchTest
-    static final ArchRule DOMAIN_MODEL_NO_SPRING = noClasses()
-            .that().resideInAPackage("..domain.model..")
-            .should().dependOnClassesThat().resideInAPackage("org.springframework..");
+    @Test
+    void domainModelHasNoSpringDependency() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..domain.model..")
+                .should().dependOnClassesThat().resideInAPackage("org.springframework..");
+        rule.check(classes);
+    }
 
     /** Domain model must not depend on JPA/Hibernate. */
-    @ArchTest
-    static final ArchRule DOMAIN_MODEL_NO_JPA = noClasses()
-            .that().resideInAPackage("..domain.model..")
-            .should().dependOnClassesThat().resideInAnyPackage(
-                    "jakarta.persistence..", "org.hibernate..");
+    @Test
+    void domainModelHasNoJpaDependency() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..domain.model..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "jakarta.persistence..", "org.hibernate..");
+        rule.check(classes);
+    }
 
     /** Domain ports must not depend on adapter packages. */
-    @ArchTest
-    static final ArchRule DOMAIN_PORTS_NO_ADAPTERS = noClasses()
-            .that().resideInAPackage("..domain.port..")
-            .should().dependOnClassesThat().resideInAPackage("..adapter..");
+    @Test
+    void domainPortsHaveNoAdapterDependency() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..domain.port..")
+                .should().dependOnClassesThat().resideInAPackage("..adapter..");
+        rule.check(classes);
+    }
 
     /** Application services must not depend on adapter packages. */
-    @ArchTest
-    static final ArchRule APPLICATION_NO_ADAPTERS = noClasses()
-            .that().resideInAPackage("..application..")
-            .should().dependOnClassesThat().resideInAPackage("..adapter..");
+    @Test
+    void applicationHasNoAdapterDependency() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..application..")
+                .should().dependOnClassesThat().resideInAPackage("..adapter..");
+        rule.check(classes);
+    }
 
     /** Persistence adapters must not depend on inbound adapters. */
-    @ArchTest
-    static final ArchRule ADAPTERS_NO_CROSS_REFERENCE = noClasses()
-            .that().resideInAPackage("..adapter.out..")
-            .should().dependOnClassesThat().resideInAPackage("..adapter.in..");
+    @Test
+    void outboundAdaptersHaveNoInboundDependency() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..adapter.out..")
+                .should().dependOnClassesThat().resideInAPackage("..adapter.in..");
+        rule.check(classes);
+    }
 
     /** No circular dependencies between top-level slices. */
-    @ArchTest
-    static final ArchRule NO_CYCLIC_DEPENDENCIES = slices()
-            .matching("com.majordomo.(*)..")
-            .should().beFreeOfCycles();
+    @Test
+    void slicesAreFreeOfCycles() {
+        ArchRule rule = slices()
+                .matching("com.majordomo.(*)..")
+                .should().beFreeOfCycles();
+        rule.check(classes);
+    }
 }

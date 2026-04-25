@@ -31,14 +31,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class JobScorerTest {
+class JobScorerServiceTest {
 
     @Mock RubricRepository rubrics;
     @Mock JobPostingRepository postings;
     @Mock ScoreReportRepository reports;
     @Mock LlmScoringPort llm;
 
-    private JobScorer scorer;
+    private JobScorerService scorer;
     private final UUID orgId = UuidFactory.newId();
 
     private Rubric rubric;
@@ -46,7 +46,7 @@ class JobScorerTest {
 
     @BeforeEach
     void setUp() {
-        scorer = new JobScorer(rubrics, postings, reports, llm, new ScoreAssembler());
+        scorer = new JobScorerService(rubrics, postings, reports, llm, new ScoreAssembler());
         rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
                 List.of(),
                 List.of(new Category("compensation", "pay", 20,

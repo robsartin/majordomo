@@ -1,6 +1,6 @@
 package com.majordomo.application.envoy;
 
-import com.majordomo.adapter.out.ingest.JobSource;
+import com.majordomo.domain.port.out.envoy.JobSource;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;

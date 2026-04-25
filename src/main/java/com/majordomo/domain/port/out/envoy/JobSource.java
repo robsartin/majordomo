@@ -1,4 +1,4 @@
-package com.majordomo.adapter.out.ingest;
+package com.majordomo.domain.port.out.envoy;
 
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
