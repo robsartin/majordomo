@@ -2,6 +2,7 @@ package com.majordomo.adapter.out.ingest;
 
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
+import com.majordomo.domain.port.out.envoy.JobSource;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
