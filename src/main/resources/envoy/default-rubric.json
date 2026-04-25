@@ -1,0 +1,69 @@
+{
+  "id": "01910000-0000-7000-8000-000000000001",
+  "version": 1,
+  "name": "default",
+  "disqualifiers": [
+    {"key": "ON_SITE_ONLY", "description": "Role requires on-site work only"},
+    {"key": "NON_ENGINEERING", "description": "Posting is not an engineering role"}
+  ],
+  "categories": [
+    {
+      "key": "compensation", "description": "Base salary and equity", "maxPoints": 25,
+      "tiers": [
+        {"label": "Excellent", "points": 25, "criteria": "Base >$250k or total comp >$400k clearly stated"},
+        {"label": "Good", "points": 18, "criteria": "Base $200-250k or range suggesting it"},
+        {"label": "Fair", "points": 10, "criteria": "Base $150-200k"},
+        {"label": "Poor", "points": 3, "criteria": "Below $150k or no range given"}
+      ]
+    },
+    {
+      "key": "remote", "description": "Remote flexibility", "maxPoints": 15,
+      "tiers": [
+        {"label": "Full remote", "points": 15, "criteria": "Fully remote, any US location"},
+        {"label": "Hybrid", "points": 7, "criteria": "Some in-office days required"},
+        {"label": "Regional remote", "points": 3, "criteria": "Remote but only from specific metros"}
+      ]
+    },
+    {
+      "key": "role_scope", "description": "Seniority and scope match", "maxPoints": 20,
+      "tiers": [
+        {"label": "Strong match", "points": 20, "criteria": "Staff/Principal level, backend or platform"},
+        {"label": "Aligned", "points": 12, "criteria": "Senior engineer, clear backend work"},
+        {"label": "Weak", "points": 4, "criteria": "Junior or unclear scope"}
+      ]
+    },
+    {
+      "key": "team_signals", "description": "Team/manager/culture signals", "maxPoints": 15,
+      "tiers": [
+        {"label": "Strong", "points": 15, "criteria": "Specific team, named manager, clear mandate"},
+        {"label": "Generic", "points": 6, "criteria": "Typical posting language"},
+        {"label": "Red", "points": 1, "criteria": "Mentions hustle culture, grind, rockstar etc."}
+      ]
+    },
+    {
+      "key": "company_stage", "description": "Company stability & stage", "maxPoints": 15,
+      "tiers": [
+        {"label": "Mature", "points": 15, "criteria": "Public or late-stage with revenue"},
+        {"label": "Growth", "points": 9, "criteria": "Series B/C/D with traction"},
+        {"label": "Early", "points": 3, "criteria": "Seed/Series A"},
+        {"label": "Risky", "points": 0, "criteria": "Pre-seed, no traction signals"}
+      ]
+    },
+    {
+      "key": "tech_stack", "description": "Tech stack alignment", "maxPoints": 10,
+      "tiers": [
+        {"label": "Perfect", "points": 10, "criteria": "Java/Spring, Postgres, cloud"},
+        {"label": "Adjacent", "points": 5, "criteria": "Kotlin/Go/Python, same architecture space"},
+        {"label": "Misaligned", "points": 1, "criteria": "Frontend-heavy or ecosystem mismatch"}
+      ]
+    }
+  ],
+  "flags": [
+    {"key": "AT_WILL_EMPHASIS", "description": "Unusually aggressive at-will language", "penalty": 3},
+    {"key": "UNPAID_TEST", "description": "Requires unpaid take-home >4 hours", "penalty": 5},
+    {"key": "VAGUE_COMP", "description": "No compensation range given at all", "penalty": 2},
+    {"key": "ON_CALL_HEAVY", "description": "Heavy on-call rotation explicitly required", "penalty": 2}
+  ],
+  "thresholds": {"applyImmediately": 75, "apply": 55, "considerOnly": 35},
+  "effectiveFrom": "2026-04-23T00:00:00Z"
+}
