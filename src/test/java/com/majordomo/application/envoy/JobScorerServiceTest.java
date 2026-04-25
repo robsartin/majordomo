@@ -10,6 +10,8 @@ import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.envoy.Thresholds;
 import com.majordomo.domain.model.envoy.Tier;
+import com.majordomo.domain.model.event.JobPostingScored;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.LlmScoringPort;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
@@ -28,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +40,7 @@ class JobScorerServiceTest {
     @Mock JobPostingRepository postings;
     @Mock ScoreReportRepository reports;
     @Mock LlmScoringPort llm;
+    @Mock EventPublisher eventPublisher;
 
     private JobScorerService scorer;
     private final UUID orgId = UuidFactory.newId();
@@ -46,7 +50,8 @@ class JobScorerServiceTest {
 
     @BeforeEach
     void setUp() {
-        scorer = new JobScorerService(rubrics, postings, reports, llm, new ScoreAssembler());
+        scorer = new JobScorerService(
+                rubrics, postings, reports, llm, new ScoreAssembler(), eventPublisher);
         rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
                 List.of(),
                 List.of(new Category("compensation", "pay", 20,
@@ -73,6 +78,7 @@ class JobScorerServiceTest {
         assertThat(r.finalScore()).isEqualTo(15);
         assertThat(r.recommendation()).isEqualTo(Recommendation.APPLY);
         assertThat(r.llmModel()).isEqualTo("claude-sonnet-4-6");
+        verify(eventPublisher).publish(any(JobPostingScored.class));
     }
 
     @Test

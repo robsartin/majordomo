@@ -4,6 +4,8 @@ import com.majordomo.domain.model.AuditAction;
 import com.majordomo.domain.model.AuditLogEntry;
 import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.UuidFactory;
+import com.majordomo.domain.model.event.JobPostingIngested;
+import com.majordomo.domain.model.event.JobPostingScored;
 import com.majordomo.domain.model.event.PropertyArchived;
 import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.event.UserCreated;
@@ -66,6 +68,28 @@ public class AuditEventListener {
     @EventListener
     public void onUserCreated(UserCreated event) {
         log(EntityType.USER.name(), event.userId(),
+                AuditAction.CREATE.name(), event.occurredAt());
+    }
+
+    /**
+     * Records an audit entry when a job posting is ingested.
+     *
+     * @param event the posting ingestion event
+     */
+    @EventListener
+    public void onJobPostingIngested(JobPostingIngested event) {
+        log(EntityType.JOB_POSTING.name(), event.postingId(),
+                AuditAction.CREATE.name(), event.occurredAt());
+    }
+
+    /**
+     * Records an audit entry when a job posting is scored.
+     *
+     * @param event the scoring event
+     */
+    @EventListener
+    public void onJobPostingScored(JobPostingScored event) {
+        log(EntityType.SCORE_REPORT.name(), event.reportId(),
                 AuditAction.CREATE.name(), event.occurredAt());
     }
 
