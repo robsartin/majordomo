@@ -84,4 +84,15 @@ class GlobalExceptionHandlerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
     }
+
+    /** Missing static resource returns 404, not 500. Regression for #127. */
+    @Test
+    @WithMockUser
+    void missingResourceReturns404() throws Exception {
+        mockMvc.perform(get("/favicon.ico"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Resource not found"));
+    }
 }
