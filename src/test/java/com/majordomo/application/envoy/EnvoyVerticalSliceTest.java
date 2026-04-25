@@ -4,12 +4,18 @@ import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.majordomo.adapter.out.llm.AnthropicMessageClient;
 import com.majordomo.domain.model.UuidFactory;
+import com.majordomo.domain.model.envoy.Category;
+import com.majordomo.domain.model.envoy.Flag;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
+import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.Thresholds;
+import com.majordomo.domain.model.envoy.Tier;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
+import com.majordomo.domain.port.out.envoy.RubricRepository;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -22,7 +28,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +61,32 @@ class EnvoyVerticalSliceTest {
 
     @Autowired IngestJobPostingUseCase ingest;
     @Autowired ScoreJobPostingUseCase score;
+    @Autowired RubricRepository rubrics;
+
+    @BeforeEach
+    void seedDefaultRubric() {
+        rubrics.save(new Rubric(
+                UuidFactory.newId(), Optional.empty(), 1, "default",
+                List.of(),
+                List.of(
+                        cat("compensation", 25, tier("Good", 18)),
+                        cat("remote", 15, tier("Full remote", 15)),
+                        cat("role_scope", 20, tier("Aligned", 12)),
+                        cat("team_signals", 15, tier("Generic", 6)),
+                        cat("company_stage", 15, tier("Growth", 9)),
+                        cat("tech_stack", 10, tier("Perfect", 10))),
+                List.of(new Flag("AT_WILL_EMPHASIS", "agg at-will", 3)),
+                new Thresholds(75, 55, 35),
+                Instant.now()));
+    }
+
+    private static Category cat(String key, int max, Tier t) {
+        return new Category(key, key, max, List.of(t));
+    }
+
+    private static Tier tier(String label, int points) {
+        return new Tier(label, points, label);
+    }
 
     @BeforeEach
     void enqueueAnthropicResponse() {
