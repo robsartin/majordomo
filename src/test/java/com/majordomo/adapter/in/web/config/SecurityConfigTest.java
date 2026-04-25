@@ -59,4 +59,11 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/contacts"))
                 .andExpect(status().is3xxRedirection());
     }
+
+    /** Favicon is publicly accessible — no auth wall, no 500 from a missing static resource. */
+    @Test
+    void faviconIsAccessibleWithoutAuth() throws Exception {
+        mockMvc.perform(get("/favicon.ico"))
+                .andExpect(status().isOk());
+    }
 }

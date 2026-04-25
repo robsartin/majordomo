@@ -89,7 +89,8 @@ class GlobalExceptionHandlerTest {
     @Test
     @WithMockUser
     void missingResourceReturns404() throws Exception {
-        mockMvc.perform(get("/favicon.ico"))
+        // /favicon.ico exists now (#126); pick a path that genuinely 404s
+        mockMvc.perform(get("/this-resource-does-not-exist.ico"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.error").value("Not Found"))
