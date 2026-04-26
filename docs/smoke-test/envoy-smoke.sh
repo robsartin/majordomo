@@ -46,16 +46,29 @@ status=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL/actuator/health")
 ok "app is up at $BASE_URL"
 
 step "2/5 form login as $USERNAME"
-login_status=$(curl -s -o /dev/null -w '%{http_code}' \
+# GET /login first to receive the XSRF-TOKEN cookie that Spring Security's
+# CsrfFilter will require on the POST. CookieCsrfTokenRepository writes it
+# with HttpOnly=false so curl can read and re-send it.
+curl -s -o /dev/null -c "$COOKIES" "$BASE_URL/login"
+csrf=$(awk '$6 == "XSRF-TOKEN" { print $7 }' "$COOKIES")
+[[ -n "$csrf" ]] || fail "no XSRF-TOKEN cookie returned by GET /login (is CSRF still enabled?)"
+
+login_response=$(curl -s -o /dev/null -w '%{http_code}|%{redirect_url}' \
     -c "$COOKIES" -b "$COOKIES" \
     -X POST "$BASE_URL/login" \
     -H 'Content-Type: application/x-www-form-urlencoded' \
+    -H "X-XSRF-TOKEN: $csrf" \
     --data-urlencode "username=$USERNAME" \
     --data-urlencode "password=$PASSWORD")
-# Spring Security form login returns 302 on success
+login_status="${login_response%%|*}"
+login_target="${login_response##*|}"
+# Spring Security form login: 302 → defaultSuccessUrl on success,
+# 302 → /login?error on failure.
 [[ "$login_status" =~ ^30[0-9]$ ]] \
-    || fail "login returned $login_status, expected 3xx (wrong creds? user not seeded?)"
-ok "session cookie acquired"
+    || fail "login returned $login_status, expected 3xx (csrf failure? endpoint changed?)"
+[[ "$login_target" != *"/login?error"* ]] \
+    || fail "login redirected to /login?error — wrong creds or user not seeded"
+ok "session cookie acquired (redirect → $login_target)"
 
 step "3/5 ingest a job posting"
 ingest_response=$(curl -fsS -c "$COOKIES" -b "$COOKIES" \
