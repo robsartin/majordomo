@@ -15,6 +15,10 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # Disabled because V15 inlines a JSONB literal containing ${…} sequences
+    # that Flyway would otherwise treat as placeholders. No migration uses
+    # Flyway placeholders today — re-enable per-migration if that changes.
+    placeholder-replacement: false
 
   data:
     redis:
