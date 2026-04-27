@@ -183,6 +183,50 @@ class ScoreAssemblerTest {
     }
 
     @Test
+    void usageFromLlmResponseFlowsIntoScoreReport() {
+        var usage = new LlmScoreResponse.Usage(1234L, 567L, 890L);
+        var resp = new LlmScoreResponse(
+                Optional.empty(),
+                List.of(
+                        new LlmScoreResponse.CategoryVerdict("compensation", "Good", "salary listed"),
+                        new LlmScoreResponse.CategoryVerdict("remote", "Hybrid", "some days required")),
+                List.of(),
+                Optional.of(usage));
+
+        ScoreReport report = assembler().assemble(posting, rubric, resp, "claude-sonnet-4-6");
+
+        assertThat(report.usage()).contains(usage);
+    }
+
+    @Test
+    void usageIsEmptyWhenLlmResponseHasNone() {
+        var resp = LlmScoreResponse.of(null,
+                List.of(
+                        new LlmScoreResponse.CategoryVerdict("compensation", "Good", "salary listed"),
+                        new LlmScoreResponse.CategoryVerdict("remote", "Hybrid", "ambiguous wording")),
+                List.of());
+
+        ScoreReport report = assembler().assemble(posting, rubric, resp, "claude-sonnet-4-6");
+
+        assertThat(report.usage()).isEmpty();
+    }
+
+    @Test
+    void usageStillPreservedOnDisqualifierPath() {
+        var usage = new LlmScoreResponse.Usage(10L, 20L, 30L);
+        var resp = new LlmScoreResponse(
+                Optional.of("ON_SITE"),
+                List.of(),
+                List.of(),
+                Optional.of(usage));
+
+        ScoreReport report = assembler().assemble(posting, rubric, resp, "claude-sonnet-4-6");
+
+        assertThat(report.recommendation()).isEqualTo(Recommendation.SKIP);
+        assertThat(report.usage()).contains(usage);
+    }
+
+    @Test
     void allConfidenceLevelsAccepted() {
         for (Confidence c : Confidence.values()) {
             var resp = LlmScoreResponse.of(null,

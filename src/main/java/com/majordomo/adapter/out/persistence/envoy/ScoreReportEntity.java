@@ -46,6 +46,15 @@ public class ScoreReportEntity {
     @Column(name = "scored_at", nullable = false)
     private Instant scoredAt;
 
+    @Column(name = "input_tokens")
+    private Long inputTokens;
+
+    @Column(name = "output_tokens")
+    private Long outputTokens;
+
+    @Column(name = "latency_ms")
+    private Long latencyMs;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -72,4 +81,13 @@ public class ScoreReportEntity {
 
     public Instant getScoredAt() { return scoredAt; }
     public void setScoredAt(Instant scoredAt) { this.scoredAt = scoredAt; }
+
+    public Long getInputTokens() { return inputTokens; }
+    public void setInputTokens(Long inputTokens) { this.inputTokens = inputTokens; }
+
+    public Long getOutputTokens() { return outputTokens; }
+    public void setOutputTokens(Long outputTokens) { this.outputTokens = outputTokens; }
+
+    public Long getLatencyMs() { return latencyMs; }
+    public void setLatencyMs(Long latencyMs) { this.latencyMs = latencyMs; }
 }
