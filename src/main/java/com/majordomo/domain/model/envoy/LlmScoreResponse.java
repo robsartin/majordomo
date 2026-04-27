@@ -15,12 +15,54 @@ import java.util.Optional;
  *                         {@link Disqualifier#key()} in the active rubric
  * @param categoryVerdicts one entry per category in the rubric (LLM must cover all)
  * @param flagHits         zero or more flags the LLM judged to have fired
+ * @param usage            optional usage metadata captured by the adapter
+ *                         (token counts, wall-clock latency); empty when the
+ *                         provider does not supply it
  */
 public record LlmScoreResponse(
         Optional<String> disqualifierKey,
         List<CategoryVerdict> categoryVerdicts,
-        List<FlagFinding> flagHits
+        List<FlagFinding> flagHits,
+        Optional<Usage> usage
 ) {
+
+    /**
+     * Convenience constructor for callers that have not yet adopted the
+     * {@code usage} field. Equivalent to supplying {@link Optional#empty()}.
+     *
+     * @param disqualifierKey  see {@link #disqualifierKey()}
+     * @param categoryVerdicts see {@link #categoryVerdicts()}
+     * @param flagHits         see {@link #flagHits()}
+     */
+    public LlmScoreResponse(Optional<String> disqualifierKey,
+                            List<CategoryVerdict> categoryVerdicts,
+                            List<FlagFinding> flagHits) {
+        this(disqualifierKey, categoryVerdicts, flagHits, Optional.empty());
+    }
+
+    /**
+     * Returns a copy with the supplied usage metadata attached.
+     *
+     * @param newUsage usage metadata captured by the adapter
+     * @return a new {@code LlmScoreResponse} with all other fields unchanged
+     */
+    public LlmScoreResponse withUsage(Usage newUsage) {
+        return new LlmScoreResponse(
+                disqualifierKey, categoryVerdicts, flagHits, Optional.ofNullable(newUsage));
+    }
+
+    /**
+     * Provider-supplied call metadata captured by the adapter. All fields are
+     * non-negative; latency is wall-clock around the SDK call (not just network
+     * time). Used for observability metrics — never persisted on the score
+     * report (yet) and never returned to the LLM.
+     *
+     * @param inputTokens  prompt tokens consumed (including cached system prompt)
+     * @param outputTokens completion tokens produced
+     * @param latencyMs    wall-clock duration of the SDK call in milliseconds
+     */
+    public record Usage(long inputTokens, long outputTokens, long latencyMs) { }
+
     /**
      * A single category verdict returned by the LLM.
      *
@@ -98,6 +140,7 @@ public record LlmScoreResponse(
         return new LlmScoreResponse(
                 Optional.ofNullable(disqualifierKey),
                 categoryVerdicts == null ? List.of() : categoryVerdicts,
-                flagHits == null ? List.of() : flagHits);
+                flagHits == null ? List.of() : flagHits,
+                Optional.empty());
     }
 }
