@@ -36,7 +36,8 @@ public class PromptBuilder {
                   {
                     "disqualifierKey": string | null,
                     "categoryVerdicts": [
-                      {"categoryKey": string, "tierLabel": string, "rationale": string}
+                      {"categoryKey": string, "tierLabel": string,
+                       "rationale": string, "confidence": "HIGH" | "MEDIUM" | "LOW"}
                     ],
                     "flagHits": [
                       {"flagKey": string, "rationale": string}
@@ -45,7 +46,16 @@ public class PromptBuilder {
                   """)
           .append("\nReturn exactly one categoryVerdict per category below.\n")
           .append("If any disqualifier applies, set disqualifierKey to its key and ")
-          .append("return empty categoryVerdicts and flagHits.\n\n");
+          .append("return empty categoryVerdicts and flagHits.\n\n")
+          .append("For each categoryVerdict, set `confidence` to reflect how strongly ")
+          .append("the posting supports your tier choice:\n")
+          .append("- \"HIGH\": the posting contains explicit, unambiguous evidence ")
+          .append("(e.g. a stated salary range, a named tech stack).\n")
+          .append("- \"MEDIUM\": some evidence is present but partial, indirect, ")
+          .append("or open to interpretation.\n")
+          .append("- \"LOW\": signals are sparse or absent and the verdict is ")
+          .append("essentially a guess (e.g. \"competitive salary\" with no numbers).\n")
+          .append("Use only the literal strings HIGH, MEDIUM, or LOW.\n\n");
 
         sb.append("## Disqualifiers (hard fails)\n");
         if (rubric.disqualifiers().isEmpty()) {
