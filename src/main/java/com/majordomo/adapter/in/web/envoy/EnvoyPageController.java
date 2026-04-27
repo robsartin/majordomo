@@ -1,6 +1,7 @@
 package com.majordomo.adapter.in.web.envoy;
 
 import com.majordomo.domain.model.envoy.JobPosting;
+import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.Optional;
@@ -83,20 +85,30 @@ public class EnvoyPageController {
      * the read path stays simple. If the page grows we can swap in a join
      * query without touching the template.</p>
      *
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model
+     * <p>Optional filters {@code minFinalScore} and {@code recommendation} are
+     * threaded straight through to the use case. The raw values are also
+     * exposed on the model so the filter strip can pre-populate after a
+     * submit.</p>
+     *
+     * @param minFinalScore  optional min score lower bound (null = no filter)
+     * @param recommendation optional recommendation tier filter (null = any)
+     * @param principal      the authenticated user
+     * @param model          the Thymeleaf model
      * @return the {@code envoy} template name, or a redirect to {@code /} if
      *         the user has no organization
      */
     @GetMapping("/envoy")
-    public String envoy(@AuthenticationPrincipal UserDetails principal, Model model) {
+    public String envoy(@RequestParam(required = false) Integer minFinalScore,
+                        @RequestParam(required = false) Recommendation recommendation,
+                        @AuthenticationPrincipal UserDetails principal,
+                        Model model) {
         AuthContext ctx = resolveContext(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
         UUID orgId = ctx.organizationId();
         List<ScoreReport> recent = reports
-                .query(orgId, null, null, null, DEFAULT_LIMIT)
+                .query(orgId, minFinalScore, recommendation, null, DEFAULT_LIMIT)
                 .items();
 
         List<ScoreReportRow> rows = recent.stream()
@@ -106,6 +118,8 @@ public class EnvoyPageController {
                 .toList();
 
         model.addAttribute("rows", rows);
+        model.addAttribute("minFinalScore", minFinalScore);
+        model.addAttribute("recommendation", recommendation);
         model.addAttribute("organizationId", orgId);
         model.addAttribute("username", ctx.user().getUsername());
         return "envoy";
