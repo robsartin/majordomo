@@ -23,7 +23,7 @@
             </div>
 
             <!-- Empty state -->
-            <div th:if="${#lists.isEmpty(reports)}"
+            <div th:if="${#lists.isEmpty(rows)}"
                  class="bg-white rounded-lg shadow p-8 text-center">
                 <p class="text-gray-500 mb-2">No score reports yet.</p>
                 <p class="text-sm text-gray-400">
@@ -36,7 +36,7 @@
             </div>
 
             <!-- Reports table -->
-            <div th:unless="${#lists.isEmpty(reports)}"
+            <div th:unless="${#lists.isEmpty(rows)}"
                  class="bg-white rounded-lg shadow overflow-hidden">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -50,9 +50,10 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
-                        <tr th:each="r : ${reports}" class="hover:bg-gray-50">
+                        <tr th:each="row : ${rows}" class="hover:bg-gray-50">
                             <td class="px-6 py-3 whitespace-nowrap">
-                                <span th:text="${r.recommendation()}"
+                                <span th:with="r=${row.report()}"
+                                      th:text="${r.recommendation()}"
                                       th:classappend="${r.recommendation().name() == 'APPLY_NOW'} ? 'bg-emerald-100 text-emerald-800' :
                                                      (${r.recommendation().name() == 'APPLY'} ? 'bg-indigo-100 text-indigo-800' :
                                                      (${r.recommendation().name() == 'CONSIDER'} ? 'bg-amber-100 text-amber-800' :
@@ -61,16 +62,25 @@
                                 </span>
                             </td>
                             <td class="px-6 py-3 text-right text-lg font-semibold text-gray-900"
-                                th:text="${r.finalScore()}">0</td>
-                            <td class="px-6 py-3 whitespace-nowrap font-mono text-xs text-gray-600"
-                                th:text="${#strings.abbreviate(r.postingId().toString(), 12)}">-</td>
+                                th:text="${row.report().finalScore()}">0</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
+                                <span th:if="${row.posting() != null}"
+                                      th:text="${(row.posting().getCompany() != null ? row.posting().getCompany() : '—')
+                                              + ' · '
+                                              + (row.posting().getTitle() != null ? row.posting().getTitle() : '—')
+                                              + ' · '
+                                              + (row.posting().getLocation() != null ? row.posting().getLocation() : '—')}">-</span>
+                                <span th:if="${row.posting() == null}"
+                                      class="font-mono text-xs text-gray-400"
+                                      th:text="${#strings.abbreviate(row.report().postingId().toString(), 12) + ' (deleted)'}">-</span>
+                            </td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600"
-                                th:text="${r.llmModel()}">-</td>
+                                th:text="${row.report().llmModel()}">-</td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500"
-                                th:text="${#temporals.format(r.scoredAt(), 'yyyy-MM-dd HH:mm')}">-</td>
+                                th:text="${#temporals.format(row.report().scoredAt(), 'yyyy-MM-dd HH:mm')}">-</td>
                             <td class="px-6 py-3 text-right">
                                 <a class="text-indigo-600 hover:text-indigo-800 text-sm"
-                                   th:href="@{|/api/envoy/reports/${r.id()}|(organizationId=${organizationId})}"
+                                   th:href="@{|/api/envoy/reports/${row.report().id()}|(organizationId=${organizationId})}"
                                    target="_blank">JSON</a>
                             </td>
                         </tr>
