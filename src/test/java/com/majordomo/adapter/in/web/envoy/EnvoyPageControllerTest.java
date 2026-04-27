@@ -4,6 +4,9 @@ import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.UuidFactory;
+import com.majordomo.domain.model.envoy.CategoryScore;
+import com.majordomo.domain.model.envoy.Disqualifier;
+import com.majordomo.domain.model.envoy.FlagHit;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
@@ -29,10 +32,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -191,6 +196,167 @@ class EnvoyPageControllerTest {
     @Test
     void unauthenticatedRedirectsToLogin() throws Exception {
         mvc.perform(get("/envoy"))
+                .andExpect(status().is3xxRedirection());
+    }
+
+    // -------------------- detail page tests (issue #145) --------------------
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void getReport_rendersDetailPage() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        UUID reportId = UuidFactory.newId();
+        UUID postingId = UuidFactory.newId();
+
+        var category = new CategoryScore("compensation", 25, "Strong",
+                "Base salary listed at $200k.");
+        var flag = new FlagHit("legacy_stack", 5, "Mentions COBOL.");
+
+        var report = new ScoreReport(reportId, ORG_ID, postingId,
+                UuidFactory.newId(), 3, Optional.empty(),
+                List.of(category), List.of(flag), 80, 75,
+                Recommendation.APPLY, "claude-sonnet-4-6", Instant.now());
+
+        var posting = new JobPosting();
+        posting.setId(postingId);
+        posting.setOrganizationId(ORG_ID);
+        posting.setSource("greenhouse");
+        posting.setExternalId("ext-1234");
+        posting.setCompany("Acme Corp");
+        posting.setTitle("Senior Backend Engineer");
+        posting.setLocation("Remote (US)");
+        posting.setRawText("Full posting body goes here.");
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.of(report));
+        when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
+
+        MvcResult result = mvc.perform(get("/envoy/reports/{id}", reportId))
+                .andExpect(status().isOk())
+                .andExpect(view().name("envoy-report"))
+                .andExpect(model().attribute("report", report))
+                .andExpect(model().attribute("posting", posting))
+                .andExpect(model().attribute("organizationId", ORG_ID))
+                .andExpect(model().attribute("username", "robsartin"))
+                .andExpect(content().string(containsString("Acme Corp")))
+                .andExpect(content().string(containsString("Senior Backend Engineer")))
+                .andExpect(content().string(containsString("Base salary listed at $200k.")))
+                .andExpect(content().string(containsString("Mentions COBOL.")))
+                .andExpect(content().string(containsString("Full posting body goes here.")))
+                .andReturn();
+
+        // sidebar should have envoy highlighted
+        assertThat(result.getResponse().getContentAsString()).contains("envoy");
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void getReport_rendersDisqualifiedBanner() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        UUID reportId = UuidFactory.newId();
+        UUID postingId = UuidFactory.newId();
+
+        var dq = new Disqualifier("ON_SITE_ONLY",
+                "Posting requires 5 days a week in office.");
+
+        var report = new ScoreReport(reportId, ORG_ID, postingId,
+                UuidFactory.newId(), 3, Optional.of(dq),
+                List.of(), List.of(), 50, 0,
+                Recommendation.SKIP, "claude-sonnet-4-6", Instant.now());
+
+        var posting = new JobPosting();
+        posting.setId(postingId);
+        posting.setOrganizationId(ORG_ID);
+        posting.setSource("manual");
+        posting.setExternalId("ext-9");
+        posting.setCompany("RTO Co");
+        posting.setTitle("Engineer");
+        posting.setLocation("San Francisco, CA");
+        posting.setRawText("Body.");
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.of(report));
+        when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
+
+        mvc.perform(get("/envoy/reports/{id}", reportId))
+                .andExpect(status().isOk())
+                .andExpect(view().name("envoy-report"))
+                .andExpect(content().string(containsString("ON_SITE_ONLY")))
+                .andExpect(content().string(
+                        containsString("Posting requires 5 days a week in office.")));
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void getReport_rendersWhenPostingIsGone() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        UUID reportId = UuidFactory.newId();
+        UUID postingId = UuidFactory.newId();
+
+        var report = new ScoreReport(reportId, ORG_ID, postingId,
+                UuidFactory.newId(), 1, Optional.empty(),
+                List.of(), List.of(), 60, 60,
+                Recommendation.CONSIDER, "claude-sonnet-4-6", Instant.now());
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.of(report));
+        when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.empty());
+
+        mvc.perform(get("/envoy/reports/{id}", reportId))
+                .andExpect(status().isOk())
+                .andExpect(view().name("envoy-report"))
+                .andExpect(model().attribute("report", report))
+                .andExpect(model().attributeDoesNotExist("posting"));
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void getReport_returns404WhenNotFound() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        UUID reportId = UuidFactory.newId();
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.empty());
+
+        mvc.perform(get("/envoy/reports/{id}", reportId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void getReport_redirectsHomeWhenUserHasNoMembership() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of());
+
+        mvc.perform(get("/envoy/reports/{id}", UuidFactory.newId()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/"));
+    }
+
+    @Test
+    void getReport_unauthenticatedRedirectsToLogin() throws Exception {
+        mvc.perform(get("/envoy/reports/{id}", UuidFactory.newId()))
                 .andExpect(status().is3xxRedirection());
     }
 }

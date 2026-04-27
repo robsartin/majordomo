@@ -79,9 +79,8 @@
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500"
                                 th:text="${#temporals.format(row.report().scoredAt(), 'yyyy-MM-dd HH:mm')}">-</td>
                             <td class="px-6 py-3 text-right">
-                                <a class="text-indigo-600 hover:text-indigo-800 text-sm"
-                                   th:href="@{|/api/envoy/reports/${row.report().id()}|(organizationId=${organizationId})}"
-                                   target="_blank">JSON</a>
+                                <a class="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                                   th:href="@{/envoy/reports/{id}(id=${row.report().id()})}">View</a>
                             </td>
                         </tr>
                     </tbody>
