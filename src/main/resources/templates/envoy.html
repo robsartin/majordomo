@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envoy - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('envoy')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Envoy</h1>
+                <span class="text-sm text-gray-500">Job posting scores</span>
+            </div>
+
+            <!-- Empty state -->
+            <div th:if="${#lists.isEmpty(reports)}"
+                 class="bg-white rounded-lg shadow p-8 text-center">
+                <p class="text-gray-500 mb-2">No score reports yet.</p>
+                <p class="text-sm text-gray-400">
+                    Ingest a posting via
+                    <code class="bg-gray-100 px-1 rounded">POST /api/envoy/postings</code>
+                    and score it via
+                    <code class="bg-gray-100 px-1 rounded">POST /api/envoy/postings/{id}/score</code>
+                    (see <a class="text-indigo-600 hover:underline" th:href="@{/swagger-ui.html}">Swagger</a>).
+                </p>
+            </div>
+
+            <!-- Reports table -->
+            <div th:unless="${#lists.isEmpty(reports)}"
+                 class="bg-white rounded-lg shadow overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recommendation</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Score</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Posting</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Model</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scored</th>
+                            <th class="px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        <tr th:each="r : ${reports}" class="hover:bg-gray-50">
+                            <td class="px-6 py-3 whitespace-nowrap">
+                                <span th:text="${r.recommendation()}"
+                                      th:classappend="${r.recommendation().name() == 'APPLY_NOW'} ? 'bg-emerald-100 text-emerald-800' :
+                                                     (${r.recommendation().name() == 'APPLY'} ? 'bg-indigo-100 text-indigo-800' :
+                                                     (${r.recommendation().name() == 'CONSIDER'} ? 'bg-amber-100 text-amber-800' :
+                                                                                                     'bg-gray-100 text-gray-700'))"
+                                      class="inline-block rounded-full px-2 py-1 text-xs font-medium">
+                                </span>
+                            </td>
+                            <td class="px-6 py-3 text-right text-lg font-semibold text-gray-900"
+                                th:text="${r.finalScore()}">0</td>
+                            <td class="px-6 py-3 whitespace-nowrap font-mono text-xs text-gray-600"
+                                th:text="${#strings.abbreviate(r.postingId().toString(), 12)}">-</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600"
+                                th:text="${r.llmModel()}">-</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500"
+                                th:text="${#temporals.format(r.scoredAt(), 'yyyy-MM-dd HH:mm')}">-</td>
+                            <td class="px-6 py-3 text-right">
+                                <a class="text-indigo-600 hover:text-indigo-800 text-sm"
+                                   th:href="@{|/api/envoy/reports/${r.id()}|(organizationId=${organizationId})}"
+                                   target="_blank">JSON</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>
