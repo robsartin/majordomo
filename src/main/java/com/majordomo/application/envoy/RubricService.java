@@ -2,7 +2,9 @@ package com.majordomo.application.envoy;
 
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.Rubric;
+import com.majordomo.domain.model.event.RubricVersionCreated;
 import com.majordomo.domain.port.in.envoy.ManageRubricUseCase;
+import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
 import org.springframework.stereotype.Service;
 
@@ -15,14 +17,18 @@ import java.util.UUID;
 public class RubricService implements ManageRubricUseCase {
 
     private final RubricRepository repo;
+    private final EventPublisher eventPublisher;
 
     /**
      * Constructs the service.
      *
-     * @param repo outbound rubric repository
+     * @param repo           outbound rubric repository
+     * @param eventPublisher domain event publisher (fans out a {@link RubricVersionCreated}
+     *                       to drive automatic re-scoring of postings in the org)
      */
-    public RubricService(RubricRepository repo) {
+    public RubricService(RubricRepository repo, EventPublisher eventPublisher) {
         this.repo = repo;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -43,6 +49,9 @@ public class RubricService implements ManageRubricUseCase {
                 submitted.flags(),
                 submitted.thresholds(),
                 Instant.now());
-        return repo.save(toSave);
+        Rubric saved = repo.save(toSave);
+        eventPublisher.publish(new RubricVersionCreated(
+                organizationId, name, saved.version(), Instant.now()));
+        return saved;
     }
 }

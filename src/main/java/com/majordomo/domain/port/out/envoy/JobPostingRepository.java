@@ -2,6 +2,7 @@ package com.majordomo.domain.port.out.envoy;
 
 import com.majordomo.domain.model.envoy.JobPosting;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -37,4 +38,14 @@ public interface JobPostingRepository {
      * @return an existing posting with that source+externalId, or empty
      */
     Optional<JobPosting> findBySourceAndExternalId(String source, String externalId, UUID organizationId);
+
+    /**
+     * Returns every posting owned by an organization. Used by the rescore
+     * fan-out (manual endpoint and {@code RubricVersionCreated} listener).
+     * Unpaginated by design — see issue #147 for the personal-scale rationale.
+     *
+     * @param organizationId owning org
+     * @return every posting in that org (may be empty)
+     */
+    List<JobPosting> findAllByOrganizationId(UUID organizationId);
 }

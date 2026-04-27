@@ -12,6 +12,7 @@ import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
+import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
@@ -48,6 +49,7 @@ class PostingControllerTest {
 
     @MockitoBean IngestJobPostingUseCase ingestUseCase;
     @MockitoBean ScoreJobPostingUseCase scoreUseCase;
+    @MockitoBean JobPostingRepository jobPostingRepository;
     @MockitoBean OrganizationAccessService organizationAccessService;
 
     // Required by SecurityConfig
@@ -76,6 +78,66 @@ class PostingControllerTest {
                         .content(json.writeValueAsString(body)))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"));
+    }
+
+    @Test
+    @WithMockUser
+    void rescoreAllReturnsCountAndScoresEachPosting() throws Exception {
+        var p1 = new JobPosting();
+        p1.setId(UuidFactory.newId());
+        p1.setOrganizationId(ORG_ID);
+        p1.setSource("manual");
+        p1.setRawText("body 1");
+        var p2 = new JobPosting();
+        p2.setId(UuidFactory.newId());
+        p2.setOrganizationId(ORG_ID);
+        p2.setSource("manual");
+        p2.setRawText("body 2");
+
+        doNothing().when(organizationAccessService).verifyAccess(any());
+        when(jobPostingRepository.findAllByOrganizationId(ORG_ID)).thenReturn(List.of(p1, p2));
+        var report = new ScoreReport(UuidFactory.newId(), ORG_ID, p1.getId(),
+                UuidFactory.newId(), 1, Optional.empty(),
+                List.of(), List.of(), 70, 70, Recommendation.APPLY,
+                "claude-sonnet-4-6", Instant.now());
+        when(scoreUseCase.score(any(), eq("default"), eq(ORG_ID))).thenReturn(report);
+
+        mvc.perform(post("/api/envoy/postings/rescore")
+                        .param("organizationId", ORG_ID.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(2));
+
+        org.mockito.Mockito.verify(scoreUseCase)
+                .score(eq(p1.getId()), eq("default"), eq(ORG_ID));
+        org.mockito.Mockito.verify(scoreUseCase)
+                .score(eq(p2.getId()), eq("default"), eq(ORG_ID));
+    }
+
+    @Test
+    @WithMockUser
+    void rescoreAllWithCustomRubricNameUsesIt() throws Exception {
+        var p1 = new JobPosting();
+        p1.setId(UuidFactory.newId());
+        p1.setOrganizationId(ORG_ID);
+        p1.setSource("manual");
+        p1.setRawText("body 1");
+
+        doNothing().when(organizationAccessService).verifyAccess(any());
+        when(jobPostingRepository.findAllByOrganizationId(ORG_ID)).thenReturn(List.of(p1));
+        var report = new ScoreReport(UuidFactory.newId(), ORG_ID, p1.getId(),
+                UuidFactory.newId(), 1, Optional.empty(),
+                List.of(), List.of(), 70, 70, Recommendation.APPLY,
+                "claude-sonnet-4-6", Instant.now());
+        when(scoreUseCase.score(any(), eq("strict"), eq(ORG_ID))).thenReturn(report);
+
+        mvc.perform(post("/api/envoy/postings/rescore")
+                        .param("organizationId", ORG_ID.toString())
+                        .param("rubricName", "strict"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(1));
+
+        org.mockito.Mockito.verify(scoreUseCase)
+                .score(eq(p1.getId()), eq("strict"), eq(ORG_ID));
     }
 
     @Test
