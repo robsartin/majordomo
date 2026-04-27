@@ -95,4 +95,46 @@ class PostingControllerTest {
                 .andExpect(jsonPath("$.finalScore").value(60))
                 .andExpect(jsonPath("$.recommendation").value("APPLY"));
     }
+
+    @Test
+    @WithMockUser
+    void scoreAllReturnsListOfReports() throws Exception {
+        var postingId = UuidFactory.newId();
+        var rubricBackendId = UuidFactory.newId();
+        var rubricStaffPlusId = UuidFactory.newId();
+        var reportBackend = new ScoreReport(UuidFactory.newId(), ORG_ID, postingId,
+                rubricBackendId, 1, Optional.empty(),
+                List.of(), List.of(), 60, 60, Recommendation.APPLY,
+                "claude-sonnet-4-6", Instant.now());
+        var reportStaffPlus = new ScoreReport(UuidFactory.newId(), ORG_ID, postingId,
+                rubricStaffPlusId, 1, Optional.empty(),
+                List.of(), List.of(), 40, 40, Recommendation.SKIP,
+                "claude-sonnet-4-6", Instant.now());
+        doNothing().when(organizationAccessService).verifyAccess(any());
+        when(scoreUseCase.scoreAll(eq(postingId),
+                eq(List.of("backend", "staff-plus")), eq(ORG_ID)))
+                .thenReturn(List.of(reportBackend, reportStaffPlus));
+
+        mvc.perform(post("/api/envoy/postings/" + postingId + "/score-all")
+                        .param("organizationId", ORG_ID.toString())
+                        .param("rubricNames", "backend", "staff-plus"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].finalScore").value(60))
+                .andExpect(jsonPath("$[0].recommendation").value("APPLY"))
+                .andExpect(jsonPath("$[1].finalScore").value(40))
+                .andExpect(jsonPath("$[1].recommendation").value("SKIP"));
+    }
+
+    @Test
+    @WithMockUser
+    void scoreAllRejectsEmptyRubricListAsBadRequest() throws Exception {
+        var postingId = UuidFactory.newId();
+        doNothing().when(organizationAccessService).verifyAccess(any());
+
+        // No rubricNames param at all -> Spring binding fails with 400.
+        mvc.perform(post("/api/envoy/postings/" + postingId + "/score-all")
+                        .param("organizationId", ORG_ID.toString()))
+                .andExpect(status().isBadRequest());
+    }
 }
