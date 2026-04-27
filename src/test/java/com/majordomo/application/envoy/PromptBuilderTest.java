@@ -42,4 +42,25 @@ class PromptBuilderTest {
         assertThat(p.systemPrompt()).doesNotContain("\"points\"");
         assertThat(p.userPrompt()).contains("Acme").contains("Senior Engineer").contains("We offer");
     }
+
+    @Test
+    void systemPromptInstructsLlmAboutConfidenceField() {
+        var rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
+                List.of(),
+                List.of(new Category("compensation", "pay", 20, List.of(
+                        new Tier("Good", 15, "$200-250k")))),
+                List.of(),
+                new Thresholds(20, 15, 5), Instant.now());
+
+        var posting = new JobPosting();
+        posting.setRawText("body");
+
+        ScoringPrompt p = new PromptBuilder().build(posting, rubric);
+
+        assertThat(p.systemPrompt())
+                .contains("confidence")
+                .contains("HIGH")
+                .contains("MEDIUM")
+                .contains("LOW");
+    }
 }

@@ -62,7 +62,11 @@ public class ScoreAssembler {
         for (var verdict : resp.categoryVerdicts()) {
             Tier tier = lookupTier(rubric, verdict.categoryKey(), verdict.tierLabel());
             categoryScores.add(new CategoryScore(
-                    verdict.categoryKey(), tier.points(), tier.label(), verdict.rationale()));
+                    verdict.categoryKey(),
+                    tier.points(),
+                    tier.label(),
+                    verdict.rationale(),
+                    verdict.confidence()));
             rawScore += tier.points();
         }
 

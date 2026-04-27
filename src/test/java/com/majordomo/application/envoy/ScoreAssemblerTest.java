@@ -2,6 +2,7 @@ package com.majordomo.application.envoy;
 
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.Category;
+import com.majordomo.domain.model.envoy.Confidence;
 import com.majordomo.domain.model.envoy.Disqualifier;
 import com.majordomo.domain.model.envoy.Flag;
 import com.majordomo.domain.model.envoy.JobPosting;
@@ -146,5 +147,56 @@ class ScoreAssemblerTest {
         assertThatThrownBy(() -> assembler().assemble(posting, rubric, resp, "m"))
                 .isInstanceOf(LlmScoringException.class)
                 .hasMessageContaining("remote");
+    }
+
+    @Test
+    void confidenceFlowsFromVerdictToCategoryScore() {
+        var resp = LlmScoreResponse.of(null,
+                List.of(
+                        new LlmScoreResponse.CategoryVerdict(
+                                "compensation", "Good", "salary listed", Optional.of(Confidence.HIGH)),
+                        new LlmScoreResponse.CategoryVerdict(
+                                "remote", "Hybrid", "ambiguous wording", Optional.of(Confidence.LOW))),
+                List.of());
+
+        ScoreReport report = assembler().assemble(posting, rubric, resp, "m");
+
+        assertThat(report.categoryScores())
+                .extracting("categoryKey", "confidence")
+                .containsExactly(
+                        org.assertj.core.api.Assertions.tuple("compensation", Optional.of(Confidence.HIGH)),
+                        org.assertj.core.api.Assertions.tuple("remote", Optional.of(Confidence.LOW)));
+    }
+
+    @Test
+    void missingConfidenceProducesEmptyOptional() {
+        var resp = LlmScoreResponse.of(null,
+                List.of(
+                        new LlmScoreResponse.CategoryVerdict("compensation", "Good", "salary listed"),
+                        new LlmScoreResponse.CategoryVerdict("remote", "Hybrid", "some days required")),
+                List.of());
+
+        ScoreReport report = assembler().assemble(posting, rubric, resp, "m");
+
+        assertThat(report.categoryScores()).allSatisfy(cs ->
+                assertThat(cs.confidence()).isEmpty());
+    }
+
+    @Test
+    void allConfidenceLevelsAccepted() {
+        for (Confidence c : Confidence.values()) {
+            var resp = LlmScoreResponse.of(null,
+                    List.of(
+                            new LlmScoreResponse.CategoryVerdict(
+                                    "compensation", "Good", "r", Optional.of(c)),
+                            new LlmScoreResponse.CategoryVerdict(
+                                    "remote", "Hybrid", "r", Optional.of(c))),
+                    List.of());
+
+            ScoreReport report = assembler().assemble(posting, rubric, resp, "m");
+
+            assertThat(report.categoryScores())
+                    .allSatisfy(cs -> assertThat(cs.confidence()).contains(c));
+        }
     }
 }
