@@ -16,6 +16,8 @@ import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -65,7 +67,32 @@ public class JobScorerService implements ScoreJobPostingUseCase {
                         EntityType.JOB_POSTING.name(), postingId));
         Rubric rubric = rubrics.findActiveByName(rubricName, organizationId)
                 .orElseThrow(() -> new EntityNotFoundException("RUBRIC", rubricName));
+        return runOne(posting, rubric);
+    }
 
+    @Override
+    public List<ScoreReport> scoreAll(
+            UUID postingId, List<String> rubricNames, UUID organizationId) {
+        if (rubricNames == null || rubricNames.isEmpty()) {
+            throw new IllegalArgumentException("rubricNames must be non-empty");
+        }
+        JobPosting posting = postings.findById(postingId, organizationId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        EntityType.JOB_POSTING.name(), postingId));
+        // Resolve all rubrics first so we fail fast without persisting partial state.
+        List<Rubric> resolved = new ArrayList<>(rubricNames.size());
+        for (String name : rubricNames) {
+            resolved.add(rubrics.findActiveByName(name, organizationId)
+                    .orElseThrow(() -> new EntityNotFoundException("RUBRIC", name)));
+        }
+        List<ScoreReport> saved = new ArrayList<>(resolved.size());
+        for (Rubric rubric : resolved) {
+            saved.add(runOne(posting, rubric));
+        }
+        return saved;
+    }
+
+    private ScoreReport runOne(JobPosting posting, Rubric rubric) {
         LlmScoreResponse resp = llm.score(posting, rubric);
         ScoreReport report = assembler.assemble(posting, rubric, resp, llm.modelId());
         ScoreReport saved = reports.save(report);
