@@ -22,6 +22,80 @@
                 <span class="text-sm text-gray-500">Job posting scores</span>
             </div>
 
+            <!-- Ingest error banner -->
+            <div th:if="${ingestError}"
+                 class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+                 th:text="${ingestError}">
+                Error message goes here.
+            </div>
+
+            <!-- Score a posting (inline ingest form) -->
+            <details class="bg-white rounded-lg shadow mb-6"
+                     th:attr="open=${ingestError != null ? 'open' : null}">
+                <summary class="cursor-pointer px-4 py-3 flex items-center justify-between hover:bg-gray-50 rounded-lg">
+                    <span class="font-semibold text-gray-900">Score a posting</span>
+                    <span class="text-xs text-gray-500">paste posting text + optional hints, scored against the
+                        <code class="bg-gray-100 px-1 rounded">default</code> rubric</span>
+                </summary>
+                <form method="post" th:action="@{/envoy}" class="px-4 pb-4 pt-2 space-y-4"
+                      onsubmit="(function(b){if(b){b.disabled=true;b.textContent='Scoring…';}})(this.querySelector('button[type=submit]'));">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="flex flex-col">
+                            <label for="ingest-type"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                Source
+                            </label>
+                            <select id="ingest-type" name="type"
+                                    class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                                <option value="manual" selected>manual</option>
+                                <option value="url">url</option>
+                                <option value="greenhouse">greenhouse</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="ingest-company"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                Company (optional)
+                            </label>
+                            <input id="ingest-company" name="company" type="text"
+                                   class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="ingest-title"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                Title (optional)
+                            </label>
+                            <input id="ingest-title" name="title" type="text"
+                                   class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="ingest-location"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                Location (optional)
+                            </label>
+                            <input id="ingest-location" name="location" type="text"
+                                   class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="ingest-payload"
+                               class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                            Payload (posting text, URL, or source-specific id)
+                        </label>
+                        <textarea id="ingest-payload" name="payload" rows="8" required
+                                  placeholder="Paste the full posting text here…"
+                                  class="block rounded border-gray-300 text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="submit"
+                                class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-progress">
+                            Score now
+                        </button>
+                        <span class="text-xs text-gray-500">scoring takes 2-5s while we wait on the LLM</span>
+                    </div>
+                </form>
+            </details>
+
             <!-- Filter strip -->
             <div class="bg-white rounded-lg shadow p-4 mb-6">
                 <form method="get" th:action="@{/envoy}" class="flex flex-wrap items-end gap-4">

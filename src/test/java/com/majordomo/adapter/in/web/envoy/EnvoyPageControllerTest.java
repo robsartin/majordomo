@@ -12,7 +12,9 @@ import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
+import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
+import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
@@ -52,6 +54,8 @@ class EnvoyPageControllerTest {
     @Autowired MockMvc mvc;
 
     @MockitoBean QueryScoreReportsUseCase reports;
+    @MockitoBean IngestJobPostingUseCase ingestUseCase;
+    @MockitoBean ScoreJobPostingUseCase scoreUseCase;
     @MockitoBean UserRepository userRepository;
     @MockitoBean MembershipRepository membershipRepository;
     @MockitoBean JobPostingRepository jobPostingRepository;

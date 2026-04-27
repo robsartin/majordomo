@@ -1,23 +1,32 @@
 package com.majordomo.adapter.in.web.envoy;
 
+import com.majordomo.application.envoy.LlmScoringException;
 import com.majordomo.domain.model.envoy.JobPosting;
+import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.identity.User;
+import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
+import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,9 +39,16 @@ import java.util.UUID;
 @Controller
 public class EnvoyPageController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(EnvoyPageController.class);
+
     private static final int DEFAULT_LIMIT = 50;
 
+    /** Rubric used by the inline ingest form. v1 hardcodes "default"; rubric picker is out of scope. */
+    private static final String DEFAULT_RUBRIC = "default";
+
     private final QueryScoreReportsUseCase reports;
+    private final IngestJobPostingUseCase ingestUseCase;
+    private final ScoreJobPostingUseCase scoreUseCase;
     private final JobPostingRepository jobPostingRepository;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
@@ -61,15 +77,21 @@ public class EnvoyPageController {
      * Constructs the controller.
      *
      * @param reports              inbound port for report queries
+     * @param ingestUseCase        inbound port for ingesting a posting from any source
+     * @param scoreUseCase         inbound port for scoring an ingested posting
      * @param jobPostingRepository outbound port for posting lookups
      * @param userRepository       outbound port for user lookups
      * @param membershipRepository outbound port for membership lookups
      */
     public EnvoyPageController(QueryScoreReportsUseCase reports,
+                               IngestJobPostingUseCase ingestUseCase,
+                               ScoreJobPostingUseCase scoreUseCase,
                                JobPostingRepository jobPostingRepository,
                                UserRepository userRepository,
                                MembershipRepository membershipRepository) {
         this.reports = reports;
+        this.ingestUseCase = ingestUseCase;
+        this.scoreUseCase = scoreUseCase;
         this.jobPostingRepository = jobPostingRepository;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
@@ -106,6 +128,84 @@ public class EnvoyPageController {
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
+        renderEnvoyPage(ctx, minFinalScore, recommendation, model);
+        return "envoy";
+    }
+
+    /**
+     * Handles the inline "Score a posting" form on {@code /envoy}. Ingests the
+     * pasted payload via the appropriate {@code JobSource}, scores the resulting
+     * posting against the {@code default} rubric, then redirects to {@code GET
+     * /envoy} so the new row renders at the top of the list.
+     *
+     * <p>If ingest fails ({@link IllegalArgumentException} — typically "no
+     * JobSource supports type: …") or scoring fails ({@link
+     * LlmScoringException}), the page is re-rendered in place with an
+     * {@code ingestError} model attribute so the message survives without a
+     * separate flash redirect. This keeps the failure path stateless and
+     * trivially testable.</p>
+     *
+     * <p>Optional hint fields ({@code company}, {@code title}, {@code location})
+     * are forwarded to the use case as a {@code Map} with blank values
+     * filtered out, so the LLM extractor only sees hints the caller actually
+     * provided.</p>
+     *
+     * @param type      source discriminator (defaults to {@code "manual"})
+     * @param payload   raw posting text / URL / source-specific id
+     * @param company   optional company hint
+     * @param title     optional title hint
+     * @param location  optional location hint
+     * @param principal the authenticated user
+     * @param model     the Thymeleaf model
+     * @return {@code redirect:/envoy} on success; {@code envoy} (with an
+     *         {@code ingestError} attribute) on a handled failure;
+     *         {@code redirect:/} if the user has no organization
+     */
+    @PostMapping("/envoy")
+    public String submitIngest(@RequestParam(defaultValue = "manual") String type,
+                               @RequestParam(required = false) String payload,
+                               @RequestParam(required = false) String company,
+                               @RequestParam(required = false) String title,
+                               @RequestParam(required = false) String location,
+                               @AuthenticationPrincipal UserDetails principal,
+                               Model model) {
+        AuthContext ctx = resolveContext(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        UUID orgId = ctx.organizationId();
+
+        if (payload == null || payload.isBlank()) {
+            renderEnvoyPage(ctx, null, null, model);
+            model.addAttribute("ingestError", "Payload is required.");
+            return "envoy";
+        }
+
+        Map<String, String> hints = buildHints(company, title, location);
+        JobSourceRequest request = new JobSourceRequest(type, payload, hints);
+
+        try {
+            JobPosting saved = ingestUseCase.ingest(request, orgId);
+            scoreUseCase.score(saved.getId(), DEFAULT_RUBRIC, orgId);
+            return "redirect:/envoy";
+        } catch (IllegalArgumentException | LlmScoringException ex) {
+            LOG.warn("Inline ingest+score failed for org {} (type={}): {}",
+                    orgId, type, ex.getMessage());
+            renderEnvoyPage(ctx, null, null, model);
+            model.addAttribute("ingestError", ex.getMessage());
+            return "envoy";
+        }
+    }
+
+    /**
+     * Populates the model with the data needed to render the envoy list page
+     * (rows, filter echo values, org id, username). Shared between the GET
+     * handler and the POST handler's error path.
+     */
+    private void renderEnvoyPage(AuthContext ctx,
+                                 Integer minFinalScore,
+                                 Recommendation recommendation,
+                                 Model model) {
         UUID orgId = ctx.organizationId();
         List<ScoreReport> recent = reports
                 .query(orgId, minFinalScore, recommendation, null, DEFAULT_LIMIT)
@@ -122,7 +222,26 @@ public class EnvoyPageController {
         model.addAttribute("recommendation", recommendation);
         model.addAttribute("organizationId", orgId);
         model.addAttribute("username", ctx.user().getUsername());
-        return "envoy";
+    }
+
+    /**
+     * Builds the hint map for the ingest request, dropping blank entries so the
+     * downstream LLM extractor doesn't see noise.
+     */
+    private static Map<String, String> buildHints(String company,
+                                                  String title,
+                                                  String location) {
+        Map<String, String> hints = new LinkedHashMap<>();
+        putIfNotBlank(hints, "company", company);
+        putIfNotBlank(hints, "title", title);
+        putIfNotBlank(hints, "location", location);
+        return hints;
+    }
+
+    private static void putIfNotBlank(Map<String, String> hints, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            hints.put(key, value.trim());
+        }
     }
 
     /**
