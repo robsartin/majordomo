@@ -94,6 +94,27 @@ public class PostingController {
     }
 
     /**
+     * Scores an existing posting against multiple rubrics. Each rubric produces
+     * a separate persisted {@code ScoreReport} and a separate
+     * {@code JobPostingScored} domain event. Fails fast: if any rubric cannot
+     * be resolved the call returns 404 and no reports are persisted.
+     *
+     * @param id             posting id
+     * @param organizationId owning org (caller must be a member)
+     * @param rubricNames    rubric names to score against (repeat the param
+     *                       or use a comma-separated value); must be non-empty
+     * @return the persisted score reports, in the same order as {@code rubricNames}
+     */
+    @PostMapping("/{id}/score-all")
+    public ResponseEntity<List<ScoreReport>> scoreAll(
+            @PathVariable UUID id,
+            @RequestParam UUID organizationId,
+            @RequestParam List<String> rubricNames) {
+        organizationAccessService.verifyAccess(organizationId);
+        return ResponseEntity.ok(scoreUseCase.scoreAll(id, rubricNames, organizationId));
+    }
+
+    /**
      * Manually re-scores every posting in the org against the named rubric. The
      * automatic counterpart is the {@code RubricVersionCreated} listener fired
      * when a rubric is edited; this endpoint exposes the same fan-out for ad-hoc
