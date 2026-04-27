@@ -54,7 +54,8 @@ public class ScoreAssembler {
                     0, 0,
                     Recommendation.SKIP,
                     llmModel,
-                    Instant.now());
+                    Instant.now(),
+                    resp.usage());
         }
 
         List<CategoryScore> categoryScores = new ArrayList<>();
@@ -96,7 +97,8 @@ public class ScoreAssembler {
                 finalScore,
                 recommendation,
                 llmModel,
-                Instant.now());
+                Instant.now(),
+                resp.usage());
     }
 
     private Disqualifier lookupDisqualifier(Rubric rubric, String key) {

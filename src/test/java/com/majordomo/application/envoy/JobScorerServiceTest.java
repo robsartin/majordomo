@@ -251,6 +251,44 @@ class JobScorerServiceTest {
     }
 
     @Test
+    void persistedReportCarriesUsageFromLlmResponse() {
+        var usage = new LlmScoreResponse.Usage(987L, 654L, 321L);
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(new LlmScoreResponse(
+                Optional.empty(),
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of(),
+                Optional.of(usage)));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        scorer.score(posting.getId(), "default", orgId);
+
+        ArgumentCaptor<ScoreReport> savedCaptor = ArgumentCaptor.forClass(ScoreReport.class);
+        verify(reports).save(savedCaptor.capture());
+        ScoreReport persisted = savedCaptor.getValue();
+        assertThat(persisted.usage()).contains(usage);
+    }
+
+    @Test
+    void persistedReportHasEmptyUsageWhenLlmReturnsNone() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        scorer.score(posting.getId(), "default", orgId);
+
+        ArgumentCaptor<ScoreReport> savedCaptor = ArgumentCaptor.forClass(ScoreReport.class);
+        verify(reports).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().usage()).isEmpty();
+    }
+
+    @Test
     void scoreAllSingleRubricStillWorks() {
         when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
         when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
