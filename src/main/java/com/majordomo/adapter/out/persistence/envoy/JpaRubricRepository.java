@@ -36,4 +36,22 @@ public interface JpaRubricRepository extends JpaRepository<RubricEntity, UUID> {
      */
     List<RubricEntity> findAllByOrganizationIdAndNameOrderByVersionAsc(
             UUID organizationId, String name);
+
+    /**
+     * All org-specific rows for {@code organizationId}, ordered by name ascending
+     * then version descending. Used to pick the highest-version row per name.
+     *
+     * @param organizationId org scope
+     * @return rows grouped by name with newest version first within each group
+     */
+    List<RubricEntity> findAllByOrganizationIdOrderByNameAscVersionDesc(UUID organizationId);
+
+    /**
+     * All system-default rows ({@code organization_id IS NULL}), ordered by name
+     * ascending then version descending. Used to pick the highest-version
+     * system-default row per name.
+     *
+     * @return system-default rows grouped by name with newest version first
+     */
+    List<RubricEntity> findAllByOrganizationIdIsNullOrderByNameAscVersionDesc();
 }
