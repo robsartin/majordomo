@@ -34,7 +34,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -197,6 +200,126 @@ class EnvoyPageControllerTest {
     void unauthenticatedRedirectsToLogin() throws Exception {
         mvc.perform(get("/envoy"))
                 .andExpect(status().is3xxRedirection());
+    }
+
+    // -------------------- filter tests (issue #146) --------------------
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void unfilteredRequestPassesNullsThrough() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+                .thenReturn(new Page<>(List.of(), null, false));
+
+        mvc.perform(get("/envoy"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("minFinalScore", (Object) null))
+                .andExpect(model().attribute("recommendation", (Object) null));
+
+        verify(reports).query(eq(ORG_ID), isNull(), isNull(), isNull(), anyInt());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void filtersByRecommendationOnly() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+                .thenReturn(new Page<>(List.of(), null, false));
+
+        mvc.perform(get("/envoy").param("recommendation", "APPLY_NOW"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("minFinalScore", (Object) null))
+                .andExpect(model().attribute("recommendation", Recommendation.APPLY_NOW));
+
+        verify(reports).query(eq(ORG_ID), isNull(),
+                eq(Recommendation.APPLY_NOW), isNull(), anyInt());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void filtersByMinFinalScoreOnly() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+                .thenReturn(new Page<>(List.of(), null, false));
+
+        mvc.perform(get("/envoy").param("minFinalScore", "70"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("minFinalScore", 70))
+                .andExpect(model().attribute("recommendation", (Object) null));
+
+        verify(reports).query(eq(ORG_ID), eq(70), isNull(), isNull(), anyInt());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void filtersByBothMinFinalScoreAndRecommendation() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+                .thenReturn(new Page<>(List.of(), null, false));
+
+        mvc.perform(get("/envoy")
+                        .param("minFinalScore", "70")
+                        .param("recommendation", "APPLY_NOW"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("minFinalScore", 70))
+                .andExpect(model().attribute("recommendation", Recommendation.APPLY_NOW));
+
+        verify(reports).query(eq(ORG_ID), eq(70),
+                eq(Recommendation.APPLY_NOW), isNull(), anyInt());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void rendersFilterStripWithPrePopulatedValues() throws Exception {
+        var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
+        var membership = new Membership();
+        membership.setUserId(user.getId());
+        membership.setOrganizationId(ORG_ID);
+
+        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
+        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+                .thenReturn(new Page<>(List.of(), null, false));
+
+        MvcResult result = mvc.perform(get("/envoy")
+                        .param("minFinalScore", "70")
+                        .param("recommendation", "APPLY_NOW"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        // form should target /envoy via GET
+        assertThat(body).contains("action=\"/envoy\"");
+        // min score input should be pre-populated
+        assertThat(body).contains("name=\"minFinalScore\"");
+        assertThat(body).contains("value=\"70\"");
+        // recommendation select option for APPLY_NOW should be selected
+        assertThat(body).contains("name=\"recommendation\"");
+        assertThat(body).contains("APPLY_NOW");
     }
 
     // -------------------- detail page tests (issue #145) --------------------
