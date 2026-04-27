@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Edit rubric: ' + ${rubricName} + ' - Majordomo'">Edit rubric - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('envoy')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <nav class="mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li><a th:href="@{/envoy}" class="hover:text-indigo-600 transition">Envoy</a></li>
+                    <li class="flex items-center space-x-2">
+                        <span>&rsaquo;</span>
+                        <a th:href="@{/envoy/rubrics}" class="hover:text-indigo-600 transition">Rubrics</a>
+                    </li>
+                    <li class="flex items-center space-x-2">
+                        <span>&rsaquo;</span>
+                        <span class="text-gray-900 font-medium" th:text="${rubricName}">name</span>
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <span th:if="${isNew}">New rubric:</span>
+                    <span th:unless="${isNew}">Edit rubric:</span>
+                    <span th:text="${rubricName}">name</span>
+                </h1>
+                <span class="text-sm text-gray-500">
+                    <span th:if="${isNew}">Will be saved as version 1.</span>
+                    <span th:unless="${isNew}">Saving creates a new version.</span>
+                </span>
+            </div>
+
+            <form th:action="@{/envoy/rubrics/{name}(name=${rubricName})}"
+                  th:object="${form}"
+                  method="post"
+                  class="space-y-6">
+
+                <div th:if="${#fields.hasGlobalErrors()}"
+                     class="bg-red-50 border border-red-200 text-red-800 rounded-md px-4 py-3 text-sm">
+                    <ul class="list-disc list-inside">
+                        <li th:each="err : ${#fields.globalErrors()}"
+                            th:text="${err}">global error</li>
+                    </ul>
+                </div>
+
+                <!-- Categories -->
+                <section class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200 flex items-baseline justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Categories</h2>
+                        <button type="button" id="addCategoryBtn"
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            + Add category
+                        </button>
+                    </div>
+
+                    <div th:if="${#fields.hasErrors('categories')}"
+                         class="px-6 pt-4 text-sm text-red-700">
+                        <p th:each="err : ${#fields.errors('categories')}"
+                           th:text="${err}">err</p>
+                    </div>
+
+                    <div id="categoriesContainer" class="p-6 space-y-6">
+                        <div th:each="cat, catStat : *{categories}"
+                             class="border border-gray-200 rounded-md p-4 category-row"
+                             th:attr="data-cat-index=${catStat.index}">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-semibold text-gray-700">
+                                    Category <span th:text="${catStat.index + 1}">1</span>
+                                </h3>
+                                <button type="button"
+                                        class="text-xs text-red-600 hover:text-red-800 remove-category-btn">
+                                    Remove category
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Key</label>
+                                    <input type="text"
+                                           th:field="*{categories[__${catStat.index}__].key}"
+                                           class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
+                                           th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].key')} ? 'border-red-500' : ''">
+                                    <p th:if="${#fields.hasErrors('categories[__${catStat.index}__].key')}"
+                                       class="mt-1 text-xs text-red-700"
+                                       th:errors="*{categories[__${catStat.index}__].key}">err</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Max points</label>
+                                    <input type="number" min="0"
+                                           th:field="*{categories[__${catStat.index}__].maxPoints}"
+                                           class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5 cat-maxpoints"
+                                           th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].maxPoints')} ? 'border-red-500' : ''">
+                                    <p th:if="${#fields.hasErrors('categories[__${catStat.index}__].maxPoints')}"
+                                       class="mt-1 text-xs text-red-700"
+                                       th:errors="*{categories[__${catStat.index}__].maxPoints}">err</p>
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                                    <input type="text"
+                                           th:field="*{categories[__${catStat.index}__].description}"
+                                           class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tiers</h4>
+                                    <button type="button"
+                                            class="text-xs text-indigo-600 hover:text-indigo-800 add-tier-btn">
+                                        + Add tier
+                                    </button>
+                                </div>
+                                <p th:if="${#fields.hasErrors('categories[__${catStat.index}__].tiers')}"
+                                   class="text-xs text-red-700 mb-2"
+                                   th:errors="*{categories[__${catStat.index}__].tiers}">err</p>
+                                <div class="tiers-container space-y-2">
+                                    <div th:each="tier, tierStat : *{categories[__${catStat.index}__].tiers}"
+                                         class="grid grid-cols-1 sm:grid-cols-12 gap-2 tier-row"
+                                         th:attr="data-tier-index=${tierStat.index}">
+                                        <div class="sm:col-span-3">
+                                            <label class="block text-xs font-medium text-gray-500 mb-1">Label</label>
+                                            <input type="text"
+                                                   th:field="*{categories[__${catStat.index}__].tiers[__${tierStat.index}__].label}"
+                                                   class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
+                                                   th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].tiers[__${tierStat.index}__].label')} ? 'border-red-500' : ''">
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-500 mb-1">Points</label>
+                                            <input type="number"
+                                                   th:field="*{categories[__${catStat.index}__].tiers[__${tierStat.index}__].points}"
+                                                   class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
+                                                   th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].tiers[__${tierStat.index}__].points')} ? 'border-red-500' : ''">
+                                        </div>
+                                        <div class="sm:col-span-6">
+                                            <label class="block text-xs font-medium text-gray-500 mb-1">Criteria</label>
+                                            <input type="text"
+                                                   th:field="*{categories[__${catStat.index}__].tiers[__${tierStat.index}__].criteria}"
+                                                   class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                                        </div>
+                                        <div class="sm:col-span-1 flex items-end">
+                                            <button type="button"
+                                                    class="text-xs text-red-600 hover:text-red-800 remove-tier-btn">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Thresholds -->
+                <section class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200 flex items-baseline justify-between">
+                        <h2 class="text-lg font-semibold text-gray-900">Thresholds</h2>
+                        <span class="text-sm text-gray-500">
+                            Total max points:
+                            <span id="totalPoints" class="font-semibold text-gray-900">0</span>
+                        </span>
+                    </div>
+                    <div class="p-6">
+                        <p th:if="${#fields.hasErrors('thresholds')}"
+                           class="text-sm text-red-700 mb-3"
+                           th:errors="*{thresholds}">err</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Apply immediately</label>
+                                <input type="number"
+                                       th:field="*{thresholds.applyImmediately}"
+                                       class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Apply</label>
+                                <input type="number"
+                                       th:field="*{thresholds.apply}"
+                                       class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Consider only</label>
+                                <input type="number"
+                                       th:field="*{thresholds.considerOnly}"
+                                       class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3">
+                            Must satisfy: applyImmediately &gt; apply &gt; considerOnly. Below considerOnly &rarr; SKIP.
+                        </p>
+                    </div>
+                </section>
+
+                <div class="flex items-center justify-end gap-3">
+                    <a th:href="@{/envoy/rubrics}"
+                       class="text-sm text-gray-500 hover:text-gray-700">Cancel</a>
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                        Save new version
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Hidden template rows used by the inline JS to clone new
+                 categories/tiers. Field name placeholders are __IDX__ /
+                 __TIDX__; the JS rewrites them to the next index. -->
+            <template id="categoryTemplate">
+                <div class="border border-gray-200 rounded-md p-4 category-row" data-cat-index="__IDX__">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-gray-700">
+                            Category <span class="cat-num">__IDX_PLUS_1__</span>
+                        </h3>
+                        <button type="button" class="text-xs text-red-600 hover:text-red-800 remove-category-btn">Remove category</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Key</label>
+                            <input type="text" name="categories[__IDX__].key" id="categories__IDX__.key"
+                                   class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Max points</label>
+                            <input type="number" min="0" name="categories[__IDX__].maxPoints" id="categories__IDX__.maxPoints"
+                                   class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5 cat-maxpoints">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                            <input type="text" name="categories[__IDX__].description" id="categories__IDX__.description"
+                                   class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tiers</h4>
+                            <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 add-tier-btn">+ Add tier</button>
+                        </div>
+                        <div class="tiers-container space-y-2"></div>
+                    </div>
+                </div>
+            </template>
+
+            <template id="tierTemplate">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 tier-row" data-tier-index="__TIDX__">
+                    <div class="sm:col-span-3">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Label</label>
+                        <input type="text" name="categories[__IDX__].tiers[__TIDX__].label" id="categories__IDX__.tiers__TIDX__.label"
+                               class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Points</label>
+                        <input type="number" name="categories[__IDX__].tiers[__TIDX__].points" id="categories__IDX__.tiers__TIDX__.points"
+                               class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                    </div>
+                    <div class="sm:col-span-6">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">Criteria</label>
+                        <input type="text" name="categories[__IDX__].tiers[__TIDX__].criteria" id="categories__IDX__.tiers__TIDX__.criteria"
+                               class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                    </div>
+                    <div class="sm:col-span-1 flex items-end">
+                        <button type="button" class="text-xs text-red-600 hover:text-red-800 remove-tier-btn">Remove</button>
+                    </div>
+                </div>
+            </template>
+
+            <script>
+            (function() {
+                'use strict';
+                const container = document.getElementById('categoriesContainer');
+                const totalEl = document.getElementById('totalPoints');
+
+                function recomputeTotal() {
+                    let total = 0;
+                    document.querySelectorAll('.cat-maxpoints').forEach(el => {
+                        const v = parseInt(el.value, 10);
+                        if (!Number.isNaN(v)) total += v;
+                    });
+                    totalEl.textContent = String(total);
+                }
+
+                function reindexHtml(html, catIdx, tierIdx) {
+                    return html
+                        .replace(/__IDX_PLUS_1__/g, String(catIdx + 1))
+                        .replace(/__IDX__/g, String(catIdx))
+                        .replace(/__TIDX__/g, String(tierIdx == null ? 0 : tierIdx));
+                }
+
+                function nextCategoryIndex() {
+                    return container.querySelectorAll('.category-row').length;
+                }
+                function nextTierIndex(catRow) {
+                    return catRow.querySelectorAll('.tier-row').length;
+                }
+
+                document.getElementById('addCategoryBtn').addEventListener('click', function() {
+                    const tpl = document.getElementById('categoryTemplate');
+                    const idx = nextCategoryIndex();
+                    const html = reindexHtml(tpl.innerHTML, idx, 0);
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = html.trim();
+                    const newRow = wrapper.firstChild;
+                    container.appendChild(newRow);
+                    // start with one tier row
+                    addTier(newRow);
+                    recomputeTotal();
+                });
+
+                function addTier(catRow) {
+                    const catIdx = parseInt(catRow.dataset.catIndex, 10);
+                    const tiersContainer = catRow.querySelector('.tiers-container');
+                    const tierIdx = nextTierIndex(catRow);
+                    const tpl = document.getElementById('tierTemplate');
+                    const html = reindexHtml(tpl.innerHTML, catIdx, tierIdx);
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = html.trim();
+                    tiersContainer.appendChild(wrapper.firstChild);
+                }
+
+                container.addEventListener('click', function(e) {
+                    const t = e.target;
+                    if (t.classList.contains('add-tier-btn')) {
+                        const catRow = t.closest('.category-row');
+                        if (catRow) addTier(catRow);
+                    } else if (t.classList.contains('remove-tier-btn')) {
+                        const tierRow = t.closest('.tier-row');
+                        if (tierRow) tierRow.remove();
+                    } else if (t.classList.contains('remove-category-btn')) {
+                        const catRow = t.closest('.category-row');
+                        if (catRow) catRow.remove();
+                        recomputeTotal();
+                    }
+                });
+
+                container.addEventListener('input', function(e) {
+                    if (e.target.classList.contains('cat-maxpoints')) {
+                        recomputeTotal();
+                    }
+                });
+
+                recomputeTotal();
+            })();
+            </script>
+
+        </main>
+    </div>
+</body>
+</html>

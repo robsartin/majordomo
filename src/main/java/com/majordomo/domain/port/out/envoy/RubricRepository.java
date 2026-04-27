@@ -43,6 +43,17 @@ public interface RubricRepository {
     List<Rubric> findAllVersionsByName(String name, UUID organizationId);
 
     /**
+     * Lists the active rubric for every distinct rubric name visible to
+     * {@code organizationId}: the highest-version org-specific rubric per name,
+     * plus the highest-version system-default rubric for any name where the org
+     * has not authored its own version yet. Order is unspecified.
+     *
+     * @param organizationId org scope
+     * @return one active rubric per distinct name visible to this org
+     */
+    List<Rubric> findActiveRubricsForOrg(UUID organizationId);
+
+    /**
      * Persists a rubric. Caller is responsible for setting id, version, and effectiveFrom.
      *
      * @param rubric the rubric to persist
