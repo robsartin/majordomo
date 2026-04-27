@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 /**
  * Spring Security configuration for Majordomo.
@@ -83,6 +84,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .ignoringRequestMatchers("/api/**")
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                // Use the plain handler instead of the BREACH-mitigating
+                // XorCsrfTokenRequestAttributeHandler so the value sent back
+                // in the X-XSRF-TOKEN header / _csrf form param matches the
+                // raw value stored in the XSRF-TOKEN cookie. Required for
+                // curl-based scripts (smoke test, ad-hoc API probing) and
+                // any non-browser client. The browser flow still works via
+                // Thymeleaf-rendered _csrf inputs. Trade-off: no BREACH
+                // protection on CSRF token transport — acceptable for a
+                // localhost-by-default personal-management app.
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
             );
 
         return http.build();
