@@ -4,6 +4,7 @@ import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,5 +39,12 @@ public class JobPostingRepositoryAdapter implements JobPostingRepository {
             String source, String externalId, UUID organizationId) {
         return jpa.findBySourceAndExternalIdAndOrganizationId(source, externalId, organizationId)
                 .map(JobPostingMapper::toDomain);
+    }
+
+    @Override
+    public List<JobPosting> findAllByOrganizationId(UUID organizationId) {
+        return jpa.findAllByOrganizationId(organizationId).stream()
+                .map(JobPostingMapper::toDomain)
+                .toList();
     }
 }

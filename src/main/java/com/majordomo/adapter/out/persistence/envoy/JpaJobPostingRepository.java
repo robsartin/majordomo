@@ -2,6 +2,7 @@ package com.majordomo.adapter.out.persistence.envoy;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,4 +29,14 @@ public interface JpaJobPostingRepository extends JpaRepository<JobPostingEntity,
      */
     Optional<JobPostingEntity> findBySourceAndExternalIdAndOrganizationId(
             String source, String externalId, UUID organizationId);
+
+    /**
+     * Returns all postings owned by the given organization. Used by the rescore
+     * fan-out (manual endpoint and {@code RubricVersionCreated} listener) — at
+     * personal scale (handful of postings) an unpaginated list is acceptable.
+     *
+     * @param organizationId owning org
+     * @return every posting in that org (may be empty)
+     */
+    List<JobPostingEntity> findAllByOrganizationId(UUID organizationId);
 }
