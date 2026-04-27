@@ -1,0 +1,68 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "envoy-llm",
+    "title": "Envoy LLM Cost & Latency",
+    "tags": ["majordomo", "envoy"],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 1,
+    "templating": {
+      "list": [
+        {
+          "name": "input_price_per_million",
+          "label": "Input price ($/Mtok)",
+          "type": "constant",
+          "query": "3.0",
+          "current": { "text": "3.0", "value": "3.0" }
+        },
+        {
+          "name": "output_price_per_million",
+          "label": "Output price ($/Mtok)",
+          "type": "constant",
+          "query": "15.0",
+          "current": { "text": "15.0", "value": "15.0" }
+        }
+      ]
+    },
+    "panels": [
+      {
+        "title": "Tokens / minute",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "sum by (model) (rate(envoy_llm_input_tokens_total[1m]) * 60)",
+            "legendFormat": "input {{model}}"
+          },
+          {
+            "expr": "sum by (model) (rate(envoy_llm_output_tokens_total[1m]) * 60)",
+            "legendFormat": "output {{model}}"
+          }
+        ]
+      },
+      {
+        "title": "p95 LLM call duration by model",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by (model, le) (rate(envoy_llm_call_duration_seconds_bucket[5m])))",
+            "legendFormat": "{{model}}"
+          }
+        ]
+      },
+      {
+        "title": "Spend / hour ($)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "sum by (model) (rate(envoy_llm_input_tokens_total[5m]) * 3600 / 1000000 * $input_price_per_million) + sum by (model) (rate(envoy_llm_output_tokens_total[5m]) * 3600 / 1000000 * $output_price_per_million)",
+            "legendFormat": "{{model}}"
+          }
+        ]
+      }
+    ]
+  }
+}

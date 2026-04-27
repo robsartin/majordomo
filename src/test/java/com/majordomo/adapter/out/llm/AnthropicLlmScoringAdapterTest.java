@@ -93,6 +93,36 @@ class AnthropicLlmScoringAdapterTest {
     }
 
     @Test
+    void populatesUsageFromSdkResponse() {
+        String innerJson = "{\\\"disqualifierKey\\\":null,"
+                + "\\\"categoryVerdicts\\\":[{\\\"categoryKey\\\":\\\"compensation\\\","
+                + "\\\"tierLabel\\\":\\\"Good\\\",\\\"rationale\\\":\\\"listed salary\\\"}],"
+                + "\\\"flagHits\\\":[]}";
+        server.enqueue(new MockResponse()
+                .setHeader("Content-Type", "application/json")
+                .setBody("""
+                        {
+                          "id": "msg_01",
+                          "type": "message",
+                          "role": "assistant",
+                          "model": "claude-sonnet-4-6",
+                          "stop_reason": "end_turn",
+                          "usage": {"input_tokens": 1234, "output_tokens": 56},
+                          "content": [
+                            {"type": "text", "text": "%s"}
+                          ]
+                        }
+                        """.formatted(innerJson)));
+
+        LlmScoreResponse resp = adapter.score(posting(), rubric());
+
+        assertThat(resp.usage()).isPresent();
+        assertThat(resp.usage().get().inputTokens()).isEqualTo(1234L);
+        assertThat(resp.usage().get().outputTokens()).isEqualTo(56L);
+        assertThat(resp.usage().get().latencyMs()).isGreaterThanOrEqualTo(0L);
+    }
+
+    @Test
     void throwsOnNon2xx() {
         server.enqueue(new MockResponse().setResponseCode(500).setBody("{}"));
         assertThatThrownBy(() -> adapter.score(posting(), rubric()))

@@ -16,6 +16,8 @@ import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.LlmScoringPort;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
 import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,6 +48,7 @@ class JobScorerServiceTest {
     @Mock EventPublisher eventPublisher;
 
     private JobScorerService scorer;
+    private MeterRegistry meterRegistry;
     private final UUID orgId = UuidFactory.newId();
 
     private Rubric rubric;
@@ -53,8 +56,10 @@ class JobScorerServiceTest {
 
     @BeforeEach
     void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
         scorer = new JobScorerService(
-                rubrics, postings, reports, llm, new ScoreAssembler(), eventPublisher);
+                rubrics, postings, reports, llm, new ScoreAssembler(),
+                eventPublisher, meterRegistry);
         rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
                 List.of(),
                 List.of(new Category("compensation", "pay", 20,
@@ -162,6 +167,87 @@ class JobScorerServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
         verify(reports, never()).save(any());
         verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void recordsTokenAndLatencyMetricsWhenLlmReturnsUsage() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(new LlmScoreResponse(
+                Optional.empty(),
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of(),
+                Optional.of(new LlmScoreResponse.Usage(123L, 45L, 200L))));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        scorer.score(posting.getId(), "default", orgId);
+
+        double inputTokens = meterRegistry.get("envoy_llm_input_tokens_total")
+                .tag("org", orgId.toString())
+                .tag("model", "claude-sonnet-4-6")
+                .tag("rubric", "default")
+                .counter().count();
+        double outputTokens = meterRegistry.get("envoy_llm_output_tokens_total")
+                .tag("org", orgId.toString())
+                .tag("model", "claude-sonnet-4-6")
+                .tag("rubric", "default")
+                .counter().count();
+        long timerCount = meterRegistry.get("envoy_llm_call_duration")
+                .tag("model", "claude-sonnet-4-6")
+                .tag("outcome", "success")
+                .timer().count();
+
+        assertThat(inputTokens).isEqualTo(123.0);
+        assertThat(outputTokens).isEqualTo(45.0);
+        assertThat(timerCount).isEqualTo(1L);
+    }
+
+    @Test
+    void doesNotIncrementTokenCountersWhenLlmReturnsNoUsage() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ScoreReport r = scorer.score(posting.getId(), "default", orgId);
+
+        assertThat(r).isNotNull();
+        // Counters were never registered, so finding them should produce no meter.
+        assertThat(meterRegistry.find("envoy_llm_input_tokens_total").counter()).isNull();
+        assertThat(meterRegistry.find("envoy_llm_output_tokens_total").counter()).isNull();
+        // Timer is always recorded so latency is observable even without token data.
+        long timerCount = meterRegistry.get("envoy_llm_call_duration")
+                .tag("model", "claude-sonnet-4-6")
+                .tag("outcome", "success")
+                .timer().count();
+        assertThat(timerCount).isEqualTo(1L);
+    }
+
+    @Test
+    void recordsErrorOutcomeOnTimerWhenLlmThrows() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(llm.score(any(), any())).thenThrow(new LlmScoringException("boom"));
+
+        assertThatThrownBy(() -> scorer.score(posting.getId(), "default", orgId))
+                .isInstanceOf(LlmScoringException.class);
+
+        long errorCount = meterRegistry.get("envoy_llm_call_duration")
+                .tag("model", "claude-sonnet-4-6")
+                .tag("outcome", "error")
+                .timer().count();
+        assertThat(errorCount).isEqualTo(1L);
+        // No success timer was recorded.
+        assertThat(meterRegistry.find("envoy_llm_call_duration")
+                .tag("outcome", "success").timer()).isNull();
+        // No token counters either, since the call never produced a usage payload.
+        assertThat(meterRegistry.find("envoy_llm_input_tokens_total").counter()).isNull();
+        assertThat(meterRegistry.find("envoy_llm_output_tokens_total").counter()).isNull();
     }
 
     @Test

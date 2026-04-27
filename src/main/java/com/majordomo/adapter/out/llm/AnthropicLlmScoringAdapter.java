@@ -36,12 +36,16 @@ public class AnthropicLlmScoringAdapter implements LlmScoringPort {
     @Override
     public LlmScoreResponse score(JobPosting posting, Rubric rubric) {
         ScoringPrompt prompt = promptBuilder.build(posting, rubric);
-        String json = client.send(prompt.systemPrompt(), prompt.userPrompt());
+        AnthropicMessageClient.MessageResult result =
+                client.sendWithUsage(prompt.systemPrompt(), prompt.userPrompt());
+        LlmScoreResponse parsed;
         try {
-            return mapper.readValue(json, LlmScoreResponse.class);
+            parsed = mapper.readValue(result.text(), LlmScoreResponse.class);
         } catch (Exception e) {
-            throw new LlmScoringException("LLM returned unparseable JSON: " + json, e);
+            throw new LlmScoringException(
+                    "LLM returned unparseable JSON: " + result.text(), e);
         }
+        return result.usage().map(parsed::withUsage).orElse(parsed);
     }
 
     @Override
