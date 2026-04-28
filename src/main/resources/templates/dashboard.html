@@ -97,6 +97,36 @@
 
         </div>
 
+        <!-- APPLY_NOW Postings (Envoy) -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">High-priority job postings</h2>
+                <a href="/envoy" class="text-sm text-indigo-600 hover:text-indigo-800">View all &rarr;</a>
+            </div>
+            <div class="p-6">
+                <p th:if="${#lists.isEmpty(applyNowPostings)}" class="text-gray-400 text-sm">
+                    No APPLY_NOW postings yet.
+                </p>
+                <ul class="space-y-3" th:unless="${#lists.isEmpty(applyNowPostings)}">
+                    <li th:each="posting : ${applyNowPostings}"
+                        class="flex items-center justify-between p-3 rounded-md bg-emerald-50 border border-emerald-200">
+                        <div>
+                            <a th:href="@{/envoy/reports/{id}(id=${posting.reportId()})}"
+                               class="font-medium text-gray-800 hover:text-indigo-700"
+                               th:text="${posting.title() != null ? posting.title() : 'Untitled posting'}">Title</a>
+                            <span class="block text-sm text-gray-600">
+                                <span th:text="${posting.company() != null ? posting.company() : '—'}">Company</span>
+                                <span th:if="${posting.location() != null}"
+                                      th:text="' · ' + ${posting.location()}"></span>
+                            </span>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
+                              th:text="${posting.finalScore()} + ' / 100'">90 / 100</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
         <!-- Recent Service Records -->
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">

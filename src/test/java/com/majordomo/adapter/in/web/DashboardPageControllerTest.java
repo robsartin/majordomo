@@ -3,10 +3,12 @@ package com.majordomo.adapter.in.web;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.domain.model.DashboardSummary;
+import com.majordomo.domain.model.envoy.ApplyNowPosting;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.MemberRole;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.DashboardUseCase;
+import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
@@ -55,6 +57,9 @@ class DashboardPageControllerTest {
     @MockitoBean
     private OAuth2UserService oAuth2UserService;
 
+    @MockitoBean
+    private GetRecentApplyNowPostingsUseCase recentApplyNowUseCase;
+
     /** Authenticated user with an organization membership sees the dashboard. */
     @Test
     @WithMockUser(username = "testuser")
@@ -67,15 +72,21 @@ class DashboardPageControllerTest {
         DashboardSummary summary = new DashboardSummary(
                 3, 5, List.of(), List.of(), List.of(), new BigDecimal("1200.00"));
 
+        ApplyNowPosting applyNow = new ApplyNowPosting(
+                UUID.randomUUID(), UUID.randomUUID(),
+                "Acme Inc", "Senior Engineer", "Remote", 92);
+
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
         when(membershipRepository.findByUserId(userId)).thenReturn(List.of(membership));
         when(dashboardUseCase.getSummary(orgId)).thenReturn(summary);
+        when(recentApplyNowUseCase.getRecentApplyNow(orgId, 5)).thenReturn(List.of(applyNow));
 
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
                 .andExpect(model().attributeExists("summary"))
-                .andExpect(model().attributeExists("username"));
+                .andExpect(model().attributeExists("username"))
+                .andExpect(model().attributeExists("applyNowPostings"));
     }
 
     /** Unauthenticated access to dashboard redirects to login. */

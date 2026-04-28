@@ -1,6 +1,7 @@
 package com.majordomo.adapter.in.web;
 
 import com.majordomo.domain.port.in.DashboardUseCase;
+import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 
@@ -16,23 +17,29 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class DashboardPageController {
 
+    private static final int APPLY_NOW_PANEL_LIMIT = 5;
+
     private final DashboardUseCase dashboardUseCase;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
+    private final GetRecentApplyNowPostingsUseCase recentApplyNowUseCase;
 
     /**
      * Constructs the dashboard page controller.
      *
-     * @param dashboardUseCase     the inbound port for dashboard data retrieval
-     * @param userRepository       the outbound port for user lookups
-     * @param membershipRepository the outbound port for membership lookups
+     * @param dashboardUseCase      the inbound port for dashboard data retrieval
+     * @param userRepository        the outbound port for user lookups
+     * @param membershipRepository  the outbound port for membership lookups
+     * @param recentApplyNowUseCase inbound port for recent APPLY_NOW postings
      */
     public DashboardPageController(DashboardUseCase dashboardUseCase,
                                    UserRepository userRepository,
-                                   MembershipRepository membershipRepository) {
+                                   MembershipRepository membershipRepository,
+                                   GetRecentApplyNowPostingsUseCase recentApplyNowUseCase) {
         this.dashboardUseCase = dashboardUseCase;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
+        this.recentApplyNowUseCase = recentApplyNowUseCase;
     }
 
     /**
@@ -53,6 +60,8 @@ public class DashboardPageController {
         var summary = dashboardUseCase.getSummary(orgId);
         model.addAttribute("summary", summary);
         model.addAttribute("username", user.getUsername());
+        model.addAttribute("applyNowPostings",
+                recentApplyNowUseCase.getRecentApplyNow(orgId, APPLY_NOW_PANEL_LIMIT));
         return "dashboard";
     }
 }
