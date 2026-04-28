@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.herald;
 
+import com.majordomo.application.herald.ScheduleAccessGuard;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
@@ -33,9 +34,9 @@ import java.util.UUID;
  * {@code /api/schedules}. Acts as an inbound adapter in the hexagonal architecture,
  * delegating to {@link ManageScheduleUseCase}.</p>
  *
- * <p>TODO: Schedules are scoped by propertyId, not organizationId directly. Organization-level
- * access control should be enforced by resolving the property's organization and verifying
- * membership. Tracked in issue #184.</p>
+ * <p>Every endpoint authorizes via {@link ScheduleAccessGuard}, resolving the
+ * relevant {@code organizationId} from the property that owns the schedule
+ * or service record before delegating to the use case.</p>
  */
 @RestController
 @RequestMapping("/api/schedules")
@@ -43,14 +44,17 @@ import java.util.UUID;
 public class ScheduleController {
 
     private final ManageScheduleUseCase scheduleUseCase;
+    private final ScheduleAccessGuard guard;
 
     /**
-     * Constructs a {@code ScheduleController} with the required use case.
+     * Constructs a {@code ScheduleController}.
      *
      * @param scheduleUseCase the inbound port for schedule management
+     * @param guard           authorization helper for property-scoped operations
      */
-    public ScheduleController(ManageScheduleUseCase scheduleUseCase) {
+    public ScheduleController(ManageScheduleUseCase scheduleUseCase, ScheduleAccessGuard guard) {
         this.scheduleUseCase = scheduleUseCase;
+        this.guard = guard;
     }
 
     /**
@@ -73,6 +77,7 @@ public class ScheduleController {
             @RequestParam(required = false) String frequency,
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
+        guard.verifyForProperty(propertyId);
         if (q != null && !q.isBlank()) {
             return scheduleUseCase.search(propertyId, q, frequency, cursor, limit);
         }
@@ -80,14 +85,16 @@ public class ScheduleController {
     }
 
     /**
-     * Returns all maintenance schedules due within a given number of days from today.
+     * Returns maintenance schedules due within a given number of days from today,
+     * filtered to the authenticated user's organizations.
      *
      * @param days the lookahead window in days; defaults to 30 if not specified
-     * @return a list of schedules whose due date falls before the calculated cutoff
+     * @return a list of due schedules belonging to properties the user can access
      */
     @GetMapping("/upcoming")
     public List<MaintenanceSchedule> listUpcoming(@RequestParam(defaultValue = "30") int days) {
-        return scheduleUseCase.findDueBefore(LocalDate.now().plusDays(days));
+        return guard.filterToCurrentUser(
+                scheduleUseCase.findDueBefore(LocalDate.now().plusDays(days)));
     }
 
     /**
@@ -98,6 +105,7 @@ public class ScheduleController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<MaintenanceSchedule> getById(@PathVariable UUID id) {
+        guard.verifyForSchedule(id);
         return scheduleUseCase.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -112,6 +120,7 @@ public class ScheduleController {
      */
     @PostMapping
     public ResponseEntity<MaintenanceSchedule> create(@Valid @RequestBody MaintenanceSchedule schedule) {
+        guard.verifyForProperty(schedule.getPropertyId());
         var saved = scheduleUseCase.create(schedule);
         return ResponseEntity.created(URI.create("/api/schedules/" + saved.getId())).body(saved);
     }
@@ -130,6 +139,7 @@ public class ScheduleController {
     public ResponseEntity<ServiceRecord> recordService(
             @PathVariable UUID id,
             @Valid @RequestBody ServiceRecord record) {
+        guard.verifyForSchedule(id);
         var saved = scheduleUseCase.recordService(id, record);
         return ResponseEntity.created(URI.create("/api/schedules/" + id + "/records/" + saved.getId())).body(saved);
     }
@@ -142,6 +152,7 @@ public class ScheduleController {
      */
     @GetMapping("/{id}/records")
     public List<ServiceRecord> listRecords(@PathVariable UUID id) {
+        guard.verifyForSchedule(id);
         return scheduleUseCase.findRecordsByScheduleId(id);
     }
 
@@ -156,6 +167,7 @@ public class ScheduleController {
     public ResponseEntity<MaintenanceSchedule> update(
             @PathVariable UUID id,
             @RequestBody MaintenanceSchedule schedule) {
+        guard.verifyForSchedule(id);
         var updated = scheduleUseCase.update(id, schedule);
         return ResponseEntity.ok(updated);
     }
@@ -168,6 +180,7 @@ public class ScheduleController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> archive(@PathVariable UUID id) {
+        guard.verifyForSchedule(id);
         scheduleUseCase.archive(id);
         return ResponseEntity.noContent().build();
     }
@@ -185,6 +198,7 @@ public class ScheduleController {
             @PathVariable UUID id,
             @PathVariable UUID recordId,
             @RequestBody ServiceRecord record) {
+        guard.verifyForRecord(recordId);
         var updated = scheduleUseCase.updateRecord(recordId, record);
         return ResponseEntity.ok(updated);
     }
@@ -200,6 +214,7 @@ public class ScheduleController {
     public ResponseEntity<Void> archiveRecord(
             @PathVariable UUID id,
             @PathVariable UUID recordId) {
+        guard.verifyForRecord(recordId);
         scheduleUseCase.archiveRecord(recordId);
         return ResponseEntity.noContent().build();
     }
