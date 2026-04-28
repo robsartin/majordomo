@@ -35,7 +35,7 @@ import java.util.UUID;
  *
  * <p>TODO: Schedules are scoped by propertyId, not organizationId directly. Organization-level
  * access control should be enforced by resolving the property's organization and verifying
- * membership. See GitHub issue #55.</p>
+ * membership. Tracked in issue #184.</p>
  */
 @RestController
 @RequestMapping("/api/schedules")
