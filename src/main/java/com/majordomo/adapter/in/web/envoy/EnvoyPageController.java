@@ -1,18 +1,16 @@
 package com.majordomo.adapter.in.web.envoy;
 
 import com.majordomo.application.envoy.LlmScoringException;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
-import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.MarkPostingConversionUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +50,7 @@ public class EnvoyPageController {
     private final ScoreJobPostingUseCase scoreUseCase;
     private final MarkPostingConversionUseCase conversionUseCase;
     private final JobPostingRepository jobPostingRepository;
-    private final UserRepository userRepository;
-    private final MembershipRepository membershipRepository;
+    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * View-model row binding a {@link ScoreReport} to its source {@link JobPosting}.
@@ -66,16 +63,6 @@ public class EnvoyPageController {
     public record ScoreReportRow(ScoreReport report, JobPosting posting) { }
 
     /**
-     * Resolved authentication context: the user, plus the first org they
-     * belong to. {@code organizationId} is {@code null} if the user has no
-     * memberships, in which case the caller should redirect home.
-     *
-     * @param user           the authenticated user
-     * @param organizationId the user's first organization id, or {@code null}
-     */
-    private record AuthContext(User user, UUID organizationId) { }
-
-    /**
      * Constructs the controller.
      *
      * @param reports              inbound port for report queries
@@ -83,23 +70,20 @@ public class EnvoyPageController {
      * @param scoreUseCase         inbound port for scoring an ingested posting
      * @param conversionUseCase    inbound port for marking APPLY_NOW conversion outcome
      * @param jobPostingRepository outbound port for posting lookups
-     * @param userRepository       outbound port for user lookups
-     * @param membershipRepository outbound port for membership lookups
+     * @param currentOrg           resolves the authenticated user's first organization
      */
     public EnvoyPageController(QueryScoreReportsUseCase reports,
                                IngestJobPostingUseCase ingestUseCase,
                                ScoreJobPostingUseCase scoreUseCase,
                                MarkPostingConversionUseCase conversionUseCase,
                                JobPostingRepository jobPostingRepository,
-                               UserRepository userRepository,
-                               MembershipRepository membershipRepository) {
+                               CurrentOrganizationResolver currentOrg) {
         this.reports = reports;
         this.ingestUseCase = ingestUseCase;
         this.scoreUseCase = scoreUseCase;
         this.conversionUseCase = conversionUseCase;
         this.jobPostingRepository = jobPostingRepository;
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+        this.currentOrg = currentOrg;
     }
 
     /**
@@ -129,7 +113,7 @@ public class EnvoyPageController {
                         @RequestParam(required = false) Recommendation recommendation,
                         @AuthenticationPrincipal UserDetails principal,
                         Model model) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -174,7 +158,7 @@ public class EnvoyPageController {
                                @RequestParam(required = false) String location,
                                @AuthenticationPrincipal UserDetails principal,
                                Model model) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -207,7 +191,7 @@ public class EnvoyPageController {
      * (rows, filter echo values, org id, username). Shared between the GET
      * handler and the POST handler's error path.
      */
-    private void renderEnvoyPage(AuthContext ctx,
+    private void renderEnvoyPage(CurrentOrganizationResolver.Resolved ctx,
                                  Integer minFinalScore,
                                  Recommendation recommendation,
                                  Model model) {
@@ -275,7 +259,7 @@ public class EnvoyPageController {
     @PostMapping("/envoy/postings/{postingId}/applied")
     public String markPostingApplied(@PathVariable UUID postingId,
                                      @AuthenticationPrincipal UserDetails principal) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -298,7 +282,7 @@ public class EnvoyPageController {
     @PostMapping("/envoy/postings/{postingId}/dismissed")
     public String dismissPosting(@PathVariable UUID postingId,
                                  @AuthenticationPrincipal UserDetails principal) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -333,7 +317,7 @@ public class EnvoyPageController {
                             @AuthenticationPrincipal UserDetails principal,
                             Model model,
                             HttpServletResponse response) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -356,17 +340,4 @@ public class EnvoyPageController {
         return "envoy-report";
     }
 
-    /**
-     * Resolves the authenticated user's first organization. Returns an
-     * {@link AuthContext} whose {@code organizationId} is {@code null} when
-     * the user has no membership; callers should redirect home in that case.
-     */
-    private AuthContext resolveContext(UserDetails principal) {
-        var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
-        var memberships = membershipRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
-            return new AuthContext(user, null);
-        }
-        return new AuthContext(user, memberships.get(0).getOrganizationId());
-    }
 }

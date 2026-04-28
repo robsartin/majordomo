@@ -18,10 +18,10 @@ import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -58,8 +58,7 @@ class EnvoyPageControllerTest {
     @MockitoBean IngestJobPostingUseCase ingestUseCase;
     @MockitoBean ScoreJobPostingUseCase scoreUseCase;
     @MockitoBean MarkPostingConversionUseCase conversionUseCase;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean JobPostingRepository jobPostingRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
@@ -87,8 +86,8 @@ class EnvoyPageControllerTest {
         posting.setTitle("Senior Backend Engineer");
         posting.setLocation("Remote (US)");
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
@@ -135,8 +134,8 @@ class EnvoyPageControllerTest {
         posting.setTitle("Software Engineer");
         posting.setLocation(null);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
@@ -170,8 +169,8 @@ class EnvoyPageControllerTest {
                 List.of(), List.of(), 70, 70, Recommendation.APPLY,
                 "claude-sonnet-4-6", Instant.now());
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.empty());
@@ -194,8 +193,8 @@ class EnvoyPageControllerTest {
     @WithMockUser(username = "robsartin")
     void redirectsHomeWhenUserHasNoMembership() throws Exception {
         var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of());
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, null));
 
         mvc.perform(get("/envoy"))
                 .andExpect(status().is3xxRedirection())
@@ -218,8 +217,8 @@ class EnvoyPageControllerTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
@@ -239,8 +238,8 @@ class EnvoyPageControllerTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
@@ -261,8 +260,8 @@ class EnvoyPageControllerTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
@@ -282,8 +281,8 @@ class EnvoyPageControllerTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
@@ -306,8 +305,8 @@ class EnvoyPageControllerTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
@@ -360,8 +359,8 @@ class EnvoyPageControllerTest {
         posting.setLocation("Remote (US)");
         posting.setRawText("Full posting body goes here.");
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.of(report));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
 
@@ -412,8 +411,8 @@ class EnvoyPageControllerTest {
         posting.setLocation("San Francisco, CA");
         posting.setRawText("Body.");
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.of(report));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
 
@@ -441,8 +440,8 @@ class EnvoyPageControllerTest {
                 List.of(), List.of(), 60, 60,
                 Recommendation.CONSIDER, "claude-sonnet-4-6", Instant.now());
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.of(report));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.empty());
 
@@ -463,8 +462,8 @@ class EnvoyPageControllerTest {
 
         UUID reportId = UuidFactory.newId();
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.findById(reportId, ORG_ID)).thenReturn(Optional.empty());
 
         mvc.perform(get("/envoy/reports/{id}", reportId))
@@ -475,8 +474,8 @@ class EnvoyPageControllerTest {
     @WithMockUser(username = "robsartin")
     void getReport_redirectsHomeWhenUserHasNoMembership() throws Exception {
         var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of());
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, null));
 
         mvc.perform(get("/envoy/reports/{id}", UuidFactory.newId()))
                 .andExpect(status().is3xxRedirection())

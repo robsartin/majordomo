@@ -1,16 +1,14 @@
 package com.majordomo.adapter.in.web.envoy;
 
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.envoy.Category;
 import com.majordomo.domain.model.envoy.CategoryScore;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.ScoreReport;
-import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -44,8 +42,7 @@ public class EnvoyComparatorController {
     private final QueryScoreReportsUseCase reports;
     private final RubricRepository rubricRepository;
     private final JobPostingRepository jobPostingRepository;
-    private final UserRepository userRepository;
-    private final MembershipRepository membershipRepository;
+    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * One column in the comparator table — a posting plus (optionally) the
@@ -90,28 +87,22 @@ public class EnvoyComparatorController {
      */
     public record Row(String categoryKey, List<Cell> cells) { }
 
-    /** Resolved authentication context. */
-    private record AuthContext(User user, UUID organizationId) { }
-
     /**
      * Constructs the controller.
      *
      * @param reports              inbound port for report queries
      * @param rubricRepository     outbound port for rubric lookups
      * @param jobPostingRepository outbound port for posting lookups
-     * @param userRepository       outbound port for user lookups
-     * @param membershipRepository outbound port for membership lookups
+     * @param currentOrg           resolves the authenticated user's first organization
      */
     public EnvoyComparatorController(QueryScoreReportsUseCase reports,
                                      RubricRepository rubricRepository,
                                      JobPostingRepository jobPostingRepository,
-                                     UserRepository userRepository,
-                                     MembershipRepository membershipRepository) {
+                                     CurrentOrganizationResolver currentOrg) {
         this.reports = reports;
         this.rubricRepository = rubricRepository;
         this.jobPostingRepository = jobPostingRepository;
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+        this.currentOrg = currentOrg;
     }
 
     /**
@@ -144,7 +135,7 @@ public class EnvoyComparatorController {
                           Model model) {
         List<UUID> ids = parseIds(idsParam);
 
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -258,12 +249,4 @@ public class EnvoyComparatorController {
         return rows;
     }
 
-    private AuthContext resolveContext(UserDetails principal) {
-        var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
-        var memberships = membershipRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
-            return new AuthContext(user, null);
-        }
-        return new AuthContext(user, memberships.get(0).getOrganizationId());
-    }
 }

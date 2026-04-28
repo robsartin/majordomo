@@ -17,10 +17,10 @@ import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -50,8 +51,7 @@ class EnvoyComparatorControllerTest {
     @MockitoBean QueryScoreReportsUseCase reports;
     @MockitoBean RubricRepository rubricRepository;
     @MockitoBean JobPostingRepository jobPostingRepository;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
 
@@ -98,8 +98,9 @@ class EnvoyComparatorControllerTest {
         var membership = new Membership();
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
     }
 
     @Test
@@ -237,8 +238,9 @@ class EnvoyComparatorControllerTest {
     @WithMockUser(username = "robsartin")
     void redirectsHomeWhenUserHasNoMembership() throws Exception {
         var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of());
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, null));
 
         mvc.perform(get("/envoy/compare")
                         .param("ids", UuidFactory.newId() + "," + UuidFactory.newId()))

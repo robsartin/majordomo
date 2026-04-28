@@ -2,30 +2,28 @@ package com.majordomo.adapter.in.web;
 
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.DashboardSummary;
 import com.majordomo.domain.model.envoy.ApplyNowPosting;
-import com.majordomo.domain.model.identity.Membership;
-import com.majordomo.domain.model.identity.MemberRole;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.DashboardUseCase;
 import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -46,10 +44,7 @@ class DashboardPageControllerTest {
     private DashboardUseCase dashboardUseCase;
 
     @MockitoBean
-    private UserRepository userRepository;
-
-    @MockitoBean
-    private MembershipRepository membershipRepository;
+    private CurrentOrganizationResolver currentOrg;
 
     @MockitoBean
     private ApiKeyRepository apiKeyRepository;
@@ -68,7 +63,6 @@ class DashboardPageControllerTest {
         UUID orgId = UUID.randomUUID();
 
         User user = new User(userId, "testuser", "test@example.com");
-        Membership membership = new Membership(UUID.randomUUID(), userId, orgId, MemberRole.OWNER);
         DashboardSummary summary = new DashboardSummary(
                 3, 5, List.of(), List.of(), List.of(), new BigDecimal("1200.00"));
 
@@ -76,8 +70,8 @@ class DashboardPageControllerTest {
                 UUID.randomUUID(), UUID.randomUUID(),
                 "Acme Inc", "Senior Engineer", "Remote", 92);
 
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(userId)).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, orgId));
         when(dashboardUseCase.getSummary(orgId)).thenReturn(summary);
         when(recentApplyNowUseCase.getRecentApplyNow(orgId, 5)).thenReturn(List.of(applyNow));
 
@@ -103,8 +97,8 @@ class DashboardPageControllerTest {
         UUID userId = UUID.randomUUID();
         User user = new User(userId, "nomember", "nomember@example.com");
 
-        when(userRepository.findByUsername("nomember")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(userId)).thenReturn(List.of());
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, null));
 
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection());

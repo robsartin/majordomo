@@ -9,10 +9,10 @@ import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.CompareRubricVersionsUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -21,12 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -43,8 +43,7 @@ class RubricComparatorControllerTest {
     @Autowired MockMvc mvc;
 
     @MockitoBean CompareRubricVersionsUseCase comparisonUseCase;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
 
@@ -58,8 +57,9 @@ class RubricComparatorControllerTest {
         var membership = new Membership();
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
 
         RubricComparison result = new RubricComparison(
                 "default", 1, 2, List.of(),
@@ -88,8 +88,9 @@ class RubricComparatorControllerTest {
         var membership = new Membership();
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
 
         RubricComparison result = new RubricComparison(
                 "default", 1, 2, List.of(),

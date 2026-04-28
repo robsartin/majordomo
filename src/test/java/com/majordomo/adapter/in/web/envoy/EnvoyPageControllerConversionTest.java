@@ -11,18 +11,16 @@ import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -47,8 +45,7 @@ class EnvoyPageControllerConversionTest {
     @MockitoBean IngestJobPostingUseCase ingestUseCase;
     @MockitoBean ScoreJobPostingUseCase scoreUseCase;
     @MockitoBean MarkPostingConversionUseCase conversionUseCase;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean JobPostingRepository jobPostingRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
@@ -64,8 +61,9 @@ class EnvoyPageControllerConversionTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
         UUID postingId = UuidFactory.newId();
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
 
         mvc.perform(post("/envoy/postings/{id}/applied", postingId).with(csrf()))
                 .andExpect(status().is3xxRedirection())
@@ -83,8 +81,9 @@ class EnvoyPageControllerConversionTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
         UUID postingId = UuidFactory.newId();
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
 
         mvc.perform(post("/envoy/postings/{id}/dismissed", postingId).with(csrf()))
                 .andExpect(status().is3xxRedirection())

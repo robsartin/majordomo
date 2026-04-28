@@ -17,11 +17,11 @@ import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -57,8 +57,7 @@ class EnvoyPageIngestFormTest {
     @MockitoBean IngestJobPostingUseCase ingestUseCase;
     @MockitoBean ScoreJobPostingUseCase scoreUseCase;
     @MockitoBean MarkPostingConversionUseCase conversionUseCase;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean JobPostingRepository jobPostingRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
@@ -83,8 +82,10 @@ class EnvoyPageIngestFormTest {
                 List.of(), List.of(), 90, 90, Recommendation.APPLY_NOW,
                 "claude-sonnet-4-6", Instant.now());
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(ingestUseCase.ingest(any(JobSourceRequest.class), eq(ORG_ID))).thenReturn(saved);
         when(scoreUseCase.score(eq(postingId), eq("default"), eq(ORG_ID))).thenReturn(report);
 
@@ -128,8 +129,10 @@ class EnvoyPageIngestFormTest {
                 List.of(), List.of(), 50, 50, Recommendation.CONSIDER,
                 "claude-sonnet-4-6", Instant.now());
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(ingestUseCase.ingest(any(JobSourceRequest.class), eq(ORG_ID))).thenReturn(saved);
         when(scoreUseCase.score(eq(postingId), eq("default"), eq(ORG_ID))).thenReturn(report);
 
@@ -156,8 +159,10 @@ class EnvoyPageIngestFormTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(ingestUseCase.ingest(any(JobSourceRequest.class), eq(ORG_ID)))
                 .thenThrow(new IllegalArgumentException("no JobSource supports type: bogus"));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
@@ -188,8 +193,10 @@ class EnvoyPageIngestFormTest {
         saved.setId(postingId);
         saved.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(ingestUseCase.ingest(any(JobSourceRequest.class), eq(ORG_ID))).thenReturn(saved);
         when(scoreUseCase.score(eq(postingId), eq("default"), eq(ORG_ID)))
                 .thenThrow(new LlmScoringException("LLM returned malformed JSON"));
@@ -219,8 +226,9 @@ class EnvoyPageIngestFormTest {
     @WithMockUser(username = "robsartin")
     void postEnvoy_redirectsHomeWhenUserHasNoMembership() throws Exception {
         var user = new User(UuidFactory.newId(), "robsartin", "rob@example.com");
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of());
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, null));
 
         mvc.perform(post("/envoy")
                         .with(csrf())
@@ -252,8 +260,10 @@ class EnvoyPageIngestFormTest {
         membership.setUserId(user.getId());
         membership.setOrganizationId(ORG_ID);
 
-        when(userRepository.findByUsername("robsartin")).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+
+
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
