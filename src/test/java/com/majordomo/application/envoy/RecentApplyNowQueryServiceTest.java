@@ -88,6 +88,72 @@ class RecentApplyNowQueryServiceTest {
         verify(reports).query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(100));
     }
 
+    /** getStat counts APPLY_NOW reports and how many of their postings are applied. */
+    @Test
+    void getStatCountsAppliedReports() {
+        UUID orgId = UUID.randomUUID();
+        UUID p1 = UUID.randomUUID();
+        UUID p2 = UUID.randomUUID();
+        UUID p3 = UUID.randomUUID();
+        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(50)))
+                .thenReturn(new com.majordomo.domain.model.Page<>(List.of(
+                        report(UUID.randomUUID(), orgId, p1, 90),
+                        report(UUID.randomUUID(), orgId, p2, 91),
+                        report(UUID.randomUUID(), orgId, p3, 92)),
+                        null, false));
+        when(postings.findById(p1, orgId)).thenReturn(Optional.of(applied(p1, orgId)));
+        when(postings.findById(p2, orgId)).thenReturn(Optional.of(applied(p2, orgId)));
+        when(postings.findById(p3, orgId)).thenReturn(Optional.of(unapplied(p3, orgId)));
+
+        var stat = service.getStat(orgId);
+
+        assertThat(stat.total()).isEqualTo(3L);
+        assertThat(stat.applied()).isEqualTo(2L);
+    }
+
+    /** getStat returns EMPTY when there are no APPLY_NOW reports. */
+    @Test
+    void getStatEmptyWhenNoReports() {
+        UUID orgId = UUID.randomUUID();
+        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(50)))
+                .thenReturn(new com.majordomo.domain.model.Page<>(List.of(), null, false));
+
+        var stat = service.getStat(orgId);
+
+        assertThat(stat).isEqualTo(com.majordomo.domain.model.envoy.ApplyNowConversionStat.EMPTY);
+    }
+
+    /** getStat tolerates missing posting (race / hard-deleted) — counts as not-applied. */
+    @Test
+    void getStatTolerantOfMissingPosting() {
+        UUID orgId = UUID.randomUUID();
+        UUID p1 = UUID.randomUUID();
+        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(50)))
+                .thenReturn(new com.majordomo.domain.model.Page<>(List.of(
+                        report(UUID.randomUUID(), orgId, p1, 90)), null, false));
+        when(postings.findById(p1, orgId)).thenReturn(Optional.empty());
+
+        var stat = service.getStat(orgId);
+
+        assertThat(stat.total()).isEqualTo(1L);
+        assertThat(stat.applied()).isEqualTo(0L);
+    }
+
+    private static JobPosting applied(UUID id, UUID orgId) {
+        JobPosting p = unapplied(id, orgId);
+        p.setAppliedAt(Instant.parse("2026-04-15T00:00:00Z"));
+        return p;
+    }
+
+    private static JobPosting unapplied(UUID id, UUID orgId) {
+        JobPosting p = new JobPosting();
+        p.setId(id);
+        p.setOrganizationId(orgId);
+        p.setSource("manual");
+        p.setRawText("body");
+        return p;
+    }
+
     private static ScoreReport report(UUID id, UUID orgId, UUID postingId, int finalScore) {
         return new ScoreReport(
                 id, orgId, postingId, UUID.randomUUID(), 1,
