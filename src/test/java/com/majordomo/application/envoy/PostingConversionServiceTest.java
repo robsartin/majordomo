@@ -30,8 +30,9 @@ class PostingConversionServiceTest {
     private final JobPostingRepository postings = mock(JobPostingRepository.class);
     private final EventPublisher events = mock(EventPublisher.class);
     private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private final EnvoyMetrics metrics = new EnvoyMetrics(meterRegistry);
     private final PostingConversionService service =
-            new PostingConversionService(postings, events, meterRegistry);
+            new PostingConversionService(postings, events, metrics);
 
     /** markApplied stamps appliedAt, persists, publishes the event, and increments the applied counter. */
     @Test
@@ -150,7 +151,7 @@ class PostingConversionServiceTest {
     }
 
     private double counterCount(String outcome, UUID orgId) {
-        var counter = meterRegistry.find(PostingConversionService.CONVERSION_METRIC)
+        var counter = meterRegistry.find(EnvoyMetrics.APPLY_NOW_CONVERSION)
                 .tag("org", orgId.toString())
                 .tag("outcome", outcome)
                 .counter();

@@ -59,7 +59,7 @@ class JobScorerServiceTest {
         meterRegistry = new SimpleMeterRegistry();
         scorer = new JobScorerService(
                 rubrics, postings, reports, llm, new ScoreAssembler(),
-                eventPublisher, meterRegistry);
+                eventPublisher, new EnvoyMetrics(meterRegistry));
         rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
                 List.of(),
                 List.of(new Category("compensation", "pay", 20,
