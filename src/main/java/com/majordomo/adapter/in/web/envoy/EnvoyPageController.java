@@ -6,6 +6,7 @@ import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.port.in.envoy.GetApplyNowConversionStatUseCase;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.MarkPostingConversionUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
@@ -49,6 +50,7 @@ public class EnvoyPageController {
     private final IngestJobPostingUseCase ingestUseCase;
     private final ScoreJobPostingUseCase scoreUseCase;
     private final MarkPostingConversionUseCase conversionUseCase;
+    private final GetApplyNowConversionStatUseCase conversionStatUseCase;
     private final JobPostingRepository jobPostingRepository;
     private final CurrentOrganizationResolver currentOrg;
 
@@ -65,23 +67,26 @@ public class EnvoyPageController {
     /**
      * Constructs the controller.
      *
-     * @param reports              inbound port for report queries
-     * @param ingestUseCase        inbound port for ingesting a posting from any source
-     * @param scoreUseCase         inbound port for scoring an ingested posting
-     * @param conversionUseCase    inbound port for marking APPLY_NOW conversion outcome
-     * @param jobPostingRepository outbound port for posting lookups
-     * @param currentOrg           resolves the authenticated user's first organization
+     * @param reports               inbound port for report queries
+     * @param ingestUseCase         inbound port for ingesting a posting from any source
+     * @param scoreUseCase          inbound port for scoring an ingested posting
+     * @param conversionUseCase     inbound port for marking APPLY_NOW conversion outcome
+     * @param conversionStatUseCase inbound port for the APPLY_NOW conversion rollup
+     * @param jobPostingRepository  outbound port for posting lookups
+     * @param currentOrg            resolves the authenticated user's first organization
      */
     public EnvoyPageController(QueryScoreReportsUseCase reports,
                                IngestJobPostingUseCase ingestUseCase,
                                ScoreJobPostingUseCase scoreUseCase,
                                MarkPostingConversionUseCase conversionUseCase,
+                               GetApplyNowConversionStatUseCase conversionStatUseCase,
                                JobPostingRepository jobPostingRepository,
                                CurrentOrganizationResolver currentOrg) {
         this.reports = reports;
         this.ingestUseCase = ingestUseCase;
         this.scoreUseCase = scoreUseCase;
         this.conversionUseCase = conversionUseCase;
+        this.conversionStatUseCase = conversionStatUseCase;
         this.jobPostingRepository = jobPostingRepository;
         this.currentOrg = currentOrg;
     }
@@ -206,26 +211,15 @@ public class EnvoyPageController {
                         jobPostingRepository.findById(r.postingId(), orgId).orElse(null)))
                 .toList();
 
-        // Conversion stat: of the user's APPLY_NOW reports, how many of the
-        // *underlying postings* have been marked applied? Counted off the same
-        // /envoy fetch when the user is already filtered to APPLY_NOW; otherwise
-        // a separate small query runs.
-        List<ScoreReport> applyNowReports = recommendation == Recommendation.APPLY_NOW
-                ? recent
-                : reports.query(orgId, null, Recommendation.APPLY_NOW, null, DEFAULT_LIMIT).items();
-        long applyNowTotal = applyNowReports.size();
-        long applyNowApplied = applyNowReports.stream()
-                .map(r -> jobPostingRepository.findById(r.postingId(), orgId).orElse(null))
-                .filter(p -> p != null && p.getAppliedAt() != null)
-                .count();
+        var stat = conversionStatUseCase.getStat(orgId);
 
         model.addAttribute("rows", rows);
         model.addAttribute("minFinalScore", minFinalScore);
         model.addAttribute("recommendation", recommendation);
         model.addAttribute("organizationId", orgId);
         model.addAttribute("username", ctx.user().getUsername());
-        model.addAttribute("applyNowTotal", applyNowTotal);
-        model.addAttribute("applyNowApplied", applyNowApplied);
+        model.addAttribute("applyNowTotal", stat.total());
+        model.addAttribute("applyNowApplied", stat.applied());
     }
 
     /**

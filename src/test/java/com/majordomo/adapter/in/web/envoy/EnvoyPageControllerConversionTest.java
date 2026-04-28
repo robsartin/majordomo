@@ -5,6 +5,8 @@ import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
+import com.majordomo.domain.model.envoy.ApplyNowConversionStat;
+import com.majordomo.domain.port.in.envoy.GetApplyNowConversionStatUseCase;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.MarkPostingConversionUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
@@ -12,6 +14,7 @@ import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -45,12 +48,19 @@ class EnvoyPageControllerConversionTest {
     @MockitoBean IngestJobPostingUseCase ingestUseCase;
     @MockitoBean ScoreJobPostingUseCase scoreUseCase;
     @MockitoBean MarkPostingConversionUseCase conversionUseCase;
+    @MockitoBean GetApplyNowConversionStatUseCase conversionStatUseCase;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean JobPostingRepository jobPostingRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
 
     private static final UUID ORG_ID = UuidFactory.newId();
+    @BeforeEach
+    void seedConversionStat() {
+        when(conversionStatUseCase.getStat(any(UUID.class)))
+                .thenReturn(ApplyNowConversionStat.EMPTY);
+    }
+
 
     /** POST /envoy/postings/{id}/applied delegates to the use case and redirects. */
     @Test

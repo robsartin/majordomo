@@ -1,9 +1,11 @@
 package com.majordomo.application.envoy;
 
+import com.majordomo.domain.model.envoy.ApplyNowConversionStat;
 import com.majordomo.domain.model.envoy.ApplyNowPosting;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.port.in.envoy.GetApplyNowConversionStatUseCase;
 import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
@@ -14,13 +16,20 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Lists recent APPLY_NOW reports enriched with posting metadata for summary surfaces.
- * Cached in {@code envoy-apply-now} (5-minute TTL via {@link com.majordomo.adapter.in.web.config.CacheConfig});
- * the cache is evicted on {@link com.majordomo.domain.model.event.JobPostingScored} so newly-scored APPLY_NOW
- * postings appear promptly on the dashboard.
+ * Lists recent APPLY_NOW reports enriched with posting metadata, plus the
+ * "X of Y applied" rollup for the same window. Cached in {@code envoy-apply-now}
+ * (postings) and {@code envoy-apply-now-stat} (rollup); both evicted on
+ * {@link com.majordomo.domain.model.event.JobPostingScored},
+ * {@link com.majordomo.domain.model.event.PostingMarkedApplied}, and
+ * {@link com.majordomo.domain.model.event.PostingDismissed} so newly-scored or
+ * newly-converted postings show up promptly on summary surfaces.
  */
 @Service
-public class RecentApplyNowQueryService implements GetRecentApplyNowPostingsUseCase {
+public class RecentApplyNowQueryService
+        implements GetRecentApplyNowPostingsUseCase, GetApplyNowConversionStatUseCase {
+
+    /** Window used by both the dashboard panel and the /envoy stat. */
+    static final int STAT_WINDOW = 50;
 
     private final ScoreReportRepository reports;
     private final JobPostingRepository postings;
@@ -42,6 +51,21 @@ public class RecentApplyNowQueryService implements GetRecentApplyNowPostingsUseC
         int clamped = Math.max(1, Math.min(limit, 100));
         var page = reports.query(organizationId, null, Recommendation.APPLY_NOW, null, clamped);
         return page.items().stream().map(report -> enrich(report, organizationId)).toList();
+    }
+
+    @Override
+    @Cacheable(value = "envoy-apply-now-stat", key = "#organizationId")
+    public ApplyNowConversionStat getStat(UUID organizationId) {
+        var page = reports.query(organizationId, null, Recommendation.APPLY_NOW, null, STAT_WINDOW);
+        long total = page.items().size();
+        if (total == 0) {
+            return ApplyNowConversionStat.EMPTY;
+        }
+        long applied = page.items().stream()
+                .map(r -> postings.findById(r.postingId(), organizationId).orElse(null))
+                .filter(p -> p != null && p.getAppliedAt() != null)
+                .count();
+        return new ApplyNowConversionStat(total, applied);
     }
 
     private ApplyNowPosting enrich(ScoreReport report, UUID organizationId) {
