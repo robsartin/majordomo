@@ -1,10 +1,8 @@
 package com.majordomo.adapter.in.web.envoy;
 
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.envoy.RubricComparison;
-import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.CompareRubricVersionsUseCase;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -29,25 +27,18 @@ public class RubricComparatorController {
     private static final int MAX_LIMIT = 50;
 
     private final CompareRubricVersionsUseCase comparisonUseCase;
-    private final UserRepository userRepository;
-    private final MembershipRepository membershipRepository;
-
-    /** Resolved authentication context. */
-    private record AuthContext(User user, UUID organizationId) { }
+    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * Constructs the controller.
      *
-     * @param comparisonUseCase    inbound port for rubric comparison
-     * @param userRepository       outbound port for user lookups
-     * @param membershipRepository outbound port for membership lookups
+     * @param comparisonUseCase inbound port for rubric comparison
+     * @param currentOrg        resolves the authenticated user's first organization
      */
     public RubricComparatorController(CompareRubricVersionsUseCase comparisonUseCase,
-                                      UserRepository userRepository,
-                                      MembershipRepository membershipRepository) {
+                                      CurrentOrganizationResolver currentOrg) {
         this.comparisonUseCase = comparisonUseCase;
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+        this.currentOrg = currentOrg;
     }
 
     /**
@@ -69,7 +60,7 @@ public class RubricComparatorController {
                           @RequestParam(value = "limit", defaultValue = "" + DEFAULT_LIMIT) int limit,
                           @AuthenticationPrincipal UserDetails principal,
                           Model model) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -86,14 +77,5 @@ public class RubricComparatorController {
         model.addAttribute("organizationId", orgId);
         model.addAttribute("username", ctx.user().getUsername());
         return "rubric-compare";
-    }
-
-    private AuthContext resolveContext(UserDetails principal) {
-        var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
-        var memberships = membershipRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
-            return new AuthContext(user, null);
-        }
-        return new AuthContext(user, memberships.get(0).getOrganizationId());
     }
 }

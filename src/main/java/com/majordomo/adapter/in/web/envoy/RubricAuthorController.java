@@ -1,15 +1,13 @@
 package com.majordomo.adapter.in.web.envoy;
 
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.Category;
 import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.Thresholds;
 import com.majordomo.domain.model.envoy.Tier;
-import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.ManageRubricUseCase;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -43,35 +41,21 @@ public class RubricAuthorController {
 
     private final ManageRubricUseCase rubrics;
     private final RubricRepository rubricRepository;
-    private final UserRepository userRepository;
-    private final MembershipRepository membershipRepository;
-
-    /**
-     * Resolved authentication context: the user, plus the first org they belong
-     * to. {@code organizationId} is {@code null} if the user has no memberships,
-     * in which case callers should redirect home.
-     *
-     * @param user           the authenticated user
-     * @param organizationId the user's first organization id, or {@code null}
-     */
-    private record AuthContext(User user, UUID organizationId) { }
+    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * Constructs the controller.
      *
-     * @param rubrics              inbound port for rubric authoring
-     * @param rubricRepository     outbound port for rubric reads
-     * @param userRepository       outbound port for user lookups
-     * @param membershipRepository outbound port for membership lookups
+     * @param rubrics          inbound port for rubric authoring
+     * @param rubricRepository outbound port for rubric reads
+     * @param currentOrg       resolves the authenticated user's first organization
      */
     public RubricAuthorController(ManageRubricUseCase rubrics,
                                   RubricRepository rubricRepository,
-                                  UserRepository userRepository,
-                                  MembershipRepository membershipRepository) {
+                                  CurrentOrganizationResolver currentOrg) {
         this.rubrics = rubrics;
         this.rubricRepository = rubricRepository;
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+        this.currentOrg = currentOrg;
     }
 
     /**
@@ -86,7 +70,7 @@ public class RubricAuthorController {
      */
     @GetMapping("/envoy/rubrics")
     public String list(@AuthenticationPrincipal UserDetails principal, Model model) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -113,7 +97,7 @@ public class RubricAuthorController {
     public String editForm(@PathVariable String name,
                            @AuthenticationPrincipal UserDetails principal,
                            Model model) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -152,7 +136,7 @@ public class RubricAuthorController {
                          @AuthenticationPrincipal UserDetails principal,
                          Model model,
                          RedirectAttributes redirect) {
-        AuthContext ctx = resolveContext(principal);
+        var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
@@ -284,12 +268,4 @@ public class RubricAuthorController {
                 Instant.now());
     }
 
-    private AuthContext resolveContext(UserDetails principal) {
-        var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
-        var memberships = membershipRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
-            return new AuthContext(user, null);
-        }
-        return new AuthContext(user, memberships.get(0).getOrganizationId());
-    }
 }

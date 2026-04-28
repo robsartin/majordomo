@@ -7,18 +7,17 @@ import com.majordomo.domain.model.envoy.Category;
 import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.Thresholds;
 import com.majordomo.domain.model.envoy.Tier;
-import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.ManageRubricUseCase;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -52,8 +51,7 @@ class RubricAuthorControllerTest {
 
     @MockitoBean ManageRubricUseCase rubrics;
     @MockitoBean RubricRepository rubricRepository;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
 
@@ -61,11 +59,8 @@ class RubricAuthorControllerTest {
 
     private void stubMembership(String username) {
         var user = new User(UuidFactory.newId(), username, username + "@example.com");
-        var membership = new Membership();
-        membership.setUserId(user.getId());
-        membership.setOrganizationId(ORG_ID);
-        when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(membershipRepository.findByUserId(user.getId())).thenReturn(List.of(membership));
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
     }
 
     private static Rubric sampleRubric(String name, int version) {

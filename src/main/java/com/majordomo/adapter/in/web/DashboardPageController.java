@@ -1,9 +1,8 @@
 package com.majordomo.adapter.in.web;
 
+import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.port.in.DashboardUseCase;
 import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,25 +19,21 @@ public class DashboardPageController {
     private static final int APPLY_NOW_PANEL_LIMIT = 5;
 
     private final DashboardUseCase dashboardUseCase;
-    private final UserRepository userRepository;
-    private final MembershipRepository membershipRepository;
+    private final CurrentOrganizationResolver currentOrg;
     private final GetRecentApplyNowPostingsUseCase recentApplyNowUseCase;
 
     /**
      * Constructs the dashboard page controller.
      *
      * @param dashboardUseCase      the inbound port for dashboard data retrieval
-     * @param userRepository        the outbound port for user lookups
-     * @param membershipRepository  the outbound port for membership lookups
+     * @param currentOrg            resolves the authenticated user's first organization
      * @param recentApplyNowUseCase inbound port for recent APPLY_NOW postings
      */
     public DashboardPageController(DashboardUseCase dashboardUseCase,
-                                   UserRepository userRepository,
-                                   MembershipRepository membershipRepository,
+                                   CurrentOrganizationResolver currentOrg,
                                    GetRecentApplyNowPostingsUseCase recentApplyNowUseCase) {
         this.dashboardUseCase = dashboardUseCase;
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
+        this.currentOrg = currentOrg;
         this.recentApplyNowUseCase = recentApplyNowUseCase;
     }
 
@@ -51,15 +46,14 @@ public class DashboardPageController {
      */
     @GetMapping("/dashboard")
     public String dashboard(@AuthenticationPrincipal UserDetails principal, Model model) {
-        var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
-        var memberships = membershipRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
+        var resolved = currentOrg.resolve(principal);
+        if (resolved.organizationId() == null) {
             return "redirect:/";
         }
-        var orgId = memberships.get(0).getOrganizationId();
+        var orgId = resolved.organizationId();
         var summary = dashboardUseCase.getSummary(orgId);
         model.addAttribute("summary", summary);
-        model.addAttribute("username", user.getUsername());
+        model.addAttribute("username", resolved.user().getUsername());
         model.addAttribute("applyNowPostings",
                 recentApplyNowUseCase.getRecentApplyNow(orgId, APPLY_NOW_PANEL_LIMIT));
         return "dashboard";
