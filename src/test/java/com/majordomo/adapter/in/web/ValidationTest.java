@@ -44,6 +44,9 @@ class ValidationTest {
     private ManageScheduleUseCase scheduleUseCase;
 
     @MockitoBean
+    private com.majordomo.application.herald.ScheduleAccessGuard scheduleAccessGuard;
+
+    @MockitoBean
     private OrganizationAccessService organizationAccessService;
 
     @MockitoBean
