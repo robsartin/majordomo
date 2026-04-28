@@ -78,9 +78,11 @@ JSON under `/api/envoy`.
 ./mvnw validate          # Checkstyle only
 ./mvnw compile           # Compile
 ./mvnw test              # Run tests
-./mvnw verify            # Full build (compile + checkstyle + test)
+./mvnw verify            # Full build (compile + checkstyle + test + JaCoCo report)
 ./mvnw spring-boot:run   # Start app (requires PostgreSQL + Redis)
 ```
+
+JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify`. Integration tests (`*IntegrationTest.java`) are excluded from the default Surefire run, so persistence-adapter coverage in the report under-represents what is actually tested — see issue #189 to merge integration-test data into the report.
 
 ## Known Trade-offs
 
