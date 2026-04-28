@@ -2,6 +2,7 @@ package com.majordomo.adapter.out.persistence.envoy;
 
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -44,6 +45,15 @@ public class JobPostingRepositoryAdapter implements JobPostingRepository {
     @Override
     public List<JobPosting> findAllByOrganizationId(UUID organizationId) {
         return jpa.findAllByOrganizationId(organizationId).stream()
+                .map(JobPostingMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<JobPosting> findRecentByOrganizationId(UUID organizationId, int limit) {
+        int clamped = Math.max(1, Math.min(limit, 100));
+        return jpa.findByOrganizationIdOrderByFetchedAtDesc(organizationId, PageRequest.of(0, clamped))
+                .stream()
                 .map(JobPostingMapper::toDomain)
                 .toList();
     }

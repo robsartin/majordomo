@@ -48,4 +48,15 @@ public interface JobPostingRepository {
      * @return every posting in that org (may be empty)
      */
     List<JobPosting> findAllByOrganizationId(UUID organizationId);
+
+    /**
+     * Returns the most recently fetched postings for an organization, newest first,
+     * capped at {@code limit}. Used as a default posting set for rubric A/B
+     * comparison.
+     *
+     * @param organizationId owning org
+     * @param limit          maximum number of postings to return
+     * @return most-recent postings in that org, newest first
+     */
+    List<JobPosting> findRecentByOrganizationId(UUID organizationId, int limit);
 }

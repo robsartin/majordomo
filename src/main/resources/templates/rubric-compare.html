@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubric compare - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('envoy')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <!-- Breadcrumb -->
+            <nav class="mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li><a th:href="@{/envoy/rubrics}" class="hover:text-indigo-600 transition">Rubrics</a></li>
+                    <li class="flex items-center space-x-2">
+                        <span>&rsaquo;</span>
+                        <span class="text-gray-900 font-medium"
+                              th:text="${rubricName} + ' v' + ${fromVersion} + ' vs v' + ${toVersion}">Compare</span>
+                    </li>
+                </ol>
+            </nav>
+
+            <!-- Header -->
+            <div class="bg-white rounded-lg shadow mb-6 px-6 py-5">
+                <h1 class="text-2xl font-bold text-gray-900"
+                    th:text="'Rubric ' + ${rubricName} + ': v' + ${fromVersion} + ' vs v' + ${toVersion}">
+                    Rubric compare
+                </h1>
+                <p class="mt-1 text-sm text-gray-600"
+                   th:text="'Scored against the ' + ${limit} + ' most recently ingested postings (in-memory only — live reports unchanged).'">
+                    Scoring against last N postings.
+                </p>
+            </div>
+
+            <!-- Aggregate stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Mean score</div>
+                    <div class="mt-2 text-2xl font-bold text-indigo-700">
+                        <span th:text="${#numbers.formatDecimal(result.meanFromScore(), 1, 1)}">0.0</span>
+                        <span class="mx-2 text-gray-400">&rarr;</span>
+                        <span th:text="${#numbers.formatDecimal(result.meanToScore(), 1, 1)}">0.0</span>
+                    </div>
+                    <div class="mt-1 text-xs text-gray-500"
+                         th:text="'v' + ${fromVersion} + ' &rarr; v' + ${toVersion}">v1 -> v2</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Recommendation flips</div>
+                    <div class="mt-2 text-3xl font-bold text-amber-700"
+                         th:text="${result.flips()}">0</div>
+                    <div class="mt-1 text-xs text-gray-500"
+                         th:text="'across ' + ${#lists.size(result.postings())} + ' postings'">across N postings</div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Distribution shift</div>
+                    <ul class="mt-2 space-y-1 text-sm">
+                        <li th:each="rec : ${T(com.majordomo.domain.model.envoy.Recommendation).values()}">
+                            <span class="font-medium text-gray-700" th:text="${rec}">REC</span>
+                            <span class="text-gray-600"
+                                  th:text="${(result.fromDistribution().get(rec) ?: 0)} + ' &rarr; '
+                                          + ${(result.toDistribution().get(rec) ?: 0)}">0 -> 0</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Per-posting deltas -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Per-posting deltas</h2>
+                </div>
+                <div class="p-0">
+                    <p th:if="${#lists.isEmpty(result.postings())}" class="p-6 text-gray-400 text-sm">
+                        No postings in the comparison set.
+                    </p>
+                    <table th:unless="${#lists.isEmpty(result.postings())}"
+                           class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posting</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    th:text="'v' + ${fromVersion}">v1</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    th:text="'v' + ${toVersion}">v2</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">&Delta;</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr th:each="row : ${result.postings()}">
+                                <td class="px-6 py-3 text-sm text-gray-700">
+                                    <span class="font-medium"
+                                          th:text="${row.posting().getCompany() != null ? row.posting().getCompany() : '—'}">Company</span>
+                                    <span class="block text-xs text-gray-500"
+                                          th:text="${row.posting().getTitle() != null ? row.posting().getTitle() : '—'}">Title</span>
+                                </td>
+                                <td class="px-6 py-3 text-sm text-gray-700"
+                                    th:text="${row.fromReport().finalScore()} + ' (' + ${row.fromReport().recommendation()} + ')'">0</td>
+                                <td class="px-6 py-3 text-sm text-gray-700"
+                                    th:text="${row.toReport().finalScore()} + ' (' + ${row.toReport().recommendation()} + ')'">0</td>
+                                <td class="px-6 py-3 text-sm font-semibold"
+                                    th:classappend="${row.scoreDelta() > 0} ? 'text-emerald-700' :
+                                                   (${row.scoreDelta() < 0} ? 'text-red-700' : 'text-gray-500')"
+                                    th:text="${row.scoreDelta() > 0 ? '+' + row.scoreDelta() : row.scoreDelta()}">0</td>
+                                <td class="px-6 py-3 text-sm">
+                                    <span th:if="${row.recommendationFlipped()}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        flipped
+                                    </span>
+                                    <span th:unless="${row.recommendationFlipped()}"
+                                          class="text-gray-400 text-xs">unchanged</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>

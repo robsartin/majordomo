@@ -39,4 +39,15 @@ public interface JpaJobPostingRepository extends JpaRepository<JobPostingEntity,
      * @return every posting in that org (may be empty)
      */
     List<JobPostingEntity> findAllByOrganizationId(UUID organizationId);
+
+    /**
+     * Most-recent postings for an org, ordered by {@code fetched_at} descending.
+     * Used as the default posting set for rubric A/B comparison.
+     *
+     * @param organizationId owning org
+     * @param pageable       page metadata (caller passes a {@code PageRequest.of(0, limit)})
+     * @return matching postings, newest first
+     */
+    List<JobPostingEntity> findByOrganizationIdOrderByFetchedAtDesc(
+            UUID organizationId, org.springframework.data.domain.Pageable pageable);
 }
