@@ -10,7 +10,6 @@ import com.majordomo.domain.model.envoy.LlmScoreResponse;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.Rubric;
 import com.majordomo.domain.model.envoy.ScoreReport;
-import com.majordomo.domain.model.envoy.Thresholds;
 import com.majordomo.domain.model.envoy.Tier;
 import org.springframework.stereotype.Component;
 
@@ -82,7 +81,7 @@ public class ScoreAssembler {
         }
 
         int finalScore = Math.max(0, rawScore - totalPenalty);
-        Recommendation recommendation = deriveRecommendation(finalScore, rubric.thresholds());
+        Recommendation recommendation = Recommendation.fromScore(finalScore, rubric.thresholds());
 
         return new ScoreReport(
                 UuidFactory.newId(),
@@ -143,16 +142,4 @@ public class ScoreAssembler {
         }
     }
 
-    private Recommendation deriveRecommendation(int finalScore, Thresholds t) {
-        if (finalScore >= t.applyImmediately()) {
-            return Recommendation.APPLY_NOW;
-        }
-        if (finalScore >= t.apply()) {
-            return Recommendation.APPLY;
-        }
-        if (finalScore >= t.considerOnly()) {
-            return Recommendation.CONSIDER;
-        }
-        return Recommendation.SKIP;
-    }
 }
