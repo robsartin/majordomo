@@ -21,6 +21,7 @@
         <java.version>25</java.version>
         <springdoc.version>2.8.6</springdoc.version>
         <checkstyle.version>10.21.4</checkstyle.version>
+        <jacoco.version>0.8.13</jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -195,6 +196,26 @@
                         <exclude>**/*IntegrationTest.java</exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
