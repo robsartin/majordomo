@@ -45,8 +45,25 @@ adapter/out/event/       — Domain event publishers
 | The Concierge | Contact management | `concierge` |
 | The Herald | Scheduling & notifications | `herald` |
 | The Ledger | Finance & cost tracking | `ledger` |
+| The Envoy | Job-posting scoring & application support | `envoy` |
 | Identity | Users, auth, API keys | `identity` |
 | The Dashboard | Aggregated summary | (top-level controllers) |
+
+### Envoy routes (ADR-0022)
+
+LLM-graded job-posting scoring against versioned rubrics. UI under `/envoy`,
+JSON under `/api/envoy`.
+
+| Route | Purpose |
+|-------|---------|
+| `GET /envoy` | List recent score reports for the user's org, with min-score / recommendation filters and an inline ingest+score form. |
+| `POST /envoy` | Inline ingest a posting (manual paste, URL, Greenhouse) and score against the `default` rubric. |
+| `GET /envoy/reports/{id}` | Detail view of a single report — categories, rationale, confidence, flags, LLM usage. |
+| `GET /envoy/compare?ids=&rubric=` | Side-by-side comparison of 2–5 reports under one rubric. |
+| `GET /envoy/rubrics`, `GET /envoy/rubrics/{name}/edit`, `POST /envoy/rubrics/{name}` | List, edit (form-based), and version rubrics. |
+| `POST /api/envoy/postings`, `/{id}/score`, `/{id}/score-all`, `/rescore` | REST ingest, single-rubric score, multi-rubric score, batch rescore. |
+| `GET /api/envoy/reports`, `GET /api/envoy/reports/{id}` | Cursor-paginated list and per-id fetch. |
+| `PUT /api/envoy/rubrics/{name}` | Append a new org-specific rubric version. |
 
 ## Development Workflow (ADR-0003, ADR-0010)
 
@@ -126,3 +143,4 @@ See `doc/adr/` for all architecture decision records:
 | 0019 | Tailwind CSS for server-rendered UI |
 | 0020 | Audit logging strategy |
 | 0021 | Prefer test slices over @SpringBootTest |
+| 0022 | Envoy: rubric-based job-posting scoring service |
