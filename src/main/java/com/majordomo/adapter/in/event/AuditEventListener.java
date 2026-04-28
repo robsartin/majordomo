@@ -6,6 +6,8 @@ import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.event.JobPostingIngested;
 import com.majordomo.domain.model.event.JobPostingScored;
+import com.majordomo.domain.model.event.PostingDismissed;
+import com.majordomo.domain.model.event.PostingMarkedApplied;
 import com.majordomo.domain.model.event.PropertyArchived;
 import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.event.UserCreated;
@@ -91,6 +93,28 @@ public class AuditEventListener {
     public void onJobPostingScored(JobPostingScored event) {
         log(EntityType.SCORE_REPORT.name(), event.reportId(),
                 AuditAction.CREATE.name(), event.occurredAt());
+    }
+
+    /**
+     * Records an audit entry when a posting is marked as applied.
+     *
+     * @param event the apply event
+     */
+    @EventListener
+    public void onPostingMarkedApplied(PostingMarkedApplied event) {
+        log(EntityType.JOB_POSTING.name(), event.postingId(),
+                AuditAction.APPLY.name(), event.occurredAt());
+    }
+
+    /**
+     * Records an audit entry when a posting is dismissed.
+     *
+     * @param event the dismiss event
+     */
+    @EventListener
+    public void onPostingDismissed(PostingDismissed event) {
+        log(EntityType.JOB_POSTING.name(), event.postingId(),
+                AuditAction.DISMISS.name(), event.occurredAt());
     }
 
     private void log(String entityType, UUID entityId, String action, Instant occurredAt) {

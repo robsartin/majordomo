@@ -7,6 +7,7 @@ import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
+import com.majordomo.domain.port.in.envoy.MarkPostingConversionUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
@@ -49,6 +50,7 @@ public class EnvoyPageController {
     private final QueryScoreReportsUseCase reports;
     private final IngestJobPostingUseCase ingestUseCase;
     private final ScoreJobPostingUseCase scoreUseCase;
+    private final MarkPostingConversionUseCase conversionUseCase;
     private final JobPostingRepository jobPostingRepository;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
@@ -79,6 +81,7 @@ public class EnvoyPageController {
      * @param reports              inbound port for report queries
      * @param ingestUseCase        inbound port for ingesting a posting from any source
      * @param scoreUseCase         inbound port for scoring an ingested posting
+     * @param conversionUseCase    inbound port for marking APPLY_NOW conversion outcome
      * @param jobPostingRepository outbound port for posting lookups
      * @param userRepository       outbound port for user lookups
      * @param membershipRepository outbound port for membership lookups
@@ -86,12 +89,14 @@ public class EnvoyPageController {
     public EnvoyPageController(QueryScoreReportsUseCase reports,
                                IngestJobPostingUseCase ingestUseCase,
                                ScoreJobPostingUseCase scoreUseCase,
+                               MarkPostingConversionUseCase conversionUseCase,
                                JobPostingRepository jobPostingRepository,
                                UserRepository userRepository,
                                MembershipRepository membershipRepository) {
         this.reports = reports;
         this.ingestUseCase = ingestUseCase;
         this.scoreUseCase = scoreUseCase;
+        this.conversionUseCase = conversionUseCase;
         this.jobPostingRepository = jobPostingRepository;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
@@ -217,11 +222,26 @@ public class EnvoyPageController {
                         jobPostingRepository.findById(r.postingId(), orgId).orElse(null)))
                 .toList();
 
+        // Conversion stat: of the user's APPLY_NOW reports, how many of the
+        // *underlying postings* have been marked applied? Counted off the same
+        // /envoy fetch when the user is already filtered to APPLY_NOW; otherwise
+        // a separate small query runs.
+        List<ScoreReport> applyNowReports = recommendation == Recommendation.APPLY_NOW
+                ? recent
+                : reports.query(orgId, null, Recommendation.APPLY_NOW, null, DEFAULT_LIMIT).items();
+        long applyNowTotal = applyNowReports.size();
+        long applyNowApplied = applyNowReports.stream()
+                .map(r -> jobPostingRepository.findById(r.postingId(), orgId).orElse(null))
+                .filter(p -> p != null && p.getAppliedAt() != null)
+                .count();
+
         model.addAttribute("rows", rows);
         model.addAttribute("minFinalScore", minFinalScore);
         model.addAttribute("recommendation", recommendation);
         model.addAttribute("organizationId", orgId);
         model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("applyNowTotal", applyNowTotal);
+        model.addAttribute("applyNowApplied", applyNowApplied);
     }
 
     /**
@@ -242,6 +262,52 @@ public class EnvoyPageController {
         if (value != null && !value.isBlank()) {
             hints.put(key, value.trim());
         }
+    }
+
+    /**
+     * Marks a posting as applied (APPLY_NOW conversion path). Idempotent.
+     *
+     * @param postingId the posting id (path variable)
+     * @param principal the authenticated user
+     * @return redirect back to the report detail page if the posting has any
+     *         report; otherwise to the envoy list
+     */
+    @PostMapping("/envoy/postings/{postingId}/applied")
+    public String markPostingApplied(@PathVariable UUID postingId,
+                                     @AuthenticationPrincipal UserDetails principal) {
+        AuthContext ctx = resolveContext(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        try {
+            conversionUseCase.markApplied(postingId, ctx.organizationId());
+        } catch (IllegalArgumentException ignored) {
+            // Posting not in user's org — silently swallow; the redirect target
+            // will naturally 404 if the report id is not theirs.
+        }
+        return "redirect:/envoy";
+    }
+
+    /**
+     * Marks a posting as dismissed (not interested). Idempotent.
+     *
+     * @param postingId the posting id (path variable)
+     * @param principal the authenticated user
+     * @return redirect to the envoy list
+     */
+    @PostMapping("/envoy/postings/{postingId}/dismissed")
+    public String dismissPosting(@PathVariable UUID postingId,
+                                 @AuthenticationPrincipal UserDetails principal) {
+        AuthContext ctx = resolveContext(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        try {
+            conversionUseCase.dismiss(postingId, ctx.organizationId());
+        } catch (IllegalArgumentException ignored) {
+            // Same rationale as markPostingApplied.
+        }
+        return "redirect:/envoy";
     }
 
     /**

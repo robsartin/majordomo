@@ -1,6 +1,8 @@
 package com.majordomo.adapter.in.event;
 
 import com.majordomo.domain.model.AuditLogEntry;
+import com.majordomo.domain.model.event.PostingDismissed;
+import com.majordomo.domain.model.event.PostingMarkedApplied;
 import com.majordomo.domain.model.event.PropertyArchived;
 import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.event.UserCreated;
@@ -73,6 +75,44 @@ class AuditEventListenerTest {
         assertEquals("PROPERTY", entry.getEntityType());
         assertEquals(propertyId, entry.getEntityId());
         assertEquals("ARCHIVE", entry.getAction());
+        assertEquals(now, entry.getOccurredAt());
+    }
+
+    /** A PostingMarkedApplied event should produce an APPLY audit entry for the posting. */
+    @Test
+    void onPostingMarkedAppliedWritesAuditEntry() {
+        UUID postingId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        listener.onPostingMarkedApplied(new PostingMarkedApplied(postingId, orgId, now));
+
+        var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLogEntry entry = captor.getValue();
+        assertEquals("JOB_POSTING", entry.getEntityType());
+        assertEquals(postingId, entry.getEntityId());
+        assertEquals("APPLY", entry.getAction());
+        assertEquals(now, entry.getOccurredAt());
+    }
+
+    /** A PostingDismissed event should produce a DISMISS audit entry for the posting. */
+    @Test
+    void onPostingDismissedWritesAuditEntry() {
+        UUID postingId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        listener.onPostingDismissed(new PostingDismissed(postingId, orgId, now));
+
+        var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
+        verify(auditLogRepository).save(captor.capture());
+
+        AuditLogEntry entry = captor.getValue();
+        assertEquals("JOB_POSTING", entry.getEntityType());
+        assertEquals(postingId, entry.getEntityId());
+        assertEquals("DISMISS", entry.getAction());
         assertEquals(now, entry.getOccurredAt());
     }
 

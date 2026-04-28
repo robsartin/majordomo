@@ -19,7 +19,13 @@
 
             <div class="flex items-baseline justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Envoy</h1>
-                <span class="text-sm text-gray-500">Job posting scores</span>
+                <span class="text-sm text-gray-500"
+                      th:if="${applyNowTotal > 0}"
+                      th:text="${applyNowApplied} + ' of ' + ${applyNowTotal} + ' APPLY_NOW postings applied'">
+                    0 of 0 APPLY_NOW postings applied
+                </span>
+                <span class="text-sm text-gray-500"
+                      th:unless="${applyNowTotal > 0}">Job posting scores</span>
             </div>
 
             <!-- Ingest error banner -->

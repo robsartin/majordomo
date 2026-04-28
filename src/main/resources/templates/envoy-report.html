@@ -67,6 +67,37 @@
                         </span>
                     </div>
                 </div>
+
+                <!-- Conversion actions -->
+                <div th:if="${posting != null}"
+                     class="px-6 py-4 border-t border-gray-100 flex flex-wrap items-center gap-3">
+                    <span th:if="${posting.getAppliedAt() != null}"
+                          class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                        Applied
+                    </span>
+                    <span th:if="${posting.getDismissedAt() != null}"
+                          class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700">
+                        Dismissed
+                    </span>
+                    <form method="post"
+                          th:if="${posting.getAppliedAt() == null}"
+                          th:action="@{|/envoy/postings/${posting.getId()}/applied|}"
+                          class="inline">
+                        <button type="submit"
+                                class="rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                            Mark applied
+                        </button>
+                    </form>
+                    <form method="post"
+                          th:if="${posting.getDismissedAt() == null}"
+                          th:action="@{|/envoy/postings/${posting.getId()}/dismissed|}"
+                          class="inline">
+                        <button type="submit"
+                                class="rounded bg-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-300">
+                            Not interested
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <!-- Disqualified banner -->
