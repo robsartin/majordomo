@@ -54,6 +54,19 @@ public interface RubricRepository {
     List<Rubric> findActiveRubricsForOrg(UUID organizationId);
 
     /**
+     * Finds a specific rubric version by {@code (organizationId, name, version)}.
+     * Prefers an org-specific row; falls back to the system default
+     * ({@code organization_id IS NULL}) for the same {@code (name, version)}.
+     * Returned rubric retains its true {@code organizationId} (empty for system default).
+     *
+     * @param name           logical rubric name
+     * @param version        version number to fetch
+     * @param organizationId org scope for the lookup
+     * @return the matching rubric, or empty if neither org-specific nor system default exists
+     */
+    Optional<Rubric> findByOrgNameVersion(String name, int version, UUID organizationId);
+
+    /**
      * Persists a rubric. Caller is responsible for setting id, version, and effectiveFrom.
      *
      * @param rubric the rubric to persist

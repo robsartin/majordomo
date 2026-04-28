@@ -74,6 +74,17 @@ public class RubricRepositoryAdapter implements RubricRepository {
     }
 
     @Override
+    public Optional<Rubric> findByOrgNameVersion(String name, int version, UUID organizationId) {
+        Optional<RubricEntity> orgSpecific =
+                jpa.findByOrganizationIdAndNameAndVersion(organizationId, name, version);
+        if (orgSpecific.isPresent()) {
+            return orgSpecific.map(RubricMapper::toDomain);
+        }
+        return jpa.findByOrganizationIdIsNullAndNameAndVersion(name, version)
+                .map(RubricMapper::toDomain);
+    }
+
+    @Override
     public Rubric save(Rubric rubric) {
         return RubricMapper.toDomain(jpa.save(RubricMapper.toEntity(rubric)));
     }

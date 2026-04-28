@@ -54,4 +54,24 @@ public interface JpaRubricRepository extends JpaRepository<RubricEntity, UUID> {
      * @return system-default rows grouped by name with newest version first
      */
     List<RubricEntity> findAllByOrganizationIdIsNullOrderByNameAscVersionDesc();
+
+    /**
+     * Exact-match finder for an org-specific rubric version.
+     *
+     * @param organizationId org scope
+     * @param name           rubric name
+     * @param version        version number
+     * @return the matching org-specific row, if any
+     */
+    Optional<RubricEntity> findByOrganizationIdAndNameAndVersion(
+            UUID organizationId, String name, int version);
+
+    /**
+     * Exact-match finder for a system-default rubric version.
+     *
+     * @param name    rubric name
+     * @param version version number
+     * @return the matching system-default row, if any
+     */
+    Optional<RubricEntity> findByOrganizationIdIsNullAndNameAndVersion(String name, int version);
 }
