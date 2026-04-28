@@ -43,6 +43,12 @@ public class JobPostingEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "applied_at")
+    private Instant appliedAt;
+
+    @Column(name = "dismissed_at")
+    private Instant dismissedAt;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -75,4 +81,10 @@ public class JobPostingEntity {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    public Instant getAppliedAt() { return appliedAt; }
+    public void setAppliedAt(Instant appliedAt) { this.appliedAt = appliedAt; }
+
+    public Instant getDismissedAt() { return dismissedAt; }
+    public void setDismissedAt(Instant dismissedAt) { this.dismissedAt = dismissedAt; }
 }

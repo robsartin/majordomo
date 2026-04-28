@@ -31,6 +31,8 @@ final class JobPostingMapper {
         e.setRawText(p.getRawText());
         e.setFetchedAt(p.getFetchedAt());
         e.setArchivedAt(p.getArchivedAt());
+        e.setAppliedAt(p.getAppliedAt());
+        e.setDismissedAt(p.getDismissedAt());
         try {
             e.setExtracted(p.getExtracted() == null ? null
                     : MAPPER.writeValueAsString(p.getExtracted()));
@@ -52,6 +54,8 @@ final class JobPostingMapper {
         p.setRawText(e.getRawText());
         p.setFetchedAt(e.getFetchedAt());
         p.setArchivedAt(e.getArchivedAt());
+        p.setAppliedAt(e.getAppliedAt());
+        p.setDismissedAt(e.getDismissedAt());
         try {
             p.setExtracted(e.getExtracted() == null ? new HashMap<>()
                     : MAPPER.readValue(e.getExtracted(), MAP_TYPE));

@@ -7,5 +7,7 @@ public enum AuditAction {
     CREATE,
     UPDATE,
     ARCHIVE,
-    TRANSFER
+    TRANSFER,
+    APPLY,
+    DISMISS
 }

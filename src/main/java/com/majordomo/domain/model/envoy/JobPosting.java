@@ -30,6 +30,8 @@ public class JobPosting {
     private Map<String, String> extracted;
     private Instant fetchedAt;
     private Instant archivedAt;
+    private Instant appliedAt;
+    private Instant dismissedAt;
 
     public JobPosting() { }
 
@@ -65,4 +67,10 @@ public class JobPosting {
 
     public Instant getArchivedAt() { return archivedAt; }
     public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+
+    public Instant getAppliedAt() { return appliedAt; }
+    public void setAppliedAt(Instant appliedAt) { this.appliedAt = appliedAt; }
+
+    public Instant getDismissedAt() { return dismissedAt; }
+    public void setDismissedAt(Instant dismissedAt) { this.dismissedAt = dismissedAt; }
 }
