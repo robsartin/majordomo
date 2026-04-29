@@ -20,7 +20,7 @@
         <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
         <!-- Stat Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
             <!-- Property Count -->
             <div class="bg-white rounded-lg shadow p-6">
@@ -35,12 +35,18 @@
             </div>
 
             <!-- Total Spend -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Spend</div>
-                <div class="mt-2 text-3xl font-bold text-indigo-700">
-                    $<span th:text="${#numbers.formatDecimal(summary.totalSpend(), 1, 2)}">0.00</span>
-                </div>
-            </div>
+            <a href="/ledger" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+                <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total spend</div>
+                <div class="mt-2 text-3xl font-bold text-indigo-700"
+                     th:text="${'$' + (summary.totalSpend() != null ? #numbers.formatDecimal(summary.totalSpend(), 1, 'COMMA', 2, 'POINT') : '0.00')}">$0.00</div>
+            </a>
+
+            <!-- Projected Annual -->
+            <a href="/ledger" class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+                <div class="text-sm font-medium text-gray-500 uppercase tracking-wide">Projected annual</div>
+                <div class="mt-2 text-3xl font-bold text-indigo-700"
+                     th:text="${'$' + (projectedAnnualSpend != null ? #numbers.formatDecimal(projectedAnnualSpend, 1, 'COMMA', 2, 'POINT') : '0.00')}">$0.00</div>
+            </a>
 
         </div>
 
