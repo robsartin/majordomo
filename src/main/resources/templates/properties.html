@@ -19,8 +19,14 @@
 
             <div class="flex items-baseline justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Properties</h1>
-                <span class="text-sm text-gray-500"
-                      th:text="${#lists.size(rows)} + ' properties'">0 properties</span>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-500"
+                          th:text="${#lists.size(rows)} + ' properties'">0 properties</span>
+                    <a th:href="@{/properties/new}"
+                       class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                        + New property
+                    </a>
+                </div>
             </div>
 
             <!-- Filter strip -->

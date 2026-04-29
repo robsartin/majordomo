@@ -69,6 +69,9 @@ class PropertyPageControllerTest {
     private com.majordomo.application.identity.CurrentOrganizationResolver currentOrg;
 
     @MockitoBean
+    private com.majordomo.application.identity.OrganizationAccessService organizationAccessService;
+
+    @MockitoBean
     private UserRepository userRepository;
 
     @MockitoBean

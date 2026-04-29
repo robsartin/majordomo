@@ -59,6 +59,7 @@ class PropertyPageDetailPanelsTest {
     @MockitoBean PropertyRepository propertyRepository;
     @MockitoBean ServiceRecordRepository serviceRecordRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
+    @MockitoBean com.majordomo.application.identity.OrganizationAccessService organizationAccessService;
     @MockitoBean UserRepository userRepository;
     @MockitoBean MembershipRepository membershipRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
