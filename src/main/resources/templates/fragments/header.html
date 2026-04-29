@@ -5,6 +5,7 @@
     <a th:href="@{/dashboard}" class="text-xl font-bold hover:text-indigo-200">Majordomo</a>
     <div class="flex items-center gap-4" sec:authorize="isAuthenticated()">
         <span sec:authentication="name" class="text-sm">User</span>
+        <a th:href="@{/account/api-keys}" class="text-indigo-200 hover:text-white text-sm">API keys</a>
         <form th:action="@{/logout}" method="post" class="inline">
             <button type="submit" class="text-indigo-200 hover:text-white text-sm">Sign out</button>
         </form>
