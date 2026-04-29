@@ -60,6 +60,12 @@ class PropertyPageControllerTest {
     private PropertyContactRepository propertyContactRepository;
 
     @MockitoBean
+    private com.majordomo.domain.port.out.steward.PropertyRepository propertyRepository;
+
+    @MockitoBean
+    private com.majordomo.application.identity.CurrentOrganizationResolver currentOrg;
+
+    @MockitoBean
     private UserRepository userRepository;
 
     @MockitoBean
