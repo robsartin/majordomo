@@ -194,4 +194,36 @@ class PropertyPageFormTest {
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getName()).isEqualTo("New name");
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getCategory()).isEqualTo("new-cat");
     }
+
+    /** Cycle 6: POST /properties/{id} with blank name re-renders the edit form with error. */
+    @Test
+    @WithMockUser
+    void updateWithBlankNameRendersFormWithError() throws Exception {
+        UUID id = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property existing =
+                new com.majordomo.domain.model.steward.Property();
+        existing.setId(id);
+        existing.setOrganizationId(ORG_ID);
+        existing.setName("Beach House");
+        existing.setCategory("vacation");
+        when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(existing));
+
+        org.springframework.test.web.servlet.MvcResult result = mvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/properties/{id}", id)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "")
+                        .param("category", "still-vacation"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("property-form"))
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(body).contains("Name is required.");
+        org.assertj.core.api.Assertions.assertThat(body).contains("Edit property");
+        org.assertj.core.api.Assertions.assertThat(body).contains("value=\"still-vacation\"");
+        org.mockito.Mockito.verify(propertyUseCase, org.mockito.Mockito.never())
+                .update(any(), any());
+    }
 }
