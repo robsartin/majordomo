@@ -50,6 +50,7 @@ class ContactPageDetailTest {
     @MockitoBean ManageContactUseCase contactUseCase;
     @MockitoBean ContactRepository contactRepository;
     @MockitoBean ManagePropertyUseCase propertyUseCase;
+    @MockitoBean com.majordomo.domain.port.out.steward.PropertyRepository propertyRepository;
     @MockitoBean PropertyContactRepository propertyContactRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean OrganizationAccessService organizationAccessService;

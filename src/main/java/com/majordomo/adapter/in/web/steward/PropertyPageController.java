@@ -3,6 +3,7 @@ package com.majordomo.adapter.in.web.steward;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.concierge.Contact;
+import com.majordomo.domain.model.concierge.ContactRole;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.model.steward.Property;
@@ -11,6 +12,7 @@ import com.majordomo.domain.port.in.ManageAttachmentUseCase;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
+import com.majordomo.domain.port.out.concierge.ContactRepository;
 import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
@@ -51,6 +53,7 @@ public class PropertyPageController {
     private final ManageAttachmentUseCase attachmentUseCase;
     private final PropertyContactRepository propertyContactRepository;
     private final PropertyRepository propertyRepository;
+    private final ContactRepository contactRepository;
     private final ServiceRecordRepository serviceRecordRepository;
     private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
@@ -79,6 +82,7 @@ public class PropertyPageController {
      * @param attachmentUseCase         the inbound port for attachment management
      * @param propertyContactRepository the outbound port for property-contact associations
      * @param propertyRepository        the outbound port for property reads (used by the list view)
+     * @param contactRepository         the outbound port for contact reads (used by the link picker)
      * @param serviceRecordRepository   the outbound port for service-record reads (recent activity panel)
      * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies the caller has access to a given organization
@@ -91,6 +95,7 @@ public class PropertyPageController {
                                   ManageAttachmentUseCase attachmentUseCase,
                                   PropertyContactRepository propertyContactRepository,
                                   PropertyRepository propertyRepository,
+                                  ContactRepository contactRepository,
                                   ServiceRecordRepository serviceRecordRepository,
                                   CurrentOrganizationResolver currentOrg,
                                   OrganizationAccessService organizationAccessService,
@@ -102,6 +107,7 @@ public class PropertyPageController {
         this.attachmentUseCase = attachmentUseCase;
         this.propertyContactRepository = propertyContactRepository;
         this.propertyRepository = propertyRepository;
+        this.contactRepository = contactRepository;
         this.serviceRecordRepository = serviceRecordRepository;
         this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
@@ -427,10 +433,21 @@ public class PropertyPageController {
 
         List<Property> children = propertyUseCase.findByParentId(id);
 
-        List<PropertyContact> propertyContacts = propertyContactRepository.findByPropertyId(id);
+        List<PropertyContact> propertyContacts = propertyContactRepository.findByPropertyId(id).stream()
+                .filter(pc -> pc.getArchivedAt() == null)
+                .toList();
         List<Contact> contacts = propertyContacts.stream()
                 .map(pc -> contactUseCase.findById(pc.getContactId()).orElse(null))
                 .filter(c -> c != null)
+                .toList();
+        java.util.Set<UUID> linkedContactIds = propertyContacts.stream()
+                .map(PropertyContact::getContactId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<Contact> contactCandidates = contactRepository.findByOrganizationId(property.getOrganizationId()).stream()
+                .filter(c -> c.getArchivedAt() == null)
+                .filter(c -> !linkedContactIds.contains(c.getId()))
+                .sorted(Comparator.comparing(Contact::getFormattedName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
 
         LocalDate today = LocalDate.now();
@@ -464,6 +481,8 @@ public class PropertyPageController {
         model.addAttribute("children", children);
         model.addAttribute("propertyContacts", propertyContacts);
         model.addAttribute("contacts", contacts);
+        model.addAttribute("contactCandidates", contactCandidates);
+        model.addAttribute("contactRoles", ContactRole.values());
         model.addAttribute("scheduleRows", scheduleRows);
         model.addAttribute("recentRecords", recentRecords);
         model.addAttribute("attachments", attachments);
