@@ -7,6 +7,12 @@ import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -73,6 +79,47 @@ class HexagonalArchitectureTest {
                 .that().resideInAPackage("..adapter.out..")
                 .should().dependOnClassesThat().resideInAPackage("..adapter.in..");
         rule.check(classes);
+    }
+
+    /**
+     * Inbound adapters (controllers) must not depend on outbound adapters
+     * (persistence, notification, storage). They go through ports only.
+     * Per #248 / ADR-0004.
+     */
+    @Test
+    void inboundAdaptersHaveNoOutboundDependency() {
+        ArchRule rule = noClasses()
+                .that().resideInAPackage("..adapter.in..")
+                .should().dependOnClassesThat().resideInAPackage("..adapter.out..");
+        rule.check(classes);
+    }
+
+    /**
+     * Production code must use {@code UuidFactory.newId()} (UUIDv7) instead of
+     * {@code UUID.randomUUID()}, per ADR-0018. Tests are not analyzed
+     * ({@code DoNotIncludeTests} above).
+     */
+    @Test
+    void productionCodeMustNotCallUuidRandomUUID() {
+        ArchRule rule = noClasses().should(callRandomUUID());
+        rule.check(classes);
+    }
+
+    private static ArchCondition<JavaClass> callRandomUUID() {
+        return new ArchCondition<>("call java.util.UUID.randomUUID") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                for (JavaMethodCall call : item.getMethodCallsFromSelf()) {
+                    if ("java.util.UUID".equals(call.getTargetOwner().getFullName())
+                            && "randomUUID".equals(call.getName())) {
+                        events.add(SimpleConditionEvent.violated(item,
+                                item.getName() + " calls UUID.randomUUID at "
+                                        + call.getSourceCodeLocation()
+                                        + " — use UuidFactory.newId()"));
+                    }
+                }
+            }
+        };
     }
 
     /** No circular dependencies between top-level slices. */
