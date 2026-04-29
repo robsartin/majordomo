@@ -4,6 +4,7 @@ import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +55,8 @@ public class ReportController {
             @RequestParam(required = false) UUID cursor,
             @RequestParam(defaultValue = "20") int limit) {
         organizationAccessService.verifyAccess(organizationId);
-        return query.query(organizationId, minFinalScore, recommendation, cursor, limit);
+        return query.query(organizationId,
+                new ScoreReportFilter(minFinalScore, recommendation), cursor, limit);
     }
 
     /**

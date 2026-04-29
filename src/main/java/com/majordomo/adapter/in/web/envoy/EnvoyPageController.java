@@ -6,6 +6,7 @@ import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.port.in.envoy.GetApplyNowConversionStatUseCase;
 import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.MarkPostingConversionUseCase;
@@ -202,7 +203,8 @@ public class EnvoyPageController {
                                  Model model) {
         UUID orgId = ctx.organizationId();
         List<ScoreReport> recent = reports
-                .query(orgId, minFinalScore, recommendation, null, DEFAULT_LIMIT)
+                .query(orgId, new ScoreReportFilter(minFinalScore, recommendation),
+                        null, DEFAULT_LIMIT)
                 .items();
 
         List<ScoreReportRow> rows = recent.stream()

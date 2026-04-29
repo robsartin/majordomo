@@ -1,8 +1,8 @@
 package com.majordomo.domain.port.in.envoy;
 
 import com.majordomo.domain.model.Page;
-import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -23,12 +23,10 @@ public interface QueryScoreReportsUseCase {
      * Cursor-paginated, filterable report query within an org.
      *
      * @param organizationId required org scope
-     * @param minFinalScore  optional min score (null = no lower bound)
-     * @param recommendation optional recommendation filter (null = any)
+     * @param filter         optional secondary filters (use {@link ScoreReportFilter#none()})
      * @param cursor         optional cursor (null = first page)
      * @param limit          row cap (clamped to [1, 100])
      * @return page of reports
      */
-    Page<ScoreReport> query(UUID organizationId, Integer minFinalScore,
-                            Recommendation recommendation, UUID cursor, int limit);
+    Page<ScoreReport> query(UUID organizationId, ScoreReportFilter filter, UUID cursor, int limit);
 }

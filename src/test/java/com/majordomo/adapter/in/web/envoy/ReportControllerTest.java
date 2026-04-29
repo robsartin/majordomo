@@ -6,6 +6,7 @@ import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.Recommendation;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
@@ -52,7 +53,7 @@ class ReportControllerTest {
     @WithMockUser
     void listPassesFiltersThrough() throws Exception {
         doNothing().when(organizationAccessService).verifyAccess(any());
-        when(query.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(query.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(get("/api/envoy/reports")
@@ -62,7 +63,8 @@ class ReportControllerTest {
                         .param("limit", "25"))
                 .andExpect(status().isOk());
 
-        verify(query).query(eq(ORG_ID), eq(70), eq(Recommendation.APPLY_NOW), eq(null), eq(25));
+        verify(query).query(eq(ORG_ID),
+                eq(new ScoreReportFilter(70, Recommendation.APPLY_NOW)), eq(null), eq(25));
     }
 
     @Test
