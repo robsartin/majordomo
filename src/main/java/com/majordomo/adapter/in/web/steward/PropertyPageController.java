@@ -256,17 +256,23 @@ public class PropertyPageController {
     /**
      * Updates an existing property from the edit-form post and redirects to detail.
      *
-     * @param id        the UUID of the property to update
-     * @param name      property name (required)
-     * @param category  optional category
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
+     * @param id            the UUID of the property to update
+     * @param name          property name (required)
+     * @param category      optional category
+     * @param description   optional description
+     * @param location      optional address / location
+     * @param purchasePrice optional purchase price (decimal)
+     * @param principal     authenticated user
+     * @param model         Thymeleaf model
      * @return redirect to the property's detail page on success
      */
     @PostMapping("/{id}")
     public String update(@PathVariable UUID id,
                          @RequestParam(required = false) String name,
                          @RequestParam(required = false) String category,
+                         @RequestParam(required = false) String description,
+                         @RequestParam(required = false) String location,
+                         @RequestParam(required = false) String purchasePrice,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -278,12 +284,8 @@ public class PropertyPageController {
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
         if (name == null || name.isBlank()) {
-            model.addAttribute("editingId", id);
-            model.addAttribute("existing", existing);
-            model.addAttribute("username", ctx.user().getUsername());
-            model.addAttribute("formError", "Name is required.");
-            model.addAttribute("formName", name);
-            model.addAttribute("formCategory", category);
+            populateFormState(model, id, existing, ctx.user().getUsername(),
+                    "Name is required.", name, category, description, location, purchasePrice);
             return "property-form";
         }
         Property updated = new Property();
@@ -291,6 +293,9 @@ public class PropertyPageController {
         updated.setOrganizationId(existing.getOrganizationId());
         updated.setName(name);
         updated.setCategory(category);
+        updated.setDescription(blankToNull(description));
+        updated.setLocation(blankToNull(location));
+        updated.setPurchasePrice(parsePrice(purchasePrice));
         propertyUseCase.update(id, updated);
         return "redirect:/properties/" + id;
     }

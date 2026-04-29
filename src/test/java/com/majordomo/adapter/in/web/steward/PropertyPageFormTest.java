@@ -238,6 +238,45 @@ class PropertyPageFormTest {
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getCategory()).isEqualTo("new-cat");
     }
 
+    /** Cycle 3 (#229): update persists description, location, purchasePrice. */
+    @Test
+    @WithMockUser
+    void updatePersistsExtraFields() throws Exception {
+        UUID id = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property existing =
+                new com.majordomo.domain.model.steward.Property();
+        existing.setId(id);
+        existing.setOrganizationId(ORG_ID);
+        existing.setName("Old");
+        when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(existing));
+        when(propertyUseCase.update(org.mockito.ArgumentMatchers.eq(id),
+                any(com.majordomo.domain.model.steward.Property.class)))
+                .thenAnswer(inv -> inv.getArgument(1));
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/properties/{id}", id)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "New name")
+                        .param("category", "new-cat")
+                        .param("description", "Renovated kitchen.")
+                        .param("location", "456 Lake Ln")
+                        .param("purchasePrice", "525000.50"))
+                .andExpect(status().is3xxRedirection());
+
+        org.mockito.ArgumentCaptor<com.majordomo.domain.model.steward.Property> captor =
+                org.mockito.ArgumentCaptor.forClass(
+                        com.majordomo.domain.model.steward.Property.class);
+        org.mockito.Mockito.verify(propertyUseCase).update(
+                org.mockito.ArgumentMatchers.eq(id), captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getDescription())
+                .isEqualTo("Renovated kitchen.");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getLocation())
+                .isEqualTo("456 Lake Ln");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getPurchasePrice())
+                .isEqualByComparingTo("525000.50");
+    }
+
     /** Cycle 6: POST /properties/{id} with blank name re-renders the edit form with error. */
     @Test
     @WithMockUser
