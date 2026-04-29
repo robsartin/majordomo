@@ -26,8 +26,8 @@ import java.util.UUID;
  * {@link ScoreAssembler}, and persist the report. The LLM makes only the fuzzy
  * interpretive choices.
  *
- * <p>LLM-call observability (token counters and latency timer) is delegated to
- * {@link EnvoyMetrics}.</p>
+ * <p>Observability (latency timer + token counters) is delegated to
+ * {@link LlmCallObserver}, so this service holds no observability code.</p>
  */
 @Service
 public class JobScorerService implements ScoreJobPostingUseCase {
@@ -38,7 +38,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
     private final LlmScoringPort llm;
     private final ScoreAssembler assembler;
     private final EventPublisher eventPublisher;
-    private final EnvoyMetrics metrics;
+    private final LlmCallObserver llmObserver;
 
     /**
      * Constructs the scorer with all required collaborators.
@@ -49,7 +49,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
      * @param llm            outbound LLM scoring port
      * @param assembler      deterministic LLM-response validator
      * @param eventPublisher domain event publisher
-     * @param metrics        envoy metrics helper
+     * @param llmObserver    observer that wraps each LLM call with metrics
      */
     public JobScorerService(RubricRepository rubrics,
                             JobPostingRepository postings,
@@ -57,14 +57,14 @@ public class JobScorerService implements ScoreJobPostingUseCase {
                             LlmScoringPort llm,
                             ScoreAssembler assembler,
                             EventPublisher eventPublisher,
-                            EnvoyMetrics metrics) {
+                            LlmCallObserver llmObserver) {
         this.rubrics = rubrics;
         this.postings = postings;
         this.reports = reports;
         this.llm = llm;
         this.assembler = assembler;
         this.eventPublisher = eventPublisher;
-        this.metrics = metrics;
+        this.llmObserver = llmObserver;
     }
 
     @Override
@@ -100,21 +100,8 @@ public class JobScorerService implements ScoreJobPostingUseCase {
     }
 
     private ScoreReport runOne(JobPosting posting, Rubric rubric) {
-        String modelId = llm.modelId();
-        long startNs = System.nanoTime();
-        LlmScoreResponse resp;
-        try {
-            resp = llm.score(posting, rubric);
-        } catch (RuntimeException e) {
-            metrics.recordLlmCallDuration(modelId, "error", System.nanoTime() - startNs);
-            throw e;
-        }
-        metrics.recordLlmCallDuration(modelId, "success", System.nanoTime() - startNs);
-        resp.usage().ifPresent(usage -> metrics.recordLlmTokenUsage(
-                posting.getOrganizationId(), modelId, rubric.name(),
-                usage.inputTokens(), usage.outputTokens()));
-
-        ScoreReport report = assembler.assemble(posting, rubric, resp, modelId);
+        LlmScoreResponse resp = llmObserver.observe(llm, posting, rubric);
+        ScoreReport report = assembler.assemble(posting, rubric, resp, llm.modelId());
         ScoreReport saved = reports.save(report);
         eventPublisher.publish(new JobPostingScored(
                 saved.id(), saved.organizationId(), saved.postingId(),
