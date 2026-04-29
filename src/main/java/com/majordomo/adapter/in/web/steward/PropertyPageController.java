@@ -22,6 +22,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -160,6 +161,85 @@ public class PropertyPageController {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Renders the new-property form.
+     *
+     * @param principal authenticated user
+     * @param model     Thymeleaf model
+     * @return the {@code property-form} template
+     */
+    @GetMapping("/new")
+    public String newForm(@AuthenticationPrincipal UserDetails principal, Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        model.addAttribute("editingId", null);
+        model.addAttribute("existing", null);
+        model.addAttribute("username", ctx.user().getUsername());
+        return "property-form";
+    }
+
+    /**
+     * Creates a property from the new-form post and redirects to the detail page.
+     *
+     * @param name       property name (required)
+     * @param category   optional category
+     * @param principal  authenticated user
+     * @param model      Thymeleaf model
+     * @return redirect to the new property's detail page on success
+     */
+    @PostMapping
+    public String create(@RequestParam(required = false) String name,
+                         @RequestParam(required = false) String category,
+                         @AuthenticationPrincipal UserDetails principal,
+                         Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        if (name == null || name.isBlank()) {
+            model.addAttribute("editingId", null);
+            model.addAttribute("existing", null);
+            model.addAttribute("username", ctx.user().getUsername());
+            model.addAttribute("formError", "Name is required.");
+            model.addAttribute("formName", name);
+            model.addAttribute("formCategory", category);
+            return "property-form";
+        }
+        Property property = new Property();
+        property.setOrganizationId(ctx.organizationId());
+        property.setName(name);
+        property.setCategory(category);
+        Property saved = propertyUseCase.create(property);
+        return "redirect:/properties/" + saved.getId();
+    }
+
+    /**
+     * Renders the edit form for an existing property, pre-populated.
+     *
+     * @param id        the UUID of the property to edit
+     * @param principal authenticated user
+     * @param model     Thymeleaf model
+     * @return the {@code property-form} template
+     */
+    @GetMapping("/{id}/edit")
+    public String editForm(@PathVariable UUID id,
+                           @AuthenticationPrincipal UserDetails principal,
+                           Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        Property existing = propertyUseCase.findById(id)
+                .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
+                        com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
+        model.addAttribute("editingId", id);
+        model.addAttribute("existing", existing);
+        model.addAttribute("username", ctx.user().getUsername());
+        return "property-form";
     }
 
     /**
