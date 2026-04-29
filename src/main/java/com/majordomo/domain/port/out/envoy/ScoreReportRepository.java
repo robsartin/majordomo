@@ -1,8 +1,8 @@
 package com.majordomo.domain.port.out.envoy;
 
 import com.majordomo.domain.model.Page;
-import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -30,16 +30,15 @@ public interface ScoreReportRepository {
     Optional<ScoreReport> findById(UUID id, UUID organizationId);
 
     /**
-     * Cursor-paginated query over reports within an organization, with optional
-     * secondary filters. Null filter values mean "no filter on that field".
+     * Cursor-paginated query over reports within an organization. Optional
+     * filters are bundled into {@link ScoreReportFilter}; pass
+     * {@link ScoreReportFilter#none()} for an unfiltered query.
      *
      * @param organizationId required — reports are always org-scoped
-     * @param minFinalScore  include only reports with finalScore &gt;= this (null = no minimum)
-     * @param recommendation include only reports with this recommendation (null = any)
+     * @param filter         optional secondary filters (never {@code null})
      * @param cursor         next-page cursor (null = first page)
      * @param limit          clamped to [1, 100] by the caller; repository must honour limit+1
-     * @return a page of reports in the given org matching the filters
+     * @return a page of reports in the given org matching the filter
      */
-    Page<ScoreReport> query(UUID organizationId, Integer minFinalScore,
-                            Recommendation recommendation, UUID cursor, int limit);
+    Page<ScoreReport> query(UUID organizationId, ScoreReportFilter filter, UUID cursor, int limit);
 }

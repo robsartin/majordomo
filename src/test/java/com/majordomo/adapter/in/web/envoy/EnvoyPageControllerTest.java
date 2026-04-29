@@ -10,6 +10,7 @@ import com.majordomo.domain.model.envoy.FlagHit;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.model.envoy.ApplyNowConversionStat;
@@ -74,7 +75,6 @@ class EnvoyPageControllerTest {
                 .thenReturn(ApplyNowConversionStat.EMPTY);
     }
 
-
     @Test
     @WithMockUser(username = "robsartin")
     void rendersEnvoyPageWithEnrichedRows() throws Exception {
@@ -98,7 +98,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
 
@@ -146,7 +146,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.of(posting));
 
@@ -181,7 +181,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(jobPostingRepository.findById(postingId, ORG_ID)).thenReturn(Optional.empty());
 
@@ -229,7 +229,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(get("/envoy"))
@@ -237,7 +237,7 @@ class EnvoyPageControllerTest {
                 .andExpect(model().attribute("minFinalScore", (Object) null))
                 .andExpect(model().attribute("recommendation", (Object) null));
 
-        verify(reports).query(eq(ORG_ID), isNull(), isNull(), isNull(), anyInt());
+        verify(reports).query(eq(ORG_ID), eq(ScoreReportFilter.none()), isNull(), anyInt());
     }
 
     @Test
@@ -250,7 +250,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(get("/envoy").param("recommendation", "APPLY_NOW"))
@@ -258,8 +258,9 @@ class EnvoyPageControllerTest {
                 .andExpect(model().attribute("minFinalScore", (Object) null))
                 .andExpect(model().attribute("recommendation", Recommendation.APPLY_NOW));
 
-        verify(reports).query(eq(ORG_ID), isNull(),
-                eq(Recommendation.APPLY_NOW), isNull(), anyInt());
+        verify(reports).query(eq(ORG_ID),
+                eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                isNull(), anyInt());
     }
 
     @Test
@@ -272,7 +273,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(get("/envoy").param("minFinalScore", "70"))
@@ -280,7 +281,7 @@ class EnvoyPageControllerTest {
                 .andExpect(model().attribute("minFinalScore", 70))
                 .andExpect(model().attribute("recommendation", (Object) null));
 
-        verify(reports).query(eq(ORG_ID), eq(70), isNull(), isNull(), anyInt());
+        verify(reports).query(eq(ORG_ID), eq(new ScoreReportFilter(70, null)), isNull(), anyInt());
     }
 
     @Test
@@ -293,7 +294,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(get("/envoy")
@@ -303,8 +304,7 @@ class EnvoyPageControllerTest {
                 .andExpect(model().attribute("minFinalScore", 70))
                 .andExpect(model().attribute("recommendation", Recommendation.APPLY_NOW));
 
-        verify(reports).query(eq(ORG_ID), eq(70),
-                eq(Recommendation.APPLY_NOW), isNull(), anyInt());
+        verify(reports).query(eq(ORG_ID), eq(new ScoreReportFilter(70, Recommendation.APPLY_NOW)), isNull(), anyInt());
     }
 
     @Test
@@ -317,7 +317,7 @@ class EnvoyPageControllerTest {
 
         when(currentOrg.resolve(any(UserDetails.class)))
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         MvcResult result = mvc.perform(get("/envoy")

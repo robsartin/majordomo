@@ -9,6 +9,7 @@ import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.model.identity.Membership;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.model.envoy.ApplyNowConversionStat;
@@ -175,7 +176,7 @@ class EnvoyPageIngestFormTest {
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
         when(ingestUseCase.ingest(any(JobSourceRequest.class), eq(ORG_ID)))
                 .thenThrow(new IllegalArgumentException("no JobSource supports type: bogus"));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(post("/envoy")
@@ -210,7 +211,7 @@ class EnvoyPageIngestFormTest {
         when(ingestUseCase.ingest(any(JobSourceRequest.class), eq(ORG_ID))).thenReturn(saved);
         when(scoreUseCase.score(eq(postingId), eq("default"), eq(ORG_ID)))
                 .thenThrow(new LlmScoringException("LLM returned malformed JSON"));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(post("/envoy")
@@ -274,7 +275,7 @@ class EnvoyPageIngestFormTest {
 
 
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
-        when(reports.query(eq(ORG_ID), any(), any(), any(), any(Integer.class)))
+        when(reports.query(eq(ORG_ID), any(ScoreReportFilter.class), any(), any(Integer.class)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         mvc.perform(post("/envoy")

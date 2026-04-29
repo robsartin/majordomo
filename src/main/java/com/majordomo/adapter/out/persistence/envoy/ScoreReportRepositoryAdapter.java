@@ -1,8 +1,8 @@
 package com.majordomo.adapter.out.persistence.envoy;
 
 import com.majordomo.domain.model.Page;
-import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Sort;
@@ -39,13 +39,13 @@ public class ScoreReportRepositoryAdapter implements ScoreReportRepository {
     }
 
     @Override
-    public Page<ScoreReport> query(UUID organizationId, Integer minFinalScore,
-                                   Recommendation recommendation, UUID cursor, int limit) {
+    public Page<ScoreReport> query(UUID organizationId, ScoreReportFilter filter,
+                                   UUID cursor, int limit) {
         int clamped = Math.max(1, Math.min(limit, 100));
         List<ScoreReportEntity> rows = jpa.query(
                 organizationId,
-                minFinalScore,
-                recommendation == null ? null : recommendation.name(),
+                filter.minFinalScore(),
+                filter.recommendation() == null ? null : filter.recommendation().name(),
                 cursor,
                 Sort.by("id").ascending(),
                 Limit.of(clamped + 1));

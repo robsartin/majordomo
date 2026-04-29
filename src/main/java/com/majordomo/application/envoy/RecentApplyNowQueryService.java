@@ -5,6 +5,7 @@ import com.majordomo.domain.model.envoy.ApplyNowPosting;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.port.in.envoy.GetApplyNowConversionStatUseCase;
 import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
@@ -49,14 +50,16 @@ public class RecentApplyNowQueryService
     @Cacheable(value = "envoy-apply-now", key = "#organizationId + ':' + #limit")
     public List<ApplyNowPosting> getRecentApplyNow(UUID organizationId, int limit) {
         int clamped = Math.max(1, Math.min(limit, 100));
-        var page = reports.query(organizationId, null, Recommendation.APPLY_NOW, null, clamped);
+        var page = reports.query(organizationId,
+                ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW), null, clamped);
         return page.items().stream().map(report -> enrich(report, organizationId)).toList();
     }
 
     @Override
     @Cacheable(value = "envoy-apply-now-stat", key = "#organizationId")
     public ApplyNowConversionStat getStat(UUID organizationId) {
-        var page = reports.query(organizationId, null, Recommendation.APPLY_NOW, null, STAT_WINDOW);
+        var page = reports.query(organizationId,
+                ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW), null, STAT_WINDOW);
         long total = page.items().size();
         if (total == 0) {
             return ApplyNowConversionStat.EMPTY;

@@ -4,6 +4,7 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.envoy.ApplyNowPosting;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.Recommendation;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
@@ -37,7 +38,9 @@ class RecentApplyNowQueryServiceTest {
         UUID postingId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
         ScoreReport report = report(reportId, orgId, postingId, 92);
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(5)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(5)))
                 .thenReturn(new Page<>(List.of(report), null, false));
         when(postings.findById(postingId, orgId)).thenReturn(Optional.of(posting(postingId, orgId,
                 "Acme Inc", "Senior Engineer", "Remote")));
@@ -54,7 +57,9 @@ class RecentApplyNowQueryServiceTest {
         UUID orgId = UUID.randomUUID();
         UUID postingId = UUID.randomUUID();
         UUID reportId = UUID.randomUUID();
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(5)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(5)))
                 .thenReturn(new Page<>(List.of(report(reportId, orgId, postingId, 90)), null, false));
         when(postings.findById(postingId, orgId)).thenReturn(Optional.empty());
 
@@ -68,24 +73,32 @@ class RecentApplyNowQueryServiceTest {
     @Test
     void clampsLimit() {
         UUID orgId = UUID.randomUUID();
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(1)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(1)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         service.getRecentApplyNow(orgId, 0);
 
-        verify(reports).query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(1));
+        verify(reports).query(eq(orgId),
+                eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                isNull(), eq(1));
     }
 
     /** Limit above 100 is clamped down. */
     @Test
     void clampsHighLimit() {
         UUID orgId = UUID.randomUUID();
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(100)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(100)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
         service.getRecentApplyNow(orgId, 5000);
 
-        verify(reports).query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(100));
+        verify(reports).query(eq(orgId),
+                eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                isNull(), eq(100));
     }
 
     /** getStat counts APPLY_NOW reports and how many of their postings are applied. */
@@ -95,7 +108,9 @@ class RecentApplyNowQueryServiceTest {
         UUID p1 = UUID.randomUUID();
         UUID p2 = UUID.randomUUID();
         UUID p3 = UUID.randomUUID();
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(50)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(50)))
                 .thenReturn(new com.majordomo.domain.model.Page<>(List.of(
                         report(UUID.randomUUID(), orgId, p1, 90),
                         report(UUID.randomUUID(), orgId, p2, 91),
@@ -115,7 +130,9 @@ class RecentApplyNowQueryServiceTest {
     @Test
     void getStatEmptyWhenNoReports() {
         UUID orgId = UUID.randomUUID();
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(50)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(50)))
                 .thenReturn(new com.majordomo.domain.model.Page<>(List.of(), null, false));
 
         var stat = service.getStat(orgId);
@@ -128,7 +145,9 @@ class RecentApplyNowQueryServiceTest {
     void getStatTolerantOfMissingPosting() {
         UUID orgId = UUID.randomUUID();
         UUID p1 = UUID.randomUUID();
-        when(reports.query(eq(orgId), isNull(), eq(Recommendation.APPLY_NOW), isNull(), eq(50)))
+        when(reports.query(eq(orgId),
+                        eq(ScoreReportFilter.withRecommendation(Recommendation.APPLY_NOW)),
+                        isNull(), eq(50)))
                 .thenReturn(new com.majordomo.domain.model.Page<>(List.of(
                         report(UUID.randomUUID(), orgId, p1, 90)), null, false));
         when(postings.findById(p1, orgId)).thenReturn(Optional.empty());

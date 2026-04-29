@@ -4,6 +4,7 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
+import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.port.out.envoy.ScoreReportRepository;
 import org.junit.jupiter.api.Test;
 
@@ -27,12 +28,13 @@ class ScoreReportQueryServiceTest {
     void clampsLimitAndDelegatesToRepository() {
         var repo = mock(ScoreReportRepository.class);
         var service = new ScoreReportQueryService(repo);
-        when(repo.query(eq(orgId), any(), any(), any(), eq(100)))
+        ScoreReportFilter filter = new ScoreReportFilter(60, Recommendation.APPLY_NOW);
+        when(repo.query(eq(orgId), any(ScoreReportFilter.class), any(), eq(100)))
                 .thenReturn(new Page<>(List.of(), null, false));
 
-        service.query(orgId, 60, Recommendation.APPLY_NOW, null, 500);
+        service.query(orgId, filter, null, 500);
 
-        verify(repo).query(orgId, 60, Recommendation.APPLY_NOW, null, 100);
+        verify(repo).query(orgId, filter, null, 100);
     }
 
     @Test
