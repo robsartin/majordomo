@@ -257,4 +257,143 @@ class ContactPageFormTest {
 
         verify(contactUseCase, never()).update(any(), any());
     }
+
+    /** #239: edit form pre-populates each existing address as a row. */
+    @Test
+    @WithMockUser
+    void editFormPrePopulatesAddresses() throws Exception {
+        UUID id = UuidFactory.newId();
+        Contact existing = new Contact();
+        existing.setId(id);
+        existing.setOrganizationId(ORG_ID);
+        existing.setFormattedName("Alice Example");
+        existing.setAddresses(List.of(
+                new com.majordomo.domain.model.concierge.Address(
+                        UuidFactory.newId(), id, "WORK",
+                        "100 Main St", "Springfield", "IL", "62701", "USA"),
+                new com.majordomo.domain.model.concierge.Address(
+                        UuidFactory.newId(), id, "HOME",
+                        "55 Oak Ln", "Lincoln", "NE", "68501", "USA")));
+        when(contactRepository.findById(id)).thenReturn(Optional.of(existing));
+
+        org.springframework.test.web.servlet.MvcResult result =
+                mvc.perform(get("/contacts/{id}/edit", id))
+                        .andExpect(status().isOk())
+                        .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        assertThat(body)
+                .contains("name=\"addresses[0].label\"")
+                .contains("value=\"WORK\"")
+                .contains("value=\"100 Main St\"")
+                .contains("value=\"Springfield\"")
+                .contains("name=\"addresses[1].label\"")
+                .contains("value=\"HOME\"")
+                .contains("value=\"55 Oak Ln\"");
+    }
+
+    /** #239: POST /contacts persists indexed addresses[N].* params. */
+    @Test
+    @WithMockUser
+    void createPersistsIndexedAddresses() throws Exception {
+        UUID newId = UuidFactory.newId();
+        Contact saved = new Contact();
+        saved.setId(newId);
+        saved.setOrganizationId(ORG_ID);
+        when(contactUseCase.create(any(Contact.class))).thenReturn(saved);
+
+        mvc.perform(post("/contacts")
+                        .with(csrf())
+                        .param("formattedName", "Alice Example")
+                        .param("addresses[0].label", "WORK")
+                        .param("addresses[0].street", "100 Main St")
+                        .param("addresses[0].city", "Springfield")
+                        .param("addresses[0].state", "IL")
+                        .param("addresses[0].postalCode", "62701")
+                        .param("addresses[0].country", "USA")
+                        .param("addresses[1].label", "HOME")
+                        .param("addresses[1].street", "55 Oak Ln")
+                        .param("addresses[1].city", "Lincoln")
+                        .param("addresses[1].state", "NE")
+                        .param("addresses[1].postalCode", "68501")
+                        .param("addresses[1].country", "USA"))
+                .andExpect(status().is3xxRedirection());
+
+        ArgumentCaptor<Contact> captor = ArgumentCaptor.forClass(Contact.class);
+        verify(contactUseCase).create(captor.capture());
+        Contact c = captor.getValue();
+        assertThat(c.getAddresses()).hasSize(2);
+        assertThat(c.getAddresses().get(0).label()).isEqualTo("WORK");
+        assertThat(c.getAddresses().get(0).street()).isEqualTo("100 Main St");
+        assertThat(c.getAddresses().get(0).contactId()).isNull();
+        assertThat(c.getAddresses().get(1).label()).isEqualTo("HOME");
+        assertThat(c.getAddresses().get(1).city()).isEqualTo("Lincoln");
+    }
+
+    /** #239: addresses[N] rows with all-blank fields are dropped (treated as deletion). */
+    @Test
+    @WithMockUser
+    void createDropsBlankAddressRows() throws Exception {
+        UUID newId = UuidFactory.newId();
+        Contact saved = new Contact();
+        saved.setId(newId);
+        saved.setOrganizationId(ORG_ID);
+        when(contactUseCase.create(any(Contact.class))).thenReturn(saved);
+
+        mvc.perform(post("/contacts")
+                        .with(csrf())
+                        .param("formattedName", "Alice Example")
+                        .param("addresses[0].label", "")
+                        .param("addresses[0].street", "")
+                        .param("addresses[0].city", "")
+                        .param("addresses[0].state", "")
+                        .param("addresses[0].postalCode", "")
+                        .param("addresses[0].country", "")
+                        .param("addresses[1].label", "WORK")
+                        .param("addresses[1].street", "100 Main St")
+                        .param("addresses[1].city", "Springfield")
+                        .param("addresses[1].state", "IL")
+                        .param("addresses[1].postalCode", "62701")
+                        .param("addresses[1].country", "USA"))
+                .andExpect(status().is3xxRedirection());
+
+        ArgumentCaptor<Contact> captor = ArgumentCaptor.forClass(Contact.class);
+        verify(contactUseCase).create(captor.capture());
+        assertThat(captor.getValue().getAddresses()).hasSize(1);
+        assertThat(captor.getValue().getAddresses().get(0).label()).isEqualTo("WORK");
+    }
+
+    /** #239: update replaces the address list. */
+    @Test
+    @WithMockUser
+    void updateReplacesAddressList() throws Exception {
+        UUID id = UuidFactory.newId();
+        Contact existing = new Contact();
+        existing.setId(id);
+        existing.setOrganizationId(ORG_ID);
+        existing.setFormattedName("Alice Example");
+        existing.setAddresses(List.of(
+                new com.majordomo.domain.model.concierge.Address(
+                        UuidFactory.newId(), id, "OLD", "old", "old", "OL", "00000", "USA")));
+        when(contactRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(contactUseCase.update(eq(id), any(Contact.class)))
+                .thenAnswer(inv -> inv.getArgument(1));
+
+        mvc.perform(post("/contacts/{id}", id)
+                        .with(csrf())
+                        .param("formattedName", "Alice Example")
+                        .param("addresses[0].label", "NEW")
+                        .param("addresses[0].street", "200 New St")
+                        .param("addresses[0].city", "New City")
+                        .param("addresses[0].state", "NY")
+                        .param("addresses[0].postalCode", "10001")
+                        .param("addresses[0].country", "USA"))
+                .andExpect(status().is3xxRedirection());
+
+        ArgumentCaptor<Contact> captor = ArgumentCaptor.forClass(Contact.class);
+        verify(contactUseCase).update(eq(id), captor.capture());
+        assertThat(captor.getValue().getAddresses()).hasSize(1);
+        assertThat(captor.getValue().getAddresses().get(0).label()).isEqualTo("NEW");
+        assertThat(captor.getValue().getAddresses().get(0).street()).isEqualTo("200 New St");
+    }
 }
