@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${editingId != null ? 'Edit contact' : 'New contact'} + ' - Majordomo'">Contact form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div th:replace="~{fragments/header :: header}"></div>
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('contacts')}"></div>
+        <main class="flex-1 p-6">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h1 class="text-xl font-semibold text-gray-900"
+                        th:text="${editingId != null ? 'Edit contact' : 'New contact'}">Title</h1>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div th:if="${formError}"
+                         class="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+                         th:text="${formError}">Error</div>
+                    <form method="post"
+                          th:action="${editingId != null ? '/contacts/' + editingId : '/contacts'}"
+                          class="space-y-4">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="flex flex-col sm:col-span-2">
+                                <label for="formattedName"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Display name</label>
+                                <input id="formattedName" name="formattedName" type="text" required
+                                       th:value="${formFormattedName != null ? formFormattedName
+                                                  : (existing != null ? existing.getFormattedName() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="givenName"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Given name</label>
+                                <input id="givenName" name="givenName" type="text"
+                                       th:value="${formGivenName != null ? formGivenName
+                                                  : (existing != null ? existing.getGivenName() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="familyName"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Family name</label>
+                                <input id="familyName" name="familyName" type="text"
+                                       th:value="${formFamilyName != null ? formFamilyName
+                                                  : (existing != null ? existing.getFamilyName() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="organization"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Organization</label>
+                                <input id="organization" name="organization" type="text"
+                                       th:value="${formOrganization != null ? formOrganization
+                                                  : (existing != null ? existing.getOrganization() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="title"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</label>
+                                <input id="title" name="title" type="text"
+                                       th:value="${formTitle != null ? formTitle
+                                                  : (existing != null ? existing.getTitle() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="flex flex-col">
+                                <label for="emails"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Emails (one per line)</label>
+                                <textarea id="emails" name="emails" rows="3"
+                                          th:text="${formEmails != null ? formEmails
+                                                    : (existing != null and existing.getEmails() != null
+                                                        ? #strings.listJoin(existing.getEmails(), '&#10;') : '')}"
+                                          class="block rounded border-gray-300 text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="telephones"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Phones (one per line)</label>
+                                <textarea id="telephones" name="telephones" rows="3"
+                                          th:text="${formTelephones != null ? formTelephones
+                                                    : (existing != null and existing.getTelephones() != null
+                                                        ? #strings.listJoin(existing.getTelephones(), '&#10;') : '')}"
+                                          class="block rounded border-gray-300 text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="urls"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">URLs (one per line)</label>
+                                <textarea id="urls" name="urls" rows="3"
+                                          th:text="${formUrls != null ? formUrls
+                                                    : (existing != null and existing.getUrls() != null
+                                                        ? #strings.listJoin(existing.getUrls(), '&#10;') : '')}"
+                                          class="block rounded border-gray-300 text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="nicknames"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nicknames (one per line)</label>
+                                <textarea id="nicknames" name="nicknames" rows="3"
+                                          th:text="${formNicknames != null ? formNicknames
+                                                    : (existing != null and existing.getNicknames() != null
+                                                        ? #strings.listJoin(existing.getNicknames(), '&#10;') : '')}"
+                                          class="block rounded border-gray-300 text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col">
+                            <label for="notes"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Notes</label>
+                            <textarea id="notes" name="notes" rows="3"
+                                      th:text="${formNotes != null ? formNotes
+                                                : (existing != null ? existing.getNotes() : '')}"
+                                      class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                        </div>
+
+                        <div>
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                                <span th:text="${editingId != null ? 'Save changes' : 'Create contact'}">Submit</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
