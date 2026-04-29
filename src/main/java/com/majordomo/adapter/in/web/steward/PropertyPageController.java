@@ -2,12 +2,15 @@ package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.concierge.Contact;
+import com.majordomo.domain.model.herald.MaintenanceSchedule;
+import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyContact;
 import com.majordomo.domain.port.in.ManageAttachmentUseCase;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
+import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
 import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import com.majordomo.domain.port.out.steward.PropertyContactRepository;
@@ -22,6 +25,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -44,9 +49,23 @@ public class PropertyPageController {
     private final ManageAttachmentUseCase attachmentUseCase;
     private final PropertyContactRepository propertyContactRepository;
     private final PropertyRepository propertyRepository;
+    private final ServiceRecordRepository serviceRecordRepository;
     private final CurrentOrganizationResolver currentOrg;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
+
+    /** Maximum service-records to surface in the "Recent service records" panel. */
+    private static final int RECENT_RECORDS_LIMIT = 10;
+
+    /**
+     * View-model row binding a {@link MaintenanceSchedule} to its days-until-due
+     * delta for the property-detail page.
+     *
+     * @param schedule    the schedule
+     * @param daysUntilDue {@code null} if {@code nextDue} is null; otherwise the
+     *                    integer day delta (negative = overdue, 0 = today)
+     */
+    public record ScheduleRow(MaintenanceSchedule schedule, Integer daysUntilDue) { }
 
     /**
      * Constructs the property page controller.
@@ -57,6 +76,7 @@ public class PropertyPageController {
      * @param attachmentUseCase         the inbound port for attachment management
      * @param propertyContactRepository the outbound port for property-contact associations
      * @param propertyRepository        the outbound port for property reads (used by the list view)
+     * @param serviceRecordRepository   the outbound port for service-record reads (recent activity panel)
      * @param currentOrg                resolves the authenticated user's organization
      * @param userRepository            the outbound port for user lookups
      * @param membershipRepository      the outbound port for membership lookups
@@ -67,6 +87,7 @@ public class PropertyPageController {
                                   ManageAttachmentUseCase attachmentUseCase,
                                   PropertyContactRepository propertyContactRepository,
                                   PropertyRepository propertyRepository,
+                                  ServiceRecordRepository serviceRecordRepository,
                                   CurrentOrganizationResolver currentOrg,
                                   UserRepository userRepository,
                                   MembershipRepository membershipRepository) {
@@ -76,6 +97,7 @@ public class PropertyPageController {
         this.attachmentUseCase = attachmentUseCase;
         this.propertyContactRepository = propertyContactRepository;
         this.propertyRepository = propertyRepository;
+        this.serviceRecordRepository = serviceRecordRepository;
         this.currentOrg = currentOrg;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
@@ -171,7 +193,28 @@ public class PropertyPageController {
                 .filter(c -> c != null)
                 .toList();
 
-        var schedules = scheduleUseCase.findByPropertyId(id);
+        LocalDate today = LocalDate.now();
+        List<ScheduleRow> scheduleRows = new ArrayList<>();
+        for (MaintenanceSchedule s : scheduleUseCase.findByPropertyId(id)) {
+            if (s.getArchivedAt() != null) {
+                continue;
+            }
+            Integer days = s.getNextDue() == null ? null
+                    : (int) ChronoUnit.DAYS.between(today, s.getNextDue());
+            scheduleRows.add(new ScheduleRow(s, days));
+        }
+        scheduleRows.sort(Comparator.comparing(
+                (ScheduleRow r) -> r.daysUntilDue() == null ? Integer.MAX_VALUE : r.daysUntilDue()));
+
+        List<ServiceRecord> recentRecords = new ArrayList<>(
+                serviceRecordRepository.findByPropertyId(id));
+        recentRecords.removeIf(r -> r.getArchivedAt() != null);
+        recentRecords.sort(Comparator.comparing(
+                ServiceRecord::getPerformedOn, Comparator.nullsLast(Comparator.reverseOrder())));
+        if (recentRecords.size() > RECENT_RECORDS_LIMIT) {
+            recentRecords = new ArrayList<>(recentRecords.subList(0, RECENT_RECORDS_LIMIT));
+        }
+
         var attachments = attachmentUseCase.list("property", id);
 
         var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
@@ -181,7 +224,8 @@ public class PropertyPageController {
         model.addAttribute("children", children);
         model.addAttribute("propertyContacts", propertyContacts);
         model.addAttribute("contacts", contacts);
-        model.addAttribute("schedules", schedules);
+        model.addAttribute("scheduleRows", scheduleRows);
+        model.addAttribute("recentRecords", recentRecords);
         model.addAttribute("attachments", attachments);
         model.addAttribute("username", user.getUsername());
 

@@ -213,19 +213,26 @@ public class SchedulePageController {
     }
 
     /**
-     * Renders the new-schedule form.
+     * Renders the new-schedule form. The optional {@code propertyId} query
+     * param pre-selects a property in the picker — used by per-property
+     * "Add schedule" buttons.
      *
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
+     * @param propertyId optional property id to pre-select in the picker
+     * @param principal  authenticated user
+     * @param model      Thymeleaf model
      * @return the {@code schedule-form} template, or {@code redirect:/} if no org
      */
     @GetMapping("/schedules/new")
-    public String newForm(@AuthenticationPrincipal UserDetails principal, Model model) {
+    public String newForm(@RequestParam(required = false) UUID propertyId,
+                          @AuthenticationPrincipal UserDetails principal, Model model) {
         var ctx = currentOrg.resolve(principal);
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
         renderForm(null, null, ctx.user().getUsername(), model);
+        if (propertyId != null) {
+            model.addAttribute("formPropertyId", propertyId);
+        }
         return "schedule-form";
     }
 

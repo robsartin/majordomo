@@ -54,6 +54,7 @@ class PropertyPageListTest {
     @MockitoBean ManageAttachmentUseCase attachmentUseCase;
     @MockitoBean PropertyContactRepository propertyContactRepository;
     @MockitoBean PropertyRepository propertyRepository;
+    @MockitoBean com.majordomo.domain.port.out.herald.ServiceRecordRepository serviceRecordRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean UserRepository userRepository;
     @MockitoBean MembershipRepository membershipRepository;

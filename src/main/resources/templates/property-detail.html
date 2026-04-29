@@ -175,29 +175,79 @@
 
         <!-- Maintenance Schedules -->
         <div class="bg-white rounded-lg shadow mb-6">
-            <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-gray-900">Maintenance Schedules</h2>
+                <a th:href="@{/schedules/new(propertyId=${property.id})}"
+                   class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                    + Add schedule
+                </a>
             </div>
             <div class="p-6">
-                <p th:if="${#lists.isEmpty(schedules)}" class="text-gray-400 text-sm">No maintenance schedules for this property.</p>
-                <div th:unless="${#lists.isEmpty(schedules)}" class="overflow-x-auto">
+                <p th:if="${#lists.isEmpty(scheduleRows)}" class="text-gray-400 text-sm">No maintenance schedules for this property.</p>
+                <div th:unless="${#lists.isEmpty(scheduleRows)}" class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Due</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">In</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <tr th:each="schedule : ${schedules}">
-                                <td class="px-6 py-4 text-sm text-gray-900" th:text="${schedule.description}">Task</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" th:text="${schedule.frequency}">Frequency</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm"
-                                    th:classappend="${#temporals.createToday().isAfter(schedule.nextDue)} ? 'text-red-600 font-semibold' :
-                                                   (${#temporals.createToday().plusDays(7).isAfter(schedule.nextDue)} ? 'text-yellow-600 font-medium' : 'text-gray-700')"
-                                    th:text="${schedule.nextDue}">
+                            <tr th:each="row : ${scheduleRows}">
+                                <td class="px-6 py-3 text-sm">
+                                    <a th:href="@{|/schedules/${row.schedule().getId()}|}"
+                                       class="font-medium text-gray-900 hover:text-indigo-700"
+                                       th:text="${row.schedule().getDescription()}">desc</a>
                                 </td>
+                                <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700" th:text="${row.schedule().getFrequency()}">FREQ</td>
+                                <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                    th:text="${row.schedule().getNextDue() != null ? row.schedule().getNextDue() : '—'}">date</td>
+                                <td class="px-6 py-3 whitespace-nowrap text-sm">
+                                    <span th:if="${row.daysUntilDue() == null}" class="text-gray-400">—</span>
+                                    <span th:if="${row.daysUntilDue() != null and row.daysUntilDue() < 0}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                                          th:text="${-row.daysUntilDue()} + ' days overdue'">overdue</span>
+                                    <span th:if="${row.daysUntilDue() != null and row.daysUntilDue() == 0}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                        today
+                                    </span>
+                                    <span th:if="${row.daysUntilDue() != null and row.daysUntilDue() > 0}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
+                                          th:text="'in ' + ${row.daysUntilDue()} + ' days'">in N days</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Service Records -->
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Recent service records</h2>
+            </div>
+            <div class="p-6">
+                <p th:if="${#lists.isEmpty(recentRecords)}" class="text-gray-400 text-sm">No service records yet for this property.</p>
+                <div th:unless="${#lists.isEmpty(recentRecords)}" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performed</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr th:each="r : ${recentRecords}">
+                                <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                    th:text="${r.getPerformedOn() != null ? r.getPerformedOn() : '—'}">date</td>
+                                <td class="px-6 py-3 text-sm text-gray-900"
+                                    th:text="${r.getDescription()}">desc</td>
+                                <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                    th:text="${r.getCost() != null ? '$' + #numbers.formatDecimal(r.getCost(), 1, 2) : '—'}">cost</td>
                             </tr>
                         </tbody>
                     </table>
