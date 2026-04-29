@@ -47,6 +47,7 @@ class SchedulePageControllerTest {
 
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean ScheduleAccessGuard guard;
+    @MockitoBean com.majordomo.domain.port.in.herald.ManageScheduleUseCase scheduleUseCase;
     @MockitoBean MaintenanceScheduleRepository scheduleRepository;
     @MockitoBean PropertyRepository propertyRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
