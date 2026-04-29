@@ -3,8 +3,10 @@ package com.majordomo.adapter.out.persistence.audit;
 import com.majordomo.domain.model.AuditLogEntry;
 import com.majordomo.domain.port.out.AuditLogRepository;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +45,16 @@ public class AuditLogRepositoryAdapter implements AuditLogRepository {
     @Override
     public List<AuditLogEntry> findByUserId(UUID userId) {
         return jpa.findByUserIdOrderByOccurredAtDesc(userId)
+                .stream()
+                .map(AuditLogMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<AuditLogEntry> find(UUID organizationId, String entityType, UUID userId,
+                                    Instant since, Instant until, int limit) {
+        return jpa.findScoped(organizationId, entityType, userId, since, until,
+                        PageRequest.of(0, Math.max(1, limit)))
                 .stream()
                 .map(AuditLogMapper::toDomain)
                 .toList();

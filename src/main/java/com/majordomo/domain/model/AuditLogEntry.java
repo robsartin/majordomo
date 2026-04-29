@@ -9,6 +9,7 @@ import java.util.UUID;
 public class AuditLogEntry {
 
     private UUID id;
+    private UUID organizationId;
     private String entityType;
     private UUID entityId;
     private String action;
@@ -18,6 +19,9 @@ public class AuditLogEntry {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    public UUID getOrganizationId() { return organizationId; }
+    public void setOrganizationId(UUID organizationId) { this.organizationId = organizationId; }
 
     public String getEntityType() { return entityType; }
     public void setEntityType(String entityType) { this.entityType = entityType; }
