@@ -20,6 +20,9 @@ public class AuditLogEntity {
     @Id
     private UUID id;
 
+    @Column(name = "organization_id")
+    private UUID organizationId;
+
     @Column(name = "entity_type", nullable = false)
     private String entityType;
 
@@ -40,6 +43,9 @@ public class AuditLogEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
+
+    public UUID getOrganizationId() { return organizationId; }
+    public void setOrganizationId(UUID organizationId) { this.organizationId = organizationId; }
 
     public String getEntityType() { return entityType; }
     public void setEntityType(String entityType) { this.entityType = entityType; }

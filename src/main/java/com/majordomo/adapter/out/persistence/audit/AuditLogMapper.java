@@ -9,6 +9,7 @@ final class AuditLogMapper {
     static AuditLogEntity toEntity(AuditLogEntry entry) {
         var entity = new AuditLogEntity();
         entity.setId(entry.getId());
+        entity.setOrganizationId(entry.getOrganizationId());
         entity.setEntityType(entry.getEntityType());
         entity.setEntityId(entry.getEntityId());
         entity.setAction(entry.getAction());
@@ -21,6 +22,7 @@ final class AuditLogMapper {
     static AuditLogEntry toDomain(AuditLogEntity entity) {
         var entry = new AuditLogEntry();
         entry.setId(entity.getId());
+        entry.setOrganizationId(entity.getOrganizationId());
         entry.setEntityType(entity.getEntityType());
         entry.setEntityId(entity.getEntityId());
         entry.setAction(entity.getAction());

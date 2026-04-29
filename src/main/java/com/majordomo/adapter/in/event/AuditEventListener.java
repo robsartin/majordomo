@@ -47,7 +47,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onServiceRecordCreated(ServiceRecordCreated event) {
-        log(EntityType.SERVICE_RECORD.name(), event.serviceRecordId(),
+        log(null, EntityType.SERVICE_RECORD.name(), event.serviceRecordId(),
                 AuditAction.CREATE.name(), event.occurredAt());
     }
 
@@ -58,7 +58,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onPropertyArchived(PropertyArchived event) {
-        log(EntityType.PROPERTY.name(), event.propertyId(),
+        log(event.organizationId(), EntityType.PROPERTY.name(), event.propertyId(),
                 AuditAction.ARCHIVE.name(), event.occurredAt());
     }
 
@@ -69,7 +69,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onUserCreated(UserCreated event) {
-        log(EntityType.USER.name(), event.userId(),
+        log(event.organizationId(), EntityType.USER.name(), event.userId(),
                 AuditAction.CREATE.name(), event.occurredAt());
     }
 
@@ -80,7 +80,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onJobPostingIngested(JobPostingIngested event) {
-        log(EntityType.JOB_POSTING.name(), event.postingId(),
+        log(event.organizationId(), EntityType.JOB_POSTING.name(), event.postingId(),
                 AuditAction.CREATE.name(), event.occurredAt());
     }
 
@@ -91,7 +91,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onJobPostingScored(JobPostingScored event) {
-        log(EntityType.SCORE_REPORT.name(), event.reportId(),
+        log(event.organizationId(), EntityType.SCORE_REPORT.name(), event.reportId(),
                 AuditAction.CREATE.name(), event.occurredAt());
     }
 
@@ -102,7 +102,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onPostingMarkedApplied(PostingMarkedApplied event) {
-        log(EntityType.JOB_POSTING.name(), event.postingId(),
+        log(event.organizationId(), EntityType.JOB_POSTING.name(), event.postingId(),
                 AuditAction.APPLY.name(), event.occurredAt());
     }
 
@@ -113,13 +113,15 @@ public class AuditEventListener {
      */
     @EventListener
     public void onPostingDismissed(PostingDismissed event) {
-        log(EntityType.JOB_POSTING.name(), event.postingId(),
+        log(event.organizationId(), EntityType.JOB_POSTING.name(), event.postingId(),
                 AuditAction.DISMISS.name(), event.occurredAt());
     }
 
-    private void log(String entityType, UUID entityId, String action, Instant occurredAt) {
+    private void log(UUID organizationId, String entityType, UUID entityId,
+                     String action, Instant occurredAt) {
         var entry = new AuditLogEntry();
         entry.setId(UuidFactory.newId());
+        entry.setOrganizationId(organizationId);
         entry.setEntityType(entityType);
         entry.setEntityId(entityId);
         entry.setAction(action);

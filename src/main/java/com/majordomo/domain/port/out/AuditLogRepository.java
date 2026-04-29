@@ -2,6 +2,7 @@ package com.majordomo.domain.port.out;
 
 import com.majordomo.domain.model.AuditLogEntry;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,4 +37,20 @@ public interface AuditLogRepository {
      * @return list of audit log entries, or an empty list if none exist
      */
     List<AuditLogEntry> findByUserId(UUID userId);
+
+    /**
+     * Queries entries scoped to an organization, with optional filters. Each
+     * filter is independent — pass {@code null} to skip. Results are ordered
+     * by {@code occurred_at} descending and capped at {@code limit}.
+     *
+     * @param organizationId required organization scope
+     * @param entityType     optional entity-type filter (e.g. "PROPERTY")
+     * @param userId         optional actor filter
+     * @param since          optional inclusive lower bound on occurred_at
+     * @param until          optional exclusive upper bound on occurred_at
+     * @param limit          maximum rows to return
+     * @return matching entries
+     */
+    List<AuditLogEntry> find(UUID organizationId, String entityType, UUID userId,
+                             Instant since, Instant until, int limit);
 }
