@@ -106,6 +106,41 @@ class PropertyPageFormTest {
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getOrganizationId()).isEqualTo(ORG_ID);
     }
 
+    /** Cycle 2 (#229): create persists description, location, purchasePrice. */
+    @Test
+    @WithMockUser
+    void createPersistsExtraFields() throws Exception {
+        UUID newId = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property saved =
+                new com.majordomo.domain.model.steward.Property();
+        saved.setId(newId);
+        saved.setOrganizationId(ORG_ID);
+        when(propertyUseCase.create(any(com.majordomo.domain.model.steward.Property.class)))
+                .thenReturn(saved);
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/properties")
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "Beach House")
+                        .param("category", "vacation")
+                        .param("description", "Two-bedroom on the dunes.")
+                        .param("location", "123 Shoreline Rd")
+                        .param("purchasePrice", "450000.00"))
+                .andExpect(status().is3xxRedirection());
+
+        org.mockito.ArgumentCaptor<com.majordomo.domain.model.steward.Property> captor =
+                org.mockito.ArgumentCaptor.forClass(
+                        com.majordomo.domain.model.steward.Property.class);
+        org.mockito.Mockito.verify(propertyUseCase).create(captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getDescription())
+                .isEqualTo("Two-bedroom on the dunes.");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getLocation())
+                .isEqualTo("123 Shoreline Rd");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getPurchasePrice())
+                .isEqualByComparingTo("450000.00");
+    }
+
     /** Cycle 3: POST /properties with blank name re-renders the form with error + field state. */
     @Test
     @WithMockUser
