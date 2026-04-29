@@ -95,6 +95,24 @@ class SchedulePageFormTest {
         assertThat(body).contains("ANNUAL").contains("WEEKLY");
     }
 
+    /** GET /schedules/new?propertyId=X pre-selects that property in the picker. */
+    @Test
+    @WithMockUser
+    void newFormPreSelectsPropertyFromQueryParam() throws Exception {
+        MvcResult result = mvc.perform(get("/schedules/new")
+                        .param("propertyId", propertyId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("schedule-form"))
+                .andReturn();
+
+        // Find the option tag bearing the propertyId; it must carry "selected".
+        String body = result.getResponse().getContentAsString();
+        int idx = body.indexOf("value=\"" + propertyId + "\"");
+        assertThat(idx).isPositive();
+        int closeTag = body.indexOf(">", idx);
+        assertThat(body.substring(idx, closeTag)).contains("selected");
+    }
+
     /** GET /schedules/{id}/edit pre-populates the form fields. */
     @Test
     @WithMockUser
