@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contacts - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('contacts')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Contacts</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm text-gray-500"
+                          th:text="${#lists.size(rows)} + ' contacts'">0 contacts</span>
+                </div>
+            </div>
+
+            <!-- Filter strip -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <form method="get" th:action="@{/contacts}" class="flex flex-wrap items-end gap-4">
+                    <div class="flex flex-col">
+                        <label for="q" class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Search</label>
+                        <input id="q" name="q" type="text" th:value="${q}"
+                               class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
+                               placeholder="name, organization, email">
+                    </div>
+                    <div class="flex flex-col">
+                        <label for="organization" class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Organization</label>
+                        <select id="organization" name="organization"
+                                class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            <option value="">— Any —</option>
+                            <option th:each="o : ${organizations}"
+                                    th:value="${o}" th:text="${o}"
+                                    th:selected="${organization != null and organization == o}">
+                            </option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit"
+                                class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                            Filter
+                        </button>
+                        <a th:href="@{/contacts}"
+                           class="inline-flex items-center rounded-md bg-white border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- List -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div th:if="${#lists.isEmpty(rows)}" class="px-6 py-12 text-center text-gray-500">
+                    No contacts.
+                </div>
+                <table th:unless="${#lists.isEmpty(rows)}" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Organization</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Title</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        <tr th:each="c : ${rows}">
+                            <td class="px-6 py-3 whitespace-nowrap text-sm">
+                                <a th:href="@{|/contacts/${c.getId()}|}"
+                                   th:text="${c.getFormattedName()}"
+                                   class="text-indigo-600 hover:text-indigo-800 font-medium">Name</a>
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                th:text="${c.getOrganization()}">Org</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                th:text="${c.getTitle()}">Title</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                th:text="${(c.getEmails() != null and !#lists.isEmpty(c.getEmails())) ? c.getEmails().get(0) : ''}">Email</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                th:text="${(c.getTelephones() != null and !#lists.isEmpty(c.getTelephones())) ? c.getTelephones().get(0) : ''}">Phone</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>
