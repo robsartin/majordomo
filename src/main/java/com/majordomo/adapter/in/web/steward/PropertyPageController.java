@@ -216,13 +216,21 @@ public class PropertyPageController {
                     "Name is required.", name, category, description, location, purchasePrice);
             return "property-form";
         }
+        java.math.BigDecimal price;
+        try {
+            price = parsePrice(purchasePrice);
+        } catch (PriceFormatException ex) {
+            populateFormState(model, null, null, ctx.user().getUsername(),
+                    ex.getMessage(), name, category, description, location, purchasePrice);
+            return "property-form";
+        }
         Property property = new Property();
         property.setOrganizationId(ctx.organizationId());
         property.setName(name);
         property.setCategory(category);
         property.setDescription(blankToNull(description));
         property.setLocation(blankToNull(location));
-        property.setPurchasePrice(parsePrice(purchasePrice));
+        property.setPurchasePrice(price);
         Property saved = propertyUseCase.create(property);
         return "redirect:/properties/" + saved.getId();
     }
@@ -235,7 +243,23 @@ public class PropertyPageController {
         if (s == null || s.isBlank()) {
             return null;
         }
-        return new java.math.BigDecimal(s.trim());
+        java.math.BigDecimal value;
+        try {
+            value = new java.math.BigDecimal(s.trim());
+        } catch (NumberFormatException ex) {
+            throw new PriceFormatException("Purchase price must be a number.");
+        }
+        if (value.signum() < 0) {
+            throw new PriceFormatException("Purchase price must be non-negative.");
+        }
+        return value;
+    }
+
+    private static final class PriceFormatException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+        PriceFormatException(String message) {
+            super(message);
+        }
     }
 
     private static void populateFormState(Model model, UUID editingId, Property existing,
@@ -288,6 +312,14 @@ public class PropertyPageController {
                     "Name is required.", name, category, description, location, purchasePrice);
             return "property-form";
         }
+        java.math.BigDecimal price;
+        try {
+            price = parsePrice(purchasePrice);
+        } catch (PriceFormatException ex) {
+            populateFormState(model, id, existing, ctx.user().getUsername(),
+                    ex.getMessage(), name, category, description, location, purchasePrice);
+            return "property-form";
+        }
         Property updated = new Property();
         updated.setId(id);
         updated.setOrganizationId(existing.getOrganizationId());
@@ -295,7 +327,7 @@ public class PropertyPageController {
         updated.setCategory(category);
         updated.setDescription(blankToNull(description));
         updated.setLocation(blankToNull(location));
-        updated.setPurchasePrice(parsePrice(purchasePrice));
+        updated.setPurchasePrice(price);
         propertyUseCase.update(id, updated);
         return "redirect:/properties/" + id;
     }

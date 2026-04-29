@@ -31,6 +31,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -275,6 +276,48 @@ class PropertyPageFormTest {
                 .isEqualTo("456 Lake Ln");
         org.assertj.core.api.Assertions.assertThat(captor.getValue().getPurchasePrice())
                 .isEqualByComparingTo("525000.50");
+    }
+
+    /** Cycle 4 (#229): negative purchasePrice on create re-renders the form with error + state. */
+    @Test
+    @WithMockUser
+    void createWithNegativePriceRendersFormWithError() throws Exception {
+        org.springframework.test.web.servlet.MvcResult result = mvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/properties")
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "Beach House")
+                        .param("category", "vacation")
+                        .param("description", "Two-bedroom on the dunes.")
+                        .param("location", "123 Shoreline Rd")
+                        .param("purchasePrice", "-1.00"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("property-form"))
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        org.assertj.core.api.Assertions.assertThat(body).contains("Purchase price must be non-negative.");
+        // Other field state echoed.
+        org.assertj.core.api.Assertions.assertThat(body).contains("value=\"Beach House\"");
+        org.assertj.core.api.Assertions.assertThat(body).contains("value=\"123 Shoreline Rd\"");
+        org.assertj.core.api.Assertions.assertThat(body).contains("value=\"-1.00\"");
+        org.mockito.Mockito.verify(propertyUseCase, org.mockito.Mockito.never()).create(any());
+    }
+
+    /** Cycle 4b (#229): non-numeric purchasePrice on create re-renders with error. */
+    @Test
+    @WithMockUser
+    void createWithNonNumericPriceRendersFormWithError() throws Exception {
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/properties")
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "Beach House")
+                        .param("purchasePrice", "abc"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                        "Purchase price must be a number.")));
+
+        org.mockito.Mockito.verify(propertyUseCase, org.mockito.Mockito.never()).create(any());
     }
 
     /** Cycle 6: POST /properties/{id} with blank name re-renders the edit form with error. */
