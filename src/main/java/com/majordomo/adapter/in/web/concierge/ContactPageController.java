@@ -358,15 +358,23 @@ public class ContactPageController {
     /** Returns null if all emails parse, or an error message naming the first bad line. */
     private static String validateEmails(List<String> emails) {
         for (String e : emails) {
-            if (!EMAIL_PATTERN.matcher(e).matches()) {
+            if (e.length() > MAX_EMAIL_LENGTH || !EMAIL_PATTERN.matcher(e).matches()) {
                 return "Invalid email: " + e;
             }
         }
         return null;
     }
 
+    /** RFC 5321 caps an address path at 254 characters; cap before regex matching. */
+    private static final int MAX_EMAIL_LENGTH = 254;
+
+    /**
+     * Domain segments are unambiguous because the character classes exclude `.`,
+     * so each `+` can only match within one label and there's no backtracking
+     * overlap between segments. Local part still excludes whitespace and `@`.
+     */
     private static final java.util.regex.Pattern EMAIL_PATTERN =
-            java.util.regex.Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+            java.util.regex.Pattern.compile("^[^\\s@]+@[^\\s@.]+(\\.[^\\s@.]+)+$");
 
     private static void populateFormState(Model model, UUID editingId, Contact existing,
                                           String username, String formError,
