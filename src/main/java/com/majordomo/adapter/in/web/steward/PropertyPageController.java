@@ -218,6 +218,47 @@ public class PropertyPageController {
     }
 
     /**
+     * Updates an existing property from the edit-form post and redirects to detail.
+     *
+     * @param id        the UUID of the property to update
+     * @param name      property name (required)
+     * @param category  optional category
+     * @param principal authenticated user
+     * @param model     Thymeleaf model
+     * @return redirect to the property's detail page on success
+     */
+    @PostMapping("/{id}")
+    public String update(@PathVariable UUID id,
+                         @RequestParam(required = false) String name,
+                         @RequestParam(required = false) String category,
+                         @AuthenticationPrincipal UserDetails principal,
+                         Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        Property existing = propertyUseCase.findById(id)
+                .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
+                        com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
+        if (name == null || name.isBlank()) {
+            model.addAttribute("editingId", id);
+            model.addAttribute("existing", existing);
+            model.addAttribute("username", ctx.user().getUsername());
+            model.addAttribute("formError", "Name is required.");
+            model.addAttribute("formName", name);
+            model.addAttribute("formCategory", category);
+            return "property-form";
+        }
+        Property updated = new Property();
+        updated.setId(id);
+        updated.setOrganizationId(existing.getOrganizationId());
+        updated.setName(name);
+        updated.setCategory(category);
+        propertyUseCase.update(id, updated);
+        return "redirect:/properties/" + id;
+    }
+
+    /**
      * Renders the edit form for an existing property, pre-populated.
      *
      * @param id        the UUID of the property to edit

@@ -160,4 +160,38 @@ class PropertyPageFormTest {
         mvc.perform(get("/properties/{id}/edit", id))
                 .andExpect(status().isNotFound());
     }
+
+    /** Cycle 5: POST /properties/{id} updates the property and redirects to detail. */
+    @Test
+    @WithMockUser
+    void updatePersistsAndRedirectsToDetail() throws Exception {
+        UUID id = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property existing =
+                new com.majordomo.domain.model.steward.Property();
+        existing.setId(id);
+        existing.setOrganizationId(ORG_ID);
+        existing.setName("Old name");
+        existing.setCategory("old-cat");
+        when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(existing));
+        when(propertyUseCase.update(org.mockito.ArgumentMatchers.eq(id),
+                any(com.majordomo.domain.model.steward.Property.class)))
+                .thenAnswer(inv -> inv.getArgument(1));
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/properties/{id}", id)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "New name")
+                        .param("category", "new-cat"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/properties/" + id));
+
+        org.mockito.ArgumentCaptor<com.majordomo.domain.model.steward.Property> captor =
+                org.mockito.ArgumentCaptor.forClass(
+                        com.majordomo.domain.model.steward.Property.class);
+        org.mockito.Mockito.verify(propertyUseCase).update(
+                org.mockito.ArgumentMatchers.eq(id), captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getName()).isEqualTo("New name");
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getCategory()).isEqualTo("new-cat");
+    }
 }
