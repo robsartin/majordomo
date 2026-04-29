@@ -202,6 +202,13 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
                 <executions>
+                    <!--
+                        Default profile: Surefire runs unit tests, agent writes
+                        jacoco.exec, report uses jacoco.exec directly.
+                        The integration-tests profile additionally writes
+                        jacoco-it.exec (Failsafe) and overrides the report to
+                        read a merged exec file.
+                    -->
                     <execution>
                         <id>jacoco-prepare</id>
                         <goals>
@@ -254,15 +261,112 @@
             <id>integration-tests</id>
             <build>
                 <plugins>
+                    <!--
+                        Surefire still runs unit tests only (excluding
+                        *IntegrationTest.java); Failsafe runs integration tests
+                        in the integration-test phase. Splitting them this way
+                        lets JaCoCo's prepare-agent-integration write a
+                        separate jacoco-it.exec file that the merge goal
+                        combines with the unit-test jacoco.exec.
+                    -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <environmentVariables>
                                 <DOCKER_HOST>${env.DOCKER_HOST}</DOCKER_HOST>
                                 <TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>${env.TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE}</TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>
                             </environmentVariables>
                         </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <includes>
+                                <include>**/*IntegrationTest.java</include>
+                            </includes>
+                            <environmentVariables>
+                                <DOCKER_HOST>${env.DOCKER_HOST}</DOCKER_HOST>
+                                <TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>${env.TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE}</TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE>
+                            </environmentVariables>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>verify</id>
+                                <goals>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <executions>
+                            <!--
+                                Attach the IT-phase agent so integration tests
+                                write to a separate exec file.
+                            -->
+                            <execution>
+                                <id>jacoco-prepare-it</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>prepare-agent-integration</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+                                </configuration>
+                            </execution>
+                            <!--
+                                Merge unit + integration exec files before the
+                                default report execution runs.
+                            -->
+                            <execution>
+                                <id>jacoco-merge</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>merge</goal>
+                                </goals>
+                                <configuration>
+                                    <fileSets>
+                                        <fileSet>
+                                            <directory>${project.build.directory}</directory>
+                                            <includes>
+                                                <include>jacoco.exec</include>
+                                                <include>jacoco-it.exec</include>
+                                            </includes>
+                                        </fileSet>
+                                    </fileSets>
+                                    <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+                                </configuration>
+                            </execution>
+                            <!--
+                                Override the default report execution to read
+                                the merged exec file. The merge goal binds to
+                                the same phase ('verify'), but executions in
+                                the same phase run in declaration order, and
+                                the profile's plugin definitions are appended
+                                after the parent's, so jacoco-merge runs
+                                before jacoco-report.
+                            -->
+                            <execution>
+                                <id>jacoco-report</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                                <configuration>
+                                    <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
