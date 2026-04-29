@@ -1,6 +1,7 @@
 package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
@@ -52,6 +53,7 @@ public class PropertyPageController {
     private final PropertyRepository propertyRepository;
     private final ServiceRecordRepository serviceRecordRepository;
     private final CurrentOrganizationResolver currentOrg;
+    private final OrganizationAccessService organizationAccessService;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
 
@@ -79,6 +81,7 @@ public class PropertyPageController {
      * @param propertyRepository        the outbound port for property reads (used by the list view)
      * @param serviceRecordRepository   the outbound port for service-record reads (recent activity panel)
      * @param currentOrg                resolves the authenticated user's organization
+     * @param organizationAccessService verifies the caller has access to a given organization
      * @param userRepository            the outbound port for user lookups
      * @param membershipRepository      the outbound port for membership lookups
      */
@@ -90,6 +93,7 @@ public class PropertyPageController {
                                   PropertyRepository propertyRepository,
                                   ServiceRecordRepository serviceRecordRepository,
                                   CurrentOrganizationResolver currentOrg,
+                                  OrganizationAccessService organizationAccessService,
                                   UserRepository userRepository,
                                   MembershipRepository membershipRepository) {
         this.propertyUseCase = propertyUseCase;
@@ -100,6 +104,7 @@ public class PropertyPageController {
         this.propertyRepository = propertyRepository;
         this.serviceRecordRepository = serviceRecordRepository;
         this.currentOrg = currentOrg;
+        this.organizationAccessService = organizationAccessService;
         this.userRepository = userRepository;
         this.membershipRepository = membershipRepository;
     }
@@ -240,6 +245,7 @@ public class PropertyPageController {
         Property existing = propertyUseCase.findById(id)
                 .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
+        organizationAccessService.verifyAccess(existing.getOrganizationId());
         if (name == null || name.isBlank()) {
             model.addAttribute("editingId", id);
             model.addAttribute("existing", existing);
@@ -277,6 +283,7 @@ public class PropertyPageController {
         Property existing = propertyUseCase.findById(id)
                 .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
+        organizationAccessService.verifyAccess(existing.getOrganizationId());
         model.addAttribute("editingId", id);
         model.addAttribute("existing", existing);
         model.addAttribute("username", ctx.user().getUsername());

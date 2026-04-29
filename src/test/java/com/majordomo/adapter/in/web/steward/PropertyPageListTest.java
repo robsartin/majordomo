@@ -56,6 +56,7 @@ class PropertyPageListTest {
     @MockitoBean PropertyRepository propertyRepository;
     @MockitoBean com.majordomo.domain.port.out.herald.ServiceRecordRepository serviceRecordRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
+    @MockitoBean com.majordomo.application.identity.OrganizationAccessService organizationAccessService;
     @MockitoBean UserRepository userRepository;
     @MockitoBean MembershipRepository membershipRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;

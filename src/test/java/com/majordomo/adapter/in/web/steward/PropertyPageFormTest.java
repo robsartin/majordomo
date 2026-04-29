@@ -3,6 +3,7 @@ package com.majordomo.adapter.in.web.steward;
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.ManageAttachmentUseCase;
@@ -50,6 +51,7 @@ class PropertyPageFormTest {
     @MockitoBean PropertyRepository propertyRepository;
     @MockitoBean ServiceRecordRepository serviceRecordRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
+    @MockitoBean OrganizationAccessService organizationAccessService;
     @MockitoBean UserRepository userRepository;
     @MockitoBean MembershipRepository membershipRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
@@ -223,6 +225,52 @@ class PropertyPageFormTest {
         org.assertj.core.api.Assertions.assertThat(body).contains("Name is required.");
         org.assertj.core.api.Assertions.assertThat(body).contains("Edit property");
         org.assertj.core.api.Assertions.assertThat(body).contains("value=\"still-vacation\"");
+        org.mockito.Mockito.verify(propertyUseCase, org.mockito.Mockito.never())
+                .update(any(), any());
+    }
+
+    /** Cycle 7: GET /properties/{id}/edit returns 403 for cross-org property. */
+    @Test
+    @WithMockUser
+    void editFormReturns403WhenCrossOrg() throws Exception {
+        UUID id = UuidFactory.newId();
+        UUID otherOrg = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property foreign =
+                new com.majordomo.domain.model.steward.Property();
+        foreign.setId(id);
+        foreign.setOrganizationId(otherOrg);
+        foreign.setName("Cross-org property");
+        when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(foreign));
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("denied"))
+                .when(organizationAccessService).verifyAccess(otherOrg);
+
+        mvc.perform(get("/properties/{id}/edit", id))
+                .andExpect(status().isForbidden());
+    }
+
+    /** Cycle 7b: POST /properties/{id} returns 403 for cross-org property. */
+    @Test
+    @WithMockUser
+    void updateReturns403WhenCrossOrg() throws Exception {
+        UUID id = UuidFactory.newId();
+        UUID otherOrg = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property foreign =
+                new com.majordomo.domain.model.steward.Property();
+        foreign.setId(id);
+        foreign.setOrganizationId(otherOrg);
+        foreign.setName("Cross-org property");
+        when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(foreign));
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException("denied"))
+                .when(organizationAccessService).verifyAccess(otherOrg);
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/properties/{id}", id)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "anything")
+                        .param("category", "anything"))
+                .andExpect(status().isForbidden());
+
         org.mockito.Mockito.verify(propertyUseCase, org.mockito.Mockito.never())
                 .update(any(), any());
     }
