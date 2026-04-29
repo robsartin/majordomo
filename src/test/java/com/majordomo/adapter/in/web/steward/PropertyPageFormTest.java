@@ -138,6 +138,9 @@ class PropertyPageFormTest {
         existing.setOrganizationId(ORG_ID);
         existing.setName("Beach House");
         existing.setCategory("vacation");
+        existing.setDescription("Two-bedroom on the dunes.");
+        existing.setLocation("123 Shoreline Rd, Outer Banks, NC");
+        existing.setPurchasePrice(new java.math.BigDecimal("450000.00"));
         when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(existing));
 
         org.springframework.test.web.servlet.MvcResult result = mvc.perform(
@@ -150,6 +153,9 @@ class PropertyPageFormTest {
         org.assertj.core.api.Assertions.assertThat(body).contains("Edit property");
         org.assertj.core.api.Assertions.assertThat(body).contains("value=\"Beach House\"");
         org.assertj.core.api.Assertions.assertThat(body).contains("value=\"vacation\"");
+        org.assertj.core.api.Assertions.assertThat(body).contains("Two-bedroom on the dunes.");
+        org.assertj.core.api.Assertions.assertThat(body).contains("value=\"123 Shoreline Rd, Outer Banks, NC\"");
+        org.assertj.core.api.Assertions.assertThat(body).contains("value=\"450000.00\"");
     }
 
     /** Cycle 4b: GET /properties/{id}/edit returns 404 when missing. */

@@ -38,6 +38,31 @@
                                               : (existing != null ? existing.getCategory() : '')}"
                                    class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
                         </div>
+                        <div class="flex flex-col">
+                            <label for="description"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                            <textarea id="description" name="description" rows="3"
+                                      th:text="${formDescription != null ? formDescription
+                                                : (existing != null ? existing.getDescription() : '')}"
+                                      class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"></textarea>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="location"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Address / location</label>
+                            <input id="location" name="location" type="text"
+                                   th:value="${formLocation != null ? formLocation
+                                              : (existing != null ? existing.getLocation() : '')}"
+                                   class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="purchasePrice"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Purchase price</label>
+                            <input id="purchasePrice" name="purchasePrice" type="text" inputmode="decimal"
+                                   th:value="${formPurchasePrice != null ? formPurchasePrice
+                                              : (existing != null and existing.getPurchasePrice() != null
+                                                  ? existing.getPurchasePrice() : '')}"
+                                   class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
                         <div>
                             <button type="submit"
                                     class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
