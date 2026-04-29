@@ -1,15 +1,22 @@
 package com.majordomo.adapter.in.web.concierge;
 
 import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.application.identity.OrganizationAccessService;
+import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.concierge.Contact;
+import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
+import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
+import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -28,21 +35,33 @@ public class ContactPageController {
 
     private final ManageContactUseCase contactUseCase;
     private final ContactRepository contactRepository;
+    private final ManagePropertyUseCase propertyUseCase;
+    private final PropertyContactRepository propertyContactRepository;
     private final CurrentOrganizationResolver currentOrg;
+    private final OrganizationAccessService organizationAccessService;
 
     /**
      * Constructs the contact page controller.
      *
-     * @param contactUseCase    inbound port for contact management
-     * @param contactRepository outbound port for contact reads (used by list view)
-     * @param currentOrg        resolves the authenticated user's organization
+     * @param contactUseCase            inbound port for contact management
+     * @param contactRepository         outbound port for contact reads (used by list view)
+     * @param propertyUseCase           inbound port for property lookups
+     * @param propertyContactRepository outbound port for property–contact associations
+     * @param currentOrg                resolves the authenticated user's organization
+     * @param organizationAccessService verifies caller has access to a given organization
      */
     public ContactPageController(ManageContactUseCase contactUseCase,
                                  ContactRepository contactRepository,
-                                 CurrentOrganizationResolver currentOrg) {
+                                 ManagePropertyUseCase propertyUseCase,
+                                 PropertyContactRepository propertyContactRepository,
+                                 CurrentOrganizationResolver currentOrg,
+                                 OrganizationAccessService organizationAccessService) {
         this.contactUseCase = contactUseCase;
         this.contactRepository = contactRepository;
+        this.propertyUseCase = propertyUseCase;
+        this.propertyContactRepository = propertyContactRepository;
         this.currentOrg = currentOrg;
+        this.organizationAccessService = organizationAccessService;
     }
 
     /**
@@ -103,6 +122,40 @@ public class ContactPageController {
         model.addAttribute("q", q);
         model.addAttribute("username", ctx.user().getUsername());
         return "contacts";
+    }
+
+    /**
+     * Renders the contact detail page.
+     *
+     * @param id        contact UUID
+     * @param principal authenticated user
+     * @param model     Thymeleaf model
+     * @return the {@code contact-detail} template
+     */
+    @GetMapping("/{id}")
+    public String detail(@PathVariable UUID id,
+                         @AuthenticationPrincipal UserDetails principal,
+                         Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        Contact contact = contactRepository.findById(id)
+                .filter(c -> c.getArchivedAt() == null)
+                .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
+        organizationAccessService.verifyAccess(contact.getOrganizationId());
+
+        List<Property> linkedProperties = propertyContactRepository.findByContactId(id).stream()
+                .map(pc -> propertyUseCase.findById(pc.getPropertyId()).orElse(null))
+                .filter(p -> p != null)
+                .sorted(Comparator.comparing(Property::getName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
+
+        model.addAttribute("contact", contact);
+        model.addAttribute("linkedProperties", linkedProperties);
+        model.addAttribute("username", ctx.user().getUsername());
+        return "contact-detail";
     }
 
     private static boolean matchesQuery(Contact c, String qLower) {
