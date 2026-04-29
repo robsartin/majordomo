@@ -75,14 +75,15 @@ JSON under `/api/envoy`.
 ## Build Commands
 
 ```bash
-./mvnw validate          # Checkstyle only
-./mvnw compile           # Compile
-./mvnw test              # Run tests
-./mvnw verify            # Full build (compile + checkstyle + test + JaCoCo report)
-./mvnw spring-boot:run   # Start app (requires PostgreSQL + Redis)
+./mvnw validate                       # Checkstyle only
+./mvnw compile                        # Compile
+./mvnw test                           # Unit tests
+./mvnw verify                         # Compile + checkstyle + unit tests + JaCoCo (unit only)
+./mvnw -Pintegration-tests verify     # Above + Failsafe IT phase, JaCoCo merged report
+./mvnw spring-boot:run                # Start app (requires PostgreSQL + Redis)
 ```
 
-JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify`. Integration tests (`*IntegrationTest.java`) are excluded from the default Surefire run, so persistence-adapter coverage in the report under-represents what is actually tested — see issue #189 to merge integration-test data into the report.
+JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify`. The default profile covers unit tests only. Activate the `integration-tests` profile (Docker required for Testcontainers) to also run `*IntegrationTest.java` via Failsafe; the report then reads a merged exec file (`jacoco-merged.exec`) that includes persistence-adapter coverage too.
 
 ## Known Trade-offs
 
