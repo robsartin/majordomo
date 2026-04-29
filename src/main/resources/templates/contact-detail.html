@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${contact.formattedName} + ' - Majordomo'">Contact</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('contacts')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <nav class="text-sm text-gray-500 mb-4">
+                <a th:href="@{/contacts}" class="hover:text-indigo-600">Contacts</a>
+                <span class="mx-2">/</span>
+                <span th:text="${contact.formattedName}" class="text-gray-700">Name</span>
+            </nav>
+
+            <!-- Header card -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-start justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900" th:text="${contact.formattedName}">Name</h1>
+                        <p class="text-sm text-gray-600"
+                           th:if="${contact.organization != null or contact.title != null}">
+                            <span th:text="${contact.title}">Title</span>
+                            <span th:if="${contact.title != null and contact.organization != null}"> · </span>
+                            <span th:text="${contact.organization}">Organization</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a th:href="@{|/contacts/${contact.id}/vcard|}"
+                           class="inline-flex items-center rounded-md bg-white border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Download vCard
+                        </a>
+                        <a th:href="@{|/contacts/${contact.id}/edit|}"
+                           class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                            Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- Emails -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Email</h2>
+                    </div>
+                    <ul class="p-6 space-y-1 text-sm text-gray-700">
+                        <li th:each="e : ${contact.emails}" th:text="${e}">email</li>
+                        <li th:if="${contact.emails == null or #lists.isEmpty(contact.emails)}"
+                            class="text-gray-400">None</li>
+                    </ul>
+                </div>
+
+                <!-- Phones -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Phone</h2>
+                    </div>
+                    <ul class="p-6 space-y-1 text-sm text-gray-700">
+                        <li th:each="p : ${contact.telephones}" th:text="${p}">phone</li>
+                        <li th:if="${contact.telephones == null or #lists.isEmpty(contact.telephones)}"
+                            class="text-gray-400">None</li>
+                    </ul>
+                </div>
+
+                <!-- URLs -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Links</h2>
+                    </div>
+                    <ul class="p-6 space-y-1 text-sm text-gray-700">
+                        <li th:each="u : ${contact.urls}">
+                            <a th:href="${u}" th:text="${u}" target="_blank" rel="noopener"
+                               class="text-indigo-600 hover:text-indigo-800">url</a>
+                        </li>
+                        <li th:if="${contact.urls == null or #lists.isEmpty(contact.urls)}"
+                            class="text-gray-400">None</li>
+                    </ul>
+                </div>
+
+                <!-- Nicknames -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Nicknames</h2>
+                    </div>
+                    <ul class="p-6 space-y-1 text-sm text-gray-700">
+                        <li th:each="n : ${contact.nicknames}" th:text="${n}">nick</li>
+                        <li th:if="${contact.nicknames == null or #lists.isEmpty(contact.nicknames)}"
+                            class="text-gray-400">None</li>
+                    </ul>
+                </div>
+
+                <!-- Addresses -->
+                <div class="bg-white rounded-lg shadow lg:col-span-2">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Addresses</h2>
+                    </div>
+                    <ul class="p-6 space-y-3 text-sm text-gray-700">
+                        <li th:each="a : ${contact.addresses}">
+                            <span th:if="${a.label() != null}"
+                                  class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded mr-2"
+                                  th:text="${a.label()}">label</span>
+                            <span th:text="${a.street()}">street</span>,
+                            <span th:text="${a.city()}">city</span>,
+                            <span th:text="${a.state()}">state</span>
+                            <span th:text="${a.postalCode()}">zip</span>
+                            <span th:text="${a.country()}">country</span>
+                        </li>
+                        <li th:if="${contact.addresses == null or #lists.isEmpty(contact.addresses)}"
+                            class="text-gray-400">None</li>
+                    </ul>
+                </div>
+
+                <!-- Notes -->
+                <div class="bg-white rounded-lg shadow lg:col-span-2" th:if="${contact.notes != null and !contact.notes.isBlank()}">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Notes</h2>
+                    </div>
+                    <p class="p-6 text-sm text-gray-700 whitespace-pre-line" th:text="${contact.notes}">notes</p>
+                </div>
+
+                <!-- Linked properties -->
+                <div class="bg-white rounded-lg shadow lg:col-span-2">
+                    <div class="px-6 py-3 border-b border-gray-200">
+                        <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Linked properties</h2>
+                    </div>
+                    <ul class="p-6 space-y-1 text-sm">
+                        <li th:each="p : ${linkedProperties}">
+                            <a th:href="@{|/properties/${p.id}|}" th:text="${p.name}"
+                               class="text-indigo-600 hover:text-indigo-800">property</a>
+                        </li>
+                        <li th:if="${#lists.isEmpty(linkedProperties)}" class="text-gray-400">None</li>
+                    </ul>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>
