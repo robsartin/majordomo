@@ -50,6 +50,7 @@ class PropertyPageFormTest {
     @MockitoBean ManageAttachmentUseCase attachmentUseCase;
     @MockitoBean PropertyContactRepository propertyContactRepository;
     @MockitoBean PropertyRepository propertyRepository;
+    @MockitoBean com.majordomo.domain.port.out.concierge.ContactRepository contactRepository;
     @MockitoBean ServiceRecordRepository serviceRecordRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean OrganizationAccessService organizationAccessService;

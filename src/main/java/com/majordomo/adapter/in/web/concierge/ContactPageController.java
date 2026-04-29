@@ -8,10 +8,12 @@ import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.concierge.Address;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.model.steward.Property;
+import com.majordomo.domain.model.steward.PropertyContact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyContactRepository;
+import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,6 +42,7 @@ public class ContactPageController {
     private final ManageContactUseCase contactUseCase;
     private final ContactRepository contactRepository;
     private final ManagePropertyUseCase propertyUseCase;
+    private final PropertyRepository propertyRepository;
     private final PropertyContactRepository propertyContactRepository;
     private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
@@ -50,6 +53,7 @@ public class ContactPageController {
      * @param contactUseCase            inbound port for contact management
      * @param contactRepository         outbound port for contact reads (used by list view)
      * @param propertyUseCase           inbound port for property lookups
+     * @param propertyRepository        outbound port for property reads (link picker)
      * @param propertyContactRepository outbound port for property–contact associations
      * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies caller has access to a given organization
@@ -57,12 +61,14 @@ public class ContactPageController {
     public ContactPageController(ManageContactUseCase contactUseCase,
                                  ContactRepository contactRepository,
                                  ManagePropertyUseCase propertyUseCase,
+                                 PropertyRepository propertyRepository,
                                  PropertyContactRepository propertyContactRepository,
                                  CurrentOrganizationResolver currentOrg,
                                  OrganizationAccessService organizationAccessService) {
         this.contactUseCase = contactUseCase;
         this.contactRepository = contactRepository;
         this.propertyUseCase = propertyUseCase;
+        this.propertyRepository = propertyRepository;
         this.propertyContactRepository = propertyContactRepository;
         this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
@@ -149,18 +155,47 @@ public class ContactPageController {
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
         organizationAccessService.verifyAccess(contact.getOrganizationId());
 
-        List<Property> linkedProperties = propertyContactRepository.findByContactId(id).stream()
-                .map(pc -> propertyUseCase.findById(pc.getPropertyId()).orElse(null))
-                .filter(p -> p != null)
-                .sorted(Comparator.comparing(Property::getName,
+        List<PropertyContact> activeLinks = propertyContactRepository.findByContactId(id).stream()
+                .filter(pc -> pc.getArchivedAt() == null)
+                .toList();
+        List<LinkedPropertyRow> linkedRows = activeLinks.stream()
+                .map(pc -> {
+                    Property p = propertyUseCase.findById(pc.getPropertyId()).orElse(null);
+                    return p == null ? null : new LinkedPropertyRow(pc, p);
+                })
+                .filter(r -> r != null)
+                .sorted(Comparator.comparing((LinkedPropertyRow r) -> r.property().getName(),
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
 
+        java.util.Set<UUID> linkedIds = activeLinks.stream()
+                .map(PropertyContact::getPropertyId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<Property> propertyCandidates =
+                propertyRepository.findByOrganizationId(contact.getOrganizationId()).stream()
+                        .filter(p -> p.getArchivedAt() == null)
+                        .filter(p -> !linkedIds.contains(p.getId()))
+                        .sorted(Comparator.comparing(Property::getName,
+                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                        .toList();
+
         model.addAttribute("contact", contact);
-        model.addAttribute("linkedProperties", linkedProperties);
+        model.addAttribute("linkedRows", linkedRows);
+        model.addAttribute("propertyCandidates", propertyCandidates);
+        model.addAttribute("contactRoles",
+                com.majordomo.domain.model.concierge.ContactRole.values());
         model.addAttribute("username", ctx.user().getUsername());
         return "contact-detail";
     }
+
+    /**
+     * View-model row tying a property to its PropertyContact link id (needed by
+     * the unlink form on the contact-detail page).
+     *
+     * @param link     the underlying PropertyContact row
+     * @param property the linked property
+     */
+    public record LinkedPropertyRow(PropertyContact link, Property property) { }
 
     /**
      * Renders the new-contact form.

@@ -41,6 +41,7 @@ class ContactPageListTest {
     @MockitoBean ManageContactUseCase contactUseCase;
     @MockitoBean ContactRepository contactRepository;
     @MockitoBean com.majordomo.domain.port.in.steward.ManagePropertyUseCase propertyUseCase;
+    @MockitoBean com.majordomo.domain.port.out.steward.PropertyRepository propertyRepository;
     @MockitoBean com.majordomo.domain.port.out.steward.PropertyContactRepository propertyContactRepository;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean com.majordomo.application.identity.OrganizationAccessService organizationAccessService;

@@ -133,13 +133,47 @@
                     <div class="px-6 py-3 border-b border-gray-200">
                         <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Linked properties</h2>
                     </div>
-                    <ul class="p-6 space-y-1 text-sm">
-                        <li th:each="p : ${linkedProperties}">
-                            <a th:href="@{|/properties/${p.id}|}" th:text="${p.name}"
+                    <ul class="p-6 space-y-2 text-sm">
+                        <li th:each="r : ${linkedRows}" class="flex items-center justify-between">
+                            <a th:href="@{|/properties/${r.property().id}|}" th:text="${r.property().name}"
                                class="text-indigo-600 hover:text-indigo-800">property</a>
+                            <form method="post"
+                                  th:action="@{|/contacts/${contact.id}/properties/${r.link().id}/unlink|}">
+                                <button type="submit"
+                                        class="text-red-600 hover:text-red-800 text-xs">Unlink</button>
+                            </form>
                         </li>
-                        <li th:if="${#lists.isEmpty(linkedProperties)}" class="text-gray-400">None</li>
+                        <li th:if="${#lists.isEmpty(linkedRows)}" class="text-gray-400">None</li>
                     </ul>
+                    <div th:if="${propertyCandidates != null and !#lists.isEmpty(propertyCandidates)}"
+                         class="px-6 pb-6 border-t border-gray-100 pt-4">
+                        <form method="post" th:action="@{|/contacts/${contact.id}/properties|}"
+                              class="flex flex-wrap items-end gap-3">
+                            <div class="flex flex-col">
+                                <label for="link-propertyId" class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Property</label>
+                                <select id="link-propertyId" name="propertyId" required
+                                        class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <option th:each="p : ${propertyCandidates}"
+                                            th:value="${p.id}" th:text="${p.name}"></option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="link-role" class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Role</label>
+                                <select id="link-role" name="role" class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <option th:each="r : ${contactRoles}" th:value="${r}" th:text="${r}"></option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col flex-grow">
+                                <label for="link-notes" class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Notes</label>
+                                <input id="link-notes" name="notes" type="text"
+                                       class="rounded border-gray-300 text-sm px-2 py-1.5">
+                            </div>
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                                + Link property
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
             </div>
