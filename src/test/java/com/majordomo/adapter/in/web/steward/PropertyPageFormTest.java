@@ -397,4 +397,90 @@ class PropertyPageFormTest {
         org.mockito.Mockito.verify(propertyUseCase, org.mockito.Mockito.never())
                 .update(any(), any());
     }
+
+    /** Cycle 5 (#229): edit form lists candidate parents excluding self and descendants. */
+    @Test
+    @WithMockUser
+    void editFormParentPickerExcludesSelfAndDescendants() throws Exception {
+        UUID rootId = UuidFactory.newId();
+        UUID parentId = UuidFactory.newId();
+        UUID siblingId = UuidFactory.newId();
+        UUID childId = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property root =
+                new com.majordomo.domain.model.steward.Property();
+        root.setId(rootId);
+        root.setOrganizationId(ORG_ID);
+        root.setName("Root estate");
+        com.majordomo.domain.model.steward.Property unrelated =
+                new com.majordomo.domain.model.steward.Property();
+        unrelated.setId(parentId);
+        unrelated.setOrganizationId(ORG_ID);
+        unrelated.setName("Mountain cabin");
+        com.majordomo.domain.model.steward.Property sibling =
+                new com.majordomo.domain.model.steward.Property();
+        sibling.setId(siblingId);
+        sibling.setOrganizationId(ORG_ID);
+        sibling.setName("Sibling unit");
+        com.majordomo.domain.model.steward.Property child =
+                new com.majordomo.domain.model.steward.Property();
+        child.setId(childId);
+        child.setOrganizationId(ORG_ID);
+        child.setName("Guest cottage");
+        child.setParentId(rootId);
+
+        when(propertyUseCase.findById(rootId)).thenReturn(java.util.Optional.of(root));
+        when(propertyRepository.findByOrganizationId(ORG_ID))
+                .thenReturn(java.util.List.of(root, unrelated, sibling, child));
+        when(propertyUseCase.findByParentId(rootId)).thenReturn(java.util.List.of(child));
+        when(propertyUseCase.findByParentId(childId)).thenReturn(java.util.List.of());
+
+        org.springframework.test.web.servlet.MvcResult result = mvc.perform(
+                get("/properties/{id}/edit", rootId))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        // Self and descendants must NOT be selectable as parent.
+        org.assertj.core.api.Assertions.assertThat(body)
+                .doesNotContain("value=\"" + rootId + "\">Root estate")
+                .doesNotContain("value=\"" + childId + "\">Guest cottage");
+        // Unrelated and sibling are valid parent candidates.
+        org.assertj.core.api.Assertions.assertThat(body)
+                .contains("value=\"" + parentId + "\">Mountain cabin")
+                .contains("value=\"" + siblingId + "\">Sibling unit");
+        // Picker is named parentId.
+        org.assertj.core.api.Assertions.assertThat(body).contains("name=\"parentId\"");
+    }
+
+    /** Cycle 5b (#229): update persists parentId. */
+    @Test
+    @WithMockUser
+    void updatePersistsParentId() throws Exception {
+        UUID id = UuidFactory.newId();
+        UUID parentId = UuidFactory.newId();
+        com.majordomo.domain.model.steward.Property existing =
+                new com.majordomo.domain.model.steward.Property();
+        existing.setId(id);
+        existing.setOrganizationId(ORG_ID);
+        existing.setName("Old");
+        when(propertyUseCase.findById(id)).thenReturn(java.util.Optional.of(existing));
+        when(propertyUseCase.update(org.mockito.ArgumentMatchers.eq(id),
+                any(com.majordomo.domain.model.steward.Property.class)))
+                .thenAnswer(inv -> inv.getArgument(1));
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/properties/{id}", id)
+                        .with(org.springframework.security.test.web.servlet.request
+                                .SecurityMockMvcRequestPostProcessors.csrf())
+                        .param("name", "Renamed")
+                        .param("parentId", parentId.toString()))
+                .andExpect(status().is3xxRedirection());
+
+        org.mockito.ArgumentCaptor<com.majordomo.domain.model.steward.Property> captor =
+                org.mockito.ArgumentCaptor.forClass(
+                        com.majordomo.domain.model.steward.Property.class);
+        org.mockito.Mockito.verify(propertyUseCase).update(
+                org.mockito.ArgumentMatchers.eq(id), captor.capture());
+        org.assertj.core.api.Assertions.assertThat(captor.getValue().getParentId()).isEqualTo(parentId);
+    }
 }

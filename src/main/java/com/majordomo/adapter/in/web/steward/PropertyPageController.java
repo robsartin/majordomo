@@ -184,6 +184,7 @@ public class PropertyPageController {
         model.addAttribute("editingId", null);
         model.addAttribute("existing", null);
         model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("parentCandidates", candidateParents(ctx.organizationId(), null));
         return "property-form";
     }
 
@@ -195,6 +196,7 @@ public class PropertyPageController {
      * @param description   optional description
      * @param location      optional address / location
      * @param purchasePrice optional purchase price (decimal)
+     * @param parentId      optional parent property ID
      * @param principal     authenticated user
      * @param model         Thymeleaf model
      * @return redirect to the new property's detail page on success
@@ -205,6 +207,7 @@ public class PropertyPageController {
                          @RequestParam(required = false) String description,
                          @RequestParam(required = false) String location,
                          @RequestParam(required = false) String purchasePrice,
+                         @RequestParam(required = false) String parentId,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -231,12 +234,48 @@ public class PropertyPageController {
         property.setDescription(blankToNull(description));
         property.setLocation(blankToNull(location));
         property.setPurchasePrice(price);
+        property.setParentId(parseUuid(parentId));
         Property saved = propertyUseCase.create(property);
         return "redirect:/properties/" + saved.getId();
     }
 
     private static String blankToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private static UUID parseUuid(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return UUID.fromString(s.trim());
+    }
+
+    /**
+     * Returns properties in the given organization that are valid as a parent for
+     * {@code editingId} (or for a new property when {@code editingId} is null).
+     * Excludes the property itself and all of its descendants to prevent cycles.
+     * Sorted by name (case-insensitive).
+     */
+    private List<Property> candidateParents(UUID organizationId, UUID editingId) {
+        java.util.Set<UUID> excluded = new java.util.HashSet<>();
+        if (editingId != null) {
+            excluded.add(editingId);
+            collectDescendantIds(editingId, excluded);
+        }
+        List<Property> all = new ArrayList<>(
+                propertyRepository.findByOrganizationId(organizationId));
+        all.removeIf(p -> p.getArchivedAt() != null || excluded.contains(p.getId()));
+        all.sort(Comparator.comparing(
+                Property::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
+        return all;
+    }
+
+    private void collectDescendantIds(UUID rootId, java.util.Set<UUID> sink) {
+        for (Property child : propertyUseCase.findByParentId(rootId)) {
+            if (sink.add(child.getId())) {
+                collectDescendantIds(child.getId(), sink);
+            }
+        }
     }
 
     private static java.math.BigDecimal parsePrice(String s) {
@@ -286,6 +325,7 @@ public class PropertyPageController {
      * @param description   optional description
      * @param location      optional address / location
      * @param purchasePrice optional purchase price (decimal)
+     * @param parentId      optional parent property ID
      * @param principal     authenticated user
      * @param model         Thymeleaf model
      * @return redirect to the property's detail page on success
@@ -297,6 +337,7 @@ public class PropertyPageController {
                          @RequestParam(required = false) String description,
                          @RequestParam(required = false) String location,
                          @RequestParam(required = false) String purchasePrice,
+                         @RequestParam(required = false) String parentId,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -328,6 +369,7 @@ public class PropertyPageController {
         updated.setDescription(blankToNull(description));
         updated.setLocation(blankToNull(location));
         updated.setPurchasePrice(price);
+        updated.setParentId(parseUuid(parentId));
         propertyUseCase.update(id, updated);
         return "redirect:/properties/" + id;
     }
@@ -355,6 +397,8 @@ public class PropertyPageController {
         model.addAttribute("editingId", id);
         model.addAttribute("existing", existing);
         model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("parentCandidates",
+                candidateParents(existing.getOrganizationId(), id));
         return "property-form";
     }
 
