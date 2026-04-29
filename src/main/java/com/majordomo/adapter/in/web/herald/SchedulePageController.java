@@ -213,6 +213,234 @@ public class SchedulePageController {
     }
 
     /**
+     * Renders the new-schedule form.
+     *
+     * @param principal authenticated user
+     * @param model     Thymeleaf model
+     * @return the {@code schedule-form} template, or {@code redirect:/} if no org
+     */
+    @GetMapping("/schedules/new")
+    public String newForm(@AuthenticationPrincipal UserDetails principal, Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        renderForm(null, null, ctx.user().getUsername(), model);
+        return "schedule-form";
+    }
+
+    /**
+     * Renders the edit form pre-populated for an existing schedule.
+     *
+     * @param id        schedule id
+     * @param principal authenticated user
+     * @param model     Thymeleaf model
+     * @return the {@code schedule-form} template, or {@code redirect:/} if no org
+     */
+    @GetMapping("/schedules/{id}/edit")
+    public String editForm(@PathVariable UUID id,
+                           @AuthenticationPrincipal UserDetails principal,
+                           Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        guard.verifyForSchedule(id);
+        MaintenanceSchedule existing = scheduleRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        EntityType.MAINTENANCE_SCHEDULE.name(), id));
+        renderForm(id, existing, ctx.user().getUsername(), model);
+        return "schedule-form";
+    }
+
+    /**
+     * Creates a new schedule and redirects to its detail page. Validates
+     * inputs server-side; on failure re-renders the form with field state
+     * preserved and a {@code formError} attribute set.
+     *
+     * @param propertyId          owning property (required)
+     * @param description         schedule description (required, non-blank)
+     * @param frequency           {@link Frequency} name (required)
+     * @param nextDue             next-due date in {@code YYYY-MM-DD} (required)
+     * @param contactId           optional service-contact id
+     * @param customIntervalDays  optional, only meaningful with {@link Frequency#CUSTOM}
+     * @param estimatedCost       optional cost-per-occurrence
+     * @param principal           authenticated user
+     * @param model               Thymeleaf model
+     * @return redirect to the new schedule's detail page on success;
+     *         {@code schedule-form} on a handled validation failure;
+     *         {@code redirect:/} if the user has no organization
+     */
+    @PostMapping("/schedules")
+    public String create(@RequestParam(required = false) UUID propertyId,
+                         @RequestParam(required = false) String description,
+                         @RequestParam(required = false) String frequency,
+                         @RequestParam(required = false) String nextDue,
+                         @RequestParam(required = false) UUID contactId,
+                         @RequestParam(required = false) Integer customIntervalDays,
+                         @RequestParam(required = false) BigDecimal estimatedCost,
+                         @AuthenticationPrincipal UserDetails principal,
+                         Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        if (propertyId == null) {
+            renderForm(null, null, ctx.user().getUsername(), model);
+            model.addAttribute("formError", "Property is required.");
+            echoFormState(model, propertyId, description, frequency, nextDue,
+                    contactId, customIntervalDays, estimatedCost);
+            return "schedule-form";
+        }
+        guard.verifyForProperty(propertyId);
+
+        String error = validateFormInputs(description, frequency, nextDue);
+        if (error != null) {
+            renderForm(null, null, ctx.user().getUsername(), model);
+            model.addAttribute("formError", error);
+            echoFormState(model, propertyId, description, frequency, nextDue,
+                    contactId, customIntervalDays, estimatedCost);
+            return "schedule-form";
+        }
+
+        MaintenanceSchedule schedule = new MaintenanceSchedule();
+        schedule.setPropertyId(propertyId);
+        schedule.setDescription(description);
+        schedule.setFrequency(Frequency.valueOf(frequency));
+        schedule.setNextDue(LocalDate.parse(nextDue));
+        schedule.setContactId(contactId);
+        schedule.setCustomIntervalDays(customIntervalDays);
+        schedule.setEstimatedCost(estimatedCost);
+        MaintenanceSchedule saved = scheduleUseCase.create(schedule);
+        return "redirect:/schedules/" + saved.getId();
+    }
+
+    /**
+     * Updates an existing schedule and redirects to its detail page. If the
+     * caller is reassigning the schedule to a different property, the new
+     * property is also access-checked.
+     *
+     * @param id                  schedule id
+     * @param propertyId          owning property (required; may differ from current)
+     * @param description         schedule description (required, non-blank)
+     * @param frequency           {@link Frequency} name (required)
+     * @param nextDue             next-due date in {@code YYYY-MM-DD} (required)
+     * @param contactId           optional service-contact id
+     * @param customIntervalDays  optional, only meaningful with {@link Frequency#CUSTOM}
+     * @param estimatedCost       optional cost-per-occurrence
+     * @param principal           authenticated user
+     * @param model               Thymeleaf model
+     * @return redirect to the schedule's detail page on success;
+     *         {@code schedule-form} on a handled validation failure;
+     *         {@code redirect:/} if the user has no organization
+     */
+    @PostMapping("/schedules/{id}")
+    public String update(@PathVariable UUID id,
+                         @RequestParam(required = false) UUID propertyId,
+                         @RequestParam(required = false) String description,
+                         @RequestParam(required = false) String frequency,
+                         @RequestParam(required = false) String nextDue,
+                         @RequestParam(required = false) UUID contactId,
+                         @RequestParam(required = false) Integer customIntervalDays,
+                         @RequestParam(required = false) BigDecimal estimatedCost,
+                         @AuthenticationPrincipal UserDetails principal,
+                         Model model) {
+        var ctx = currentOrg.resolve(principal);
+        if (ctx.organizationId() == null) {
+            return "redirect:/";
+        }
+        guard.verifyForSchedule(id);
+        MaintenanceSchedule existing = scheduleRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        EntityType.MAINTENANCE_SCHEDULE.name(), id));
+
+        if (propertyId == null) {
+            renderForm(id, existing, ctx.user().getUsername(), model);
+            model.addAttribute("formError", "Property is required.");
+            echoFormState(model, propertyId, description, frequency, nextDue,
+                    contactId, customIntervalDays, estimatedCost);
+            return "schedule-form";
+        }
+        // If the user is reassigning the schedule to a different property,
+        // verify they can also access the new property.
+        if (!propertyId.equals(existing.getPropertyId())) {
+            guard.verifyForProperty(propertyId);
+        }
+
+        String error = validateFormInputs(description, frequency, nextDue);
+        if (error != null) {
+            renderForm(id, existing, ctx.user().getUsername(), model);
+            model.addAttribute("formError", error);
+            echoFormState(model, propertyId, description, frequency, nextDue,
+                    contactId, customIntervalDays, estimatedCost);
+            return "schedule-form";
+        }
+
+        MaintenanceSchedule updated = new MaintenanceSchedule();
+        updated.setPropertyId(propertyId);
+        updated.setDescription(description);
+        updated.setFrequency(Frequency.valueOf(frequency));
+        updated.setNextDue(LocalDate.parse(nextDue));
+        updated.setContactId(contactId);
+        updated.setCustomIntervalDays(customIntervalDays);
+        updated.setEstimatedCost(estimatedCost);
+        scheduleUseCase.update(id, updated);
+        return "redirect:/schedules/" + id;
+    }
+
+    /**
+     * Populates the model for the schedule form, used by both new and edit modes.
+     */
+    private void renderForm(UUID editingId, MaintenanceSchedule existing,
+                            String username, Model model) {
+        // Properties the user can pick from.
+        List<Property> properties = new ArrayList<>();
+        for (UUID orgId : guard.currentUserOrganizationIds()) {
+            properties.addAll(propertyRepository.findByOrganizationId(orgId));
+        }
+        model.addAttribute("properties", properties);
+        model.addAttribute("frequencies", Frequency.values());
+        model.addAttribute("editingId", editingId);
+        model.addAttribute("existing", existing);
+        model.addAttribute("username", username);
+    }
+
+    private static void echoFormState(Model model, UUID propertyId, String description,
+                                      String frequency, String nextDue, UUID contactId,
+                                      Integer customIntervalDays, BigDecimal estimatedCost) {
+        model.addAttribute("formPropertyId", propertyId);
+        model.addAttribute("formDescription", description);
+        model.addAttribute("formFrequency", frequency);
+        model.addAttribute("formNextDue", nextDue);
+        model.addAttribute("formContactId", contactId);
+        model.addAttribute("formCustomIntervalDays", customIntervalDays);
+        model.addAttribute("formEstimatedCost", estimatedCost);
+    }
+
+    private static String validateFormInputs(String description, String frequency, String nextDue) {
+        if (description == null || description.isBlank()) {
+            return "Description is required.";
+        }
+        if (frequency == null || frequency.isBlank()) {
+            return "Frequency is required.";
+        }
+        try {
+            Frequency.valueOf(frequency);
+        } catch (IllegalArgumentException ex) {
+            return "Frequency must be one of: " + List.of(Frequency.values());
+        }
+        if (nextDue == null || nextDue.isBlank()) {
+            return "Next due date is required.";
+        }
+        try {
+            LocalDate.parse(nextDue);
+        } catch (DateTimeParseException ex) {
+            return "Next due must be a valid date (YYYY-MM-DD).";
+        }
+        return null;
+    }
+
+    /**
      * Populates the model with everything the detail template needs.
      */
     private void renderDetail(UUID id, String username, Model model) {

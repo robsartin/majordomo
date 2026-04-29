@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${editingId != null ? 'Edit schedule' : 'New schedule'} + ' - Majordomo'">Schedule form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('schedules')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <!-- Breadcrumb -->
+            <nav class="mb-4" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2 text-sm text-gray-500">
+                    <li><a th:href="@{/schedules}" class="hover:text-indigo-600 transition">Schedules</a></li>
+                    <li class="flex items-center space-x-2">
+                        <span>&rsaquo;</span>
+                        <span class="text-gray-900 font-medium"
+                              th:text="${editingId != null ? 'Edit' : 'New'}">Edit</span>
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h1 class="text-xl font-semibold text-gray-900"
+                        th:text="${editingId != null ? 'Edit schedule' : 'New schedule'}">Title</h1>
+                </div>
+                <div class="p-6 space-y-4">
+
+                    <div th:if="${formError}"
+                         class="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+                         th:text="${formError}">Error</div>
+
+                    <form method="post"
+                          th:action="${editingId != null ? '/schedules/' + editingId : '/schedules'}"
+                          class="space-y-4">
+
+                        <!-- Property picker -->
+                        <div class="flex flex-col">
+                            <label for="propertyId"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                Property
+                            </label>
+                            <select id="propertyId" name="propertyId" required
+                                    class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                                <option value="">— select a property —</option>
+                                <option th:each="p : ${properties}"
+                                        th:value="${p.getId()}"
+                                        th:text="${p.getName()}"
+                                        th:selected="${(formPropertyId != null and formPropertyId == p.getId())
+                                                or (formPropertyId == null and existing != null and existing.getPropertyId() == p.getId())}">
+                                    Property name
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="flex flex-col">
+                            <label for="description"
+                                   class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                Description
+                            </label>
+                            <input id="description" name="description" type="text" required
+                                   th:value="${formDescription != null ? formDescription
+                                              : (existing != null ? existing.getDescription() : '')}"
+                                   class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                        </div>
+
+                        <!-- Frequency + nextDue + customIntervalDays -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="flex flex-col">
+                                <label for="frequency"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                    Frequency
+                                </label>
+                                <select id="frequency" name="frequency" required
+                                        class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                                    <option value="">— select —</option>
+                                    <option th:each="f : ${frequencies}"
+                                            th:value="${f}"
+                                            th:text="${f}"
+                                            th:selected="${(formFrequency != null and formFrequency == f.name())
+                                                    or (formFrequency == null and existing != null and existing.getFrequency() == f)}">
+                                        FREQ
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="nextDue"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                    Next due
+                                </label>
+                                <input id="nextDue" name="nextDue" type="date" required
+                                       th:value="${formNextDue != null ? formNextDue
+                                                  : (existing != null and existing.getNextDue() != null ? existing.getNextDue() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="customIntervalDays"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                    Custom interval (days)
+                                </label>
+                                <input id="customIntervalDays" name="customIntervalDays" type="number" min="1"
+                                       th:value="${formCustomIntervalDays != null ? formCustomIntervalDays
+                                                  : (existing != null and existing.getCustomIntervalDays() != null ? existing.getCustomIntervalDays() : '')}"
+                                       placeholder="for CUSTOM frequency"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                        </div>
+
+                        <!-- Estimated cost + contact id (optional) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex flex-col">
+                                <label for="estimatedCost"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                    Estimated cost (optional)
+                                </label>
+                                <input id="estimatedCost" name="estimatedCost" type="number" step="0.01" min="0"
+                                       th:value="${formEstimatedCost != null ? formEstimatedCost
+                                                  : (existing != null and existing.getEstimatedCost() != null ? existing.getEstimatedCost() : '')}"
+                                       class="block rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="contactId"
+                                       class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                    Service contact id (optional)
+                                </label>
+                                <input id="contactId" name="contactId" type="text"
+                                       th:value="${formContactId != null ? formContactId
+                                                  : (existing != null and existing.getContactId() != null ? existing.getContactId() : '')}"
+                                       placeholder="UUID of the contact who services this"
+                                       class="block rounded border-gray-300 text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="submit"
+                                    class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                                <span th:text="${editingId != null ? 'Save changes' : 'Create schedule'}">Submit</span>
+                            </button>
+                            <a th:href="${editingId != null ? '/schedules/' + editingId : '/schedules'}"
+                               class="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>
