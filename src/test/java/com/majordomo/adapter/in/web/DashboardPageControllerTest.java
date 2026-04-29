@@ -8,6 +8,7 @@ import com.majordomo.domain.model.envoy.ApplyNowPosting;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.in.DashboardUseCase;
 import com.majordomo.domain.port.in.envoy.GetRecentApplyNowPostingsUseCase;
+import com.majordomo.domain.port.in.ledger.QuerySpendUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,9 @@ class DashboardPageControllerTest {
     @MockitoBean
     private GetRecentApplyNowPostingsUseCase recentApplyNowUseCase;
 
+    @MockitoBean
+    private QuerySpendUseCase spendUseCase;
+
     /** Authenticated user with an organization membership sees the dashboard. */
     @Test
     @WithMockUser(username = "testuser")
@@ -88,6 +92,35 @@ class DashboardPageControllerTest {
     void dashboardRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection());
+    }
+
+    /** #241: dashboard exposes projectedAnnualSpend + renders both cards linking to /ledger. */
+    @Test
+    @WithMockUser(username = "testuser")
+    void dashboardExposesSpendCardsLinkingToLedger() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        User user = new User(userId, "testuser", "test@example.com");
+        DashboardSummary summary = new DashboardSummary(
+                3, 5, List.of(), List.of(), List.of(), new BigDecimal("1234.56"));
+
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, orgId));
+        when(dashboardUseCase.getSummary(orgId)).thenReturn(summary);
+        when(recentApplyNowUseCase.getRecentApplyNow(orgId, 5)).thenReturn(List.of());
+        when(spendUseCase.projectedAnnualSpend(orgId)).thenReturn(new BigDecimal("4800.00"));
+
+        var result = mockMvc.perform(get("/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("projectedAnnualSpend", new BigDecimal("4800.00")))
+                .andReturn();
+
+        String body = result.getResponse().getContentAsString();
+        // Both spend cards link to the full ledger.
+        org.assertj.core.api.Assertions.assertThat(body)
+                .contains("$1,234.56")
+                .contains("$4,800.00")
+                .contains("href=\"/ledger\"");
     }
 
     /** User with no memberships is redirected to the home page. */
