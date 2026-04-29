@@ -184,21 +184,30 @@ public class PropertyPageController {
         model.addAttribute("editingId", null);
         model.addAttribute("existing", null);
         model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("parentCandidates", candidateParents(ctx.organizationId(), null));
         return "property-form";
     }
 
     /**
      * Creates a property from the new-form post and redirects to the detail page.
      *
-     * @param name       property name (required)
-     * @param category   optional category
-     * @param principal  authenticated user
-     * @param model      Thymeleaf model
+     * @param name          property name (required)
+     * @param category      optional category
+     * @param description   optional description
+     * @param location      optional address / location
+     * @param purchasePrice optional purchase price (decimal)
+     * @param parentId      optional parent property ID
+     * @param principal     authenticated user
+     * @param model         Thymeleaf model
      * @return redirect to the new property's detail page on success
      */
     @PostMapping
     public String create(@RequestParam(required = false) String name,
                          @RequestParam(required = false) String category,
+                         @RequestParam(required = false) String description,
+                         @RequestParam(required = false) String location,
+                         @RequestParam(required = false) String purchasePrice,
+                         @RequestParam(required = false) String parentId,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -206,36 +215,129 @@ public class PropertyPageController {
             return "redirect:/";
         }
         if (name == null || name.isBlank()) {
-            model.addAttribute("editingId", null);
-            model.addAttribute("existing", null);
-            model.addAttribute("username", ctx.user().getUsername());
-            model.addAttribute("formError", "Name is required.");
-            model.addAttribute("formName", name);
-            model.addAttribute("formCategory", category);
+            populateFormState(model, null, null, ctx.user().getUsername(),
+                    "Name is required.", name, category, description, location, purchasePrice);
+            return "property-form";
+        }
+        java.math.BigDecimal price;
+        try {
+            price = parsePrice(purchasePrice);
+        } catch (PriceFormatException ex) {
+            populateFormState(model, null, null, ctx.user().getUsername(),
+                    ex.getMessage(), name, category, description, location, purchasePrice);
             return "property-form";
         }
         Property property = new Property();
         property.setOrganizationId(ctx.organizationId());
         property.setName(name);
         property.setCategory(category);
+        property.setDescription(blankToNull(description));
+        property.setLocation(blankToNull(location));
+        property.setPurchasePrice(price);
+        property.setParentId(parseUuid(parentId));
         Property saved = propertyUseCase.create(property);
         return "redirect:/properties/" + saved.getId();
+    }
+
+    private static String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private static UUID parseUuid(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        return UUID.fromString(s.trim());
+    }
+
+    /**
+     * Returns properties in the given organization that are valid as a parent for
+     * {@code editingId} (or for a new property when {@code editingId} is null).
+     * Excludes the property itself and all of its descendants to prevent cycles.
+     * Sorted by name (case-insensitive).
+     */
+    private List<Property> candidateParents(UUID organizationId, UUID editingId) {
+        java.util.Set<UUID> excluded = new java.util.HashSet<>();
+        if (editingId != null) {
+            excluded.add(editingId);
+            collectDescendantIds(editingId, excluded);
+        }
+        List<Property> all = new ArrayList<>(
+                propertyRepository.findByOrganizationId(organizationId));
+        all.removeIf(p -> p.getArchivedAt() != null || excluded.contains(p.getId()));
+        all.sort(Comparator.comparing(
+                Property::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
+        return all;
+    }
+
+    private void collectDescendantIds(UUID rootId, java.util.Set<UUID> sink) {
+        for (Property child : propertyUseCase.findByParentId(rootId)) {
+            if (sink.add(child.getId())) {
+                collectDescendantIds(child.getId(), sink);
+            }
+        }
+    }
+
+    private static java.math.BigDecimal parsePrice(String s) {
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        java.math.BigDecimal value;
+        try {
+            value = new java.math.BigDecimal(s.trim());
+        } catch (NumberFormatException ex) {
+            throw new PriceFormatException("Purchase price must be a number.");
+        }
+        if (value.signum() < 0) {
+            throw new PriceFormatException("Purchase price must be non-negative.");
+        }
+        return value;
+    }
+
+    private static final class PriceFormatException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+        PriceFormatException(String message) {
+            super(message);
+        }
+    }
+
+    private static void populateFormState(Model model, UUID editingId, Property existing,
+                                          String username, String formError,
+                                          String name, String category, String description,
+                                          String location, String purchasePrice) {
+        model.addAttribute("editingId", editingId);
+        model.addAttribute("existing", existing);
+        model.addAttribute("username", username);
+        model.addAttribute("formError", formError);
+        model.addAttribute("formName", name);
+        model.addAttribute("formCategory", category);
+        model.addAttribute("formDescription", description);
+        model.addAttribute("formLocation", location);
+        model.addAttribute("formPurchasePrice", purchasePrice);
     }
 
     /**
      * Updates an existing property from the edit-form post and redirects to detail.
      *
-     * @param id        the UUID of the property to update
-     * @param name      property name (required)
-     * @param category  optional category
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
+     * @param id            the UUID of the property to update
+     * @param name          property name (required)
+     * @param category      optional category
+     * @param description   optional description
+     * @param location      optional address / location
+     * @param purchasePrice optional purchase price (decimal)
+     * @param parentId      optional parent property ID
+     * @param principal     authenticated user
+     * @param model         Thymeleaf model
      * @return redirect to the property's detail page on success
      */
     @PostMapping("/{id}")
     public String update(@PathVariable UUID id,
                          @RequestParam(required = false) String name,
                          @RequestParam(required = false) String category,
+                         @RequestParam(required = false) String description,
+                         @RequestParam(required = false) String location,
+                         @RequestParam(required = false) String purchasePrice,
+                         @RequestParam(required = false) String parentId,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -247,12 +349,16 @@ public class PropertyPageController {
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
         if (name == null || name.isBlank()) {
-            model.addAttribute("editingId", id);
-            model.addAttribute("existing", existing);
-            model.addAttribute("username", ctx.user().getUsername());
-            model.addAttribute("formError", "Name is required.");
-            model.addAttribute("formName", name);
-            model.addAttribute("formCategory", category);
+            populateFormState(model, id, existing, ctx.user().getUsername(),
+                    "Name is required.", name, category, description, location, purchasePrice);
+            return "property-form";
+        }
+        java.math.BigDecimal price;
+        try {
+            price = parsePrice(purchasePrice);
+        } catch (PriceFormatException ex) {
+            populateFormState(model, id, existing, ctx.user().getUsername(),
+                    ex.getMessage(), name, category, description, location, purchasePrice);
             return "property-form";
         }
         Property updated = new Property();
@@ -260,6 +366,10 @@ public class PropertyPageController {
         updated.setOrganizationId(existing.getOrganizationId());
         updated.setName(name);
         updated.setCategory(category);
+        updated.setDescription(blankToNull(description));
+        updated.setLocation(blankToNull(location));
+        updated.setPurchasePrice(price);
+        updated.setParentId(parseUuid(parentId));
         propertyUseCase.update(id, updated);
         return "redirect:/properties/" + id;
     }
@@ -287,6 +397,8 @@ public class PropertyPageController {
         model.addAttribute("editingId", id);
         model.addAttribute("existing", existing);
         model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("parentCandidates",
+                candidateParents(existing.getOrganizationId(), id));
         return "property-form";
     }
 
