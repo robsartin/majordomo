@@ -4,6 +4,8 @@ import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.EntityType;
+import com.majordomo.domain.model.UuidFactory;
+import com.majordomo.domain.model.concierge.Address;
 import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
@@ -16,6 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -191,6 +194,7 @@ public class ContactPageController {
      * @param telephones    newline-separated telephone numbers
      * @param urls          newline-separated URLs
      * @param nicknames     newline-separated nicknames
+     * @param command       indexed addresses sub-form
      * @param principal     authenticated user
      * @param model         Thymeleaf model
      * @return redirect to the new contact's detail page on success
@@ -206,6 +210,7 @@ public class ContactPageController {
                          @RequestParam(required = false) String telephones,
                          @RequestParam(required = false) String urls,
                          @RequestParam(required = false) String nicknames,
+                         @ModelAttribute ContactFormCommand command,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -238,6 +243,7 @@ public class ContactPageController {
         contact.setTelephones(splitLines(telephones));
         contact.setUrls(splitLines(urls));
         contact.setNicknames(splitLines(nicknames));
+        contact.setAddresses(toAddresses(command.getAddresses(), null));
         Contact saved = contactUseCase.create(contact);
         return "redirect:/contacts/" + saved.getId();
     }
@@ -281,6 +287,7 @@ public class ContactPageController {
      * @param telephones    newline-separated telephone numbers
      * @param urls          newline-separated URLs
      * @param nicknames     newline-separated nicknames
+     * @param command       indexed addresses sub-form
      * @param principal     authenticated user
      * @param model         Thymeleaf model
      * @return redirect to the contact's detail page on success
@@ -297,6 +304,7 @@ public class ContactPageController {
                          @RequestParam(required = false) String telephones,
                          @RequestParam(required = false) String urls,
                          @RequestParam(required = false) String nicknames,
+                         @ModelAttribute ContactFormCommand command,
                          @AuthenticationPrincipal UserDetails principal,
                          Model model) {
         var ctx = currentOrg.resolve(principal);
@@ -333,12 +341,32 @@ public class ContactPageController {
         updated.setTelephones(splitLines(telephones));
         updated.setUrls(splitLines(urls));
         updated.setNicknames(splitLines(nicknames));
+        updated.setAddresses(toAddresses(command.getAddresses(), id));
         contactUseCase.update(id, updated);
         return "redirect:/contacts/" + id;
     }
 
     private static String blankToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    /** Drops blank rows; mints a fresh row id for each remaining row. */
+    private static List<Address> toAddresses(List<AddressFormRow> rows, UUID contactId) {
+        if (rows == null || rows.isEmpty()) {
+            return List.of();
+        }
+        List<Address> out = new ArrayList<>();
+        for (AddressFormRow r : rows) {
+            if (r == null || r.isBlank()) {
+                continue;
+            }
+            out.add(new Address(
+                    UuidFactory.newId(), contactId,
+                    blankToNull(r.getLabel()), blankToNull(r.getStreet()),
+                    blankToNull(r.getCity()), blankToNull(r.getState()),
+                    blankToNull(r.getPostalCode()), blankToNull(r.getCountry())));
+        }
+        return out;
     }
 
     private static List<String> splitLines(String raw) {

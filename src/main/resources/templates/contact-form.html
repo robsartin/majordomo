@@ -105,6 +105,43 @@
                             </div>
                         </div>
 
+                        <!-- Addresses sub-section -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Addresses</h2>
+                                <button type="button" id="add-address"
+                                        class="inline-flex items-center rounded-md bg-white border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    + Add address
+                                </button>
+                            </div>
+                            <div id="address-rows" class="space-y-3">
+                                <th:block th:if="${existing != null and existing.getAddresses() != null}">
+                                <div th:each="a, it : ${existing.getAddresses()}"
+                                     class="grid grid-cols-1 sm:grid-cols-6 gap-2 address-row">
+                                    <input type="text" th:name="|addresses[${it.index}].label|"
+                                           th:value="${a.label()}" placeholder="Label"
+                                           class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <input type="text" th:name="|addresses[${it.index}].street|"
+                                           th:value="${a.street()}" placeholder="Street"
+                                           class="sm:col-span-2 rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <input type="text" th:name="|addresses[${it.index}].city|"
+                                           th:value="${a.city()}" placeholder="City"
+                                           class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <input type="text" th:name="|addresses[${it.index}].state|"
+                                           th:value="${a.state()}" placeholder="State"
+                                           class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <input type="text" th:name="|addresses[${it.index}].postalCode|"
+                                           th:value="${a.postalCode()}" placeholder="Postal"
+                                           class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                    <input type="text" th:name="|addresses[${it.index}].country|"
+                                           th:value="${a.country()}" placeholder="Country"
+                                           class="rounded border-gray-300 text-sm px-2 py-1.5">
+                                </div>
+                                </th:block>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Leave a row entirely blank to delete it on save.</p>
+                        </div>
+
                         <div class="flex flex-col">
                             <label for="notes"
                                    class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Notes</label>
@@ -125,5 +162,25 @@
             </div>
         </main>
     </div>
+    <script>
+        (function () {
+            var btn = document.getElementById('add-address');
+            var rows = document.getElementById('address-rows');
+            if (!btn || !rows) return;
+            btn.addEventListener('click', function () {
+                var idx = rows.querySelectorAll('.address-row').length;
+                var html =
+                    '<div class="grid grid-cols-1 sm:grid-cols-6 gap-2 address-row">' +
+                    '<input type="text" name="addresses[' + idx + '].label" placeholder="Label" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].street" placeholder="Street" class="sm:col-span-2 rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].city" placeholder="City" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].state" placeholder="State" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].postalCode" placeholder="Postal" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].country" placeholder="Country" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '</div>';
+                rows.insertAdjacentHTML('beforeend', html);
+            });
+        })();
+    </script>
 </body>
 </html>
