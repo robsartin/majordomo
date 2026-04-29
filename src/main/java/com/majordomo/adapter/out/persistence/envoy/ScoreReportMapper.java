@@ -1,9 +1,6 @@
 package com.majordomo.adapter.out.persistence.envoy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.majordomo.adapter.out.persistence.JsonColumnCodec;
 import com.majordomo.domain.model.envoy.LlmScoreResponse;
 import com.majordomo.domain.model.envoy.ScoreReport;
 
@@ -22,11 +19,6 @@ import java.util.Optional;
  * are treated as if usage were absent rather than producing a half-formed value.
  */
 final class ScoreReportMapper {
-
-    private static final ObjectMapper MAPPER = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
-            .addModule(new Jdk8Module())
-            .build();
 
     private ScoreReportMapper() { }
 
@@ -51,22 +43,13 @@ final class ScoreReportMapper {
                     e.setOutputTokens(null);
                     e.setLatencyMs(null);
                 });
-        try {
-            e.setBody(MAPPER.writeValueAsString(report));
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to serialise ScoreReport", ex);
-        }
+        e.setBody(JsonColumnCodec.encode(report, "ScoreReport"));
         return e;
     }
 
     static ScoreReport toDomain(ScoreReportEntity e) {
-        ScoreReport fromBody;
-        try {
-            fromBody = MAPPER.readValue(e.getBody(), ScoreReport.class);
-        } catch (Exception ex) {
-            throw new IllegalStateException(
-                    "Failed to deserialise ScoreReport " + e.getId(), ex);
-        }
+        ScoreReport fromBody = JsonColumnCodec.decode(
+                e.getBody(), ScoreReport.class, "ScoreReport " + e.getId());
         Optional<LlmScoreResponse.Usage> columnUsage = readUsageFromColumns(e);
         // Prefer the scalar columns when present. They are the canonical home for usage
         // data going forward; the JSONB body may also carry a `usage` field (newly

@@ -1,7 +1,7 @@
 package com.majordomo.adapter.out.persistence.envoy;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.majordomo.adapter.out.persistence.JsonColumnCodec;
 import com.majordomo.domain.model.envoy.JobPosting;
 
 import java.util.HashMap;
@@ -9,11 +9,11 @@ import java.util.Map;
 
 /**
  * Maps between the {@link JobPosting} POJO and {@link JobPostingEntity},
- * serialising the {@code extracted} hint map to/from JSON.
+ * serialising the {@code extracted} hint map to/from JSON via
+ * {@link JsonColumnCodec}.
  */
 final class JobPostingMapper {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<Map<String, String>> MAP_TYPE =
             new TypeReference<>() { };
 
@@ -33,12 +33,7 @@ final class JobPostingMapper {
         e.setArchivedAt(p.getArchivedAt());
         e.setAppliedAt(p.getAppliedAt());
         e.setDismissedAt(p.getDismissedAt());
-        try {
-            e.setExtracted(p.getExtracted() == null ? null
-                    : MAPPER.writeValueAsString(p.getExtracted()));
-        } catch (Exception ex) {
-            throw new IllegalStateException("Failed to serialise JobPosting.extracted", ex);
-        }
+        e.setExtracted(JsonColumnCodec.encode(p.getExtracted(), "JobPosting.extracted"));
         return e;
     }
 
@@ -56,13 +51,9 @@ final class JobPostingMapper {
         p.setArchivedAt(e.getArchivedAt());
         p.setAppliedAt(e.getAppliedAt());
         p.setDismissedAt(e.getDismissedAt());
-        try {
-            p.setExtracted(e.getExtracted() == null ? new HashMap<>()
-                    : MAPPER.readValue(e.getExtracted(), MAP_TYPE));
-        } catch (Exception ex) {
-            throw new IllegalStateException(
-                    "Failed to deserialise JobPosting.extracted for " + e.getId(), ex);
-        }
+        Map<String, String> extracted = JsonColumnCodec.decode(
+                e.getExtracted(), MAP_TYPE, "JobPosting.extracted for " + e.getId());
+        p.setExtracted(extracted == null ? new HashMap<>() : extracted);
         return p;
     }
 }
