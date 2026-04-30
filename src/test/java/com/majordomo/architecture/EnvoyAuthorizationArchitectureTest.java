@@ -30,6 +30,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
  *       {@link com.majordomo.application.identity.OrganizationAccessService}.</li>
  *   <li>The method takes a parameter annotated
  *       {@code @org.springframework.security.core.annotation.AuthenticationPrincipal}.</li>
+ *   <li>The method takes a parameter of type
+ *       {@link com.majordomo.adapter.in.web.config.OrgContext}, which is resolved
+ *       by an argument resolver that throws {@code MissingOrganizationException}
+ *       (mapped to {@code redirect:/}) when the user has no membership.</li>
  * </ul>
  *
  * <p>HTTP-mapped means annotated with {@code @RequestMapping},
@@ -58,6 +62,9 @@ class EnvoyAuthorizationArchitectureTest {
     private static final String ORG_ACCESS_SERVICE =
             "com.majordomo.application.identity.OrganizationAccessService";
 
+    private static final String ORG_CONTEXT =
+            "com.majordomo.adapter.in.web.config.OrgContext";
+
     private static final Set<String> HTTP_MAPPING_ANNOTATIONS = Set.of(
             "org.springframework.web.bind.annotation.RequestMapping",
             "org.springframework.web.bind.annotation.GetMapping",
@@ -77,15 +84,16 @@ class EnvoyAuthorizationArchitectureTest {
 
     /**
      * Every HTTP-mapped method on an /envoy controller must be gated by
-     * {@code OrganizationAccessService} on the owning class or
-     * {@code @AuthenticationPrincipal} on the method.
+     * {@code OrganizationAccessService} on the owning class,
+     * {@code @AuthenticationPrincipal} on the method, or an {@code OrgContext}
+     * parameter on the method.
      */
     @Test
     void everyEnvoyControllerRouteIsAuthorized() {
         ArchRule rule = methods()
                 .that(areDeclaredInEnvoyController())
                 .and(areHttpMapped())
-                .should(beGatedByOrgAccessOrAuthenticationPrincipal());
+                .should(beGatedByOrgAccessOrAuthenticationPrincipalOrOrgContext());
 
         rule.check(classes);
     }
@@ -117,24 +125,26 @@ class EnvoyAuthorizationArchitectureTest {
         };
     }
 
-    private static ArchCondition<JavaMethod> beGatedByOrgAccessOrAuthenticationPrincipal() {
+    private static ArchCondition<JavaMethod> beGatedByOrgAccessOrAuthenticationPrincipalOrOrgContext() {
         return new ArchCondition<>(
                 "have an OrganizationAccessService field on the owner OR an "
-                        + "@AuthenticationPrincipal parameter") {
+                        + "@AuthenticationPrincipal parameter OR an OrgContext parameter") {
             @Override
             public void check(JavaMethod method, ConditionEvents events) {
                 boolean ownerHasOrgAccess = ownerHasOrgAccessField(method.getOwner());
                 boolean methodHasPrincipal = methodHasAuthenticationPrincipalParam(method);
+                boolean methodHasOrgContext = methodHasOrgContextParam(method);
 
-                if (ownerHasOrgAccess || methodHasPrincipal) {
+                if (ownerHasOrgAccess || methodHasPrincipal || methodHasOrgContext) {
                     return;
                 }
 
                 String message = String.format(
                         "Method %s.%s on /envoy controller is not gated: "
-                                + "owner has no OrganizationAccessService field "
-                                + "and method has no @AuthenticationPrincipal "
-                                + "parameter (declared in %s)",
+                                + "owner has no OrganizationAccessService field, "
+                                + "method has no @AuthenticationPrincipal parameter, "
+                                + "and method has no OrgContext parameter "
+                                + "(declared in %s)",
                         method.getOwner().getSimpleName(),
                         method.getName(),
                         method.getSourceCodeLocation());
@@ -155,5 +165,10 @@ class EnvoyAuthorizationArchitectureTest {
     private static boolean methodHasAuthenticationPrincipalParam(JavaMethod method) {
         return method.getParameters().stream()
                 .anyMatch(p -> p.isAnnotatedWith(AUTHENTICATION_PRINCIPAL_ANNOTATION));
+    }
+
+    private static boolean methodHasOrgContextParam(JavaMethod method) {
+        return method.getParameters().stream()
+                .anyMatch(p -> p.getRawType().getFullName().equals(ORG_CONTEXT));
     }
 }

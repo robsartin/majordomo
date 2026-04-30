@@ -1,13 +1,11 @@
 package com.majordomo.adapter.in.web.identity;
 
 import com.majordomo.adapter.in.web.config.ApiKeyAuthenticationFilter;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.ApiKey;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,38 +35,30 @@ public class AccountApiKeyPageController {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final ApiKeyRepository apiKeyRepository;
-    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * Constructs the API key page controller.
      *
      * @param apiKeyRepository outbound port for API key persistence
-     * @param currentOrg       resolves the authenticated user's organization
      */
-    public AccountApiKeyPageController(ApiKeyRepository apiKeyRepository,
-                                       CurrentOrganizationResolver currentOrg) {
+    public AccountApiKeyPageController(ApiKeyRepository apiKeyRepository) {
         this.apiKeyRepository = apiKeyRepository;
-        this.currentOrg = currentOrg;
     }
 
     /**
      * Renders the API key list for the user's organization.
      *
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
-     * @return the {@code account-api-keys} template, or a redirect home if no org
+     * @param orgContext authenticated user + organization
+     * @param model      Thymeleaf model
+     * @return the {@code account-api-keys} template
      */
     @GetMapping
-    public String list(@AuthenticationPrincipal UserDetails principal, Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        List<ApiKey> keys = apiKeyRepository.findByOrganizationId(ctx.organizationId()).stream()
+    public String list(OrgContext orgContext, Model model) {
+        List<ApiKey> keys = apiKeyRepository.findByOrganizationId(orgContext.organizationId()).stream()
                 .filter(k -> k.getArchivedAt() == null)
                 .toList();
         model.addAttribute("keys", keys);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "account-api-keys";
     }
 
@@ -79,18 +69,14 @@ public class AccountApiKeyPageController {
      * never stored.
      *
      * @param name       the key label (required)
-     * @param principal  authenticated user
+     * @param orgContext authenticated user + organization
      * @param redirect   redirect attributes (used as flash for one-shot plaintext)
      * @return redirect back to the list
      */
     @PostMapping
     public String create(@RequestParam(required = false) String name,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          RedirectAttributes redirect) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         if (name == null || name.isBlank()) {
             redirect.addFlashAttribute("formError", "Name is required.");
             return "redirect:/account/api-keys";
@@ -98,7 +84,7 @@ public class AccountApiKeyPageController {
         String plaintext = generateRawKey();
         String hashed = ApiKeyAuthenticationFilter.sha256(plaintext);
         Instant now = Instant.now();
-        ApiKey key = new ApiKey(UuidFactory.newId(), ctx.organizationId(), name.trim(), hashed);
+        ApiKey key = new ApiKey(UuidFactory.newId(), orgContext.organizationId(), name.trim(), hashed);
         key.setCreatedAt(now);
         key.setUpdatedAt(now);
         apiKeyRepository.save(key);
@@ -112,18 +98,13 @@ public class AccountApiKeyPageController {
      * Cross-organization revokes are silently ignored — the redirect lands on
      * the same list, which won't contain the foreign key.
      *
-     * @param id        the key UUID
-     * @param principal authenticated user
+     * @param id         the key UUID
+     * @param orgContext authenticated user + organization
      * @return redirect back to the list
      */
     @PostMapping("/{id}/revoke")
-    public String revoke(@PathVariable UUID id,
-                         @AuthenticationPrincipal UserDetails principal) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+    public String revoke(@PathVariable UUID id, OrgContext orgContext) {
+        UUID orgId = orgContext.organizationId();
         apiKeyRepository.findById(id).ifPresent(k -> {
             if (orgId.equals(k.getOrganizationId())) {
                 Instant now = Instant.now();

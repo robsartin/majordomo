@@ -1,7 +1,7 @@
 package com.majordomo.adapter.in.web.herald;
 
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.herald.ScheduleAccessGuard;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.herald.Frequency;
@@ -11,8 +11,6 @@ import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,7 +37,6 @@ import java.util.UUID;
 @Controller
 public class SchedulePageController {
 
-    private final CurrentOrganizationResolver currentOrg;
     private final ScheduleAccessGuard guard;
     private final ManageScheduleUseCase scheduleUseCase;
     private final MaintenanceScheduleRepository scheduleRepository;
@@ -60,18 +57,15 @@ public class SchedulePageController {
     /**
      * Constructs the controller.
      *
-     * @param currentOrg         resolves the authenticated user's organizations
      * @param guard              authorization helper for property-scoped reads
      * @param scheduleUseCase    inbound port for schedule writes (record-add)
      * @param scheduleRepository outbound port for schedule reads
      * @param propertyRepository outbound port for property reads
      */
-    public SchedulePageController(CurrentOrganizationResolver currentOrg,
-                                  ScheduleAccessGuard guard,
+    public SchedulePageController(ScheduleAccessGuard guard,
                                   ManageScheduleUseCase scheduleUseCase,
                                   MaintenanceScheduleRepository scheduleRepository,
                                   PropertyRepository propertyRepository) {
-        this.currentOrg = currentOrg;
         this.guard = guard;
         this.scheduleUseCase = scheduleUseCase;
         this.scheduleRepository = scheduleRepository;
@@ -83,7 +77,7 @@ public class SchedulePageController {
      *
      * @param frequency      optional Frequency filter (null = any)
      * @param dueWithinDays  optional "due within N days" filter (null = any)
-     * @param principal      authenticated user
+     * @param orgContext     authenticated user + organization
      * @param model          Thymeleaf model
      * @return the {@code schedules} template, or a redirect to {@code /} when
      *         the user has no organization
@@ -91,13 +85,8 @@ public class SchedulePageController {
     @GetMapping("/schedules")
     public String list(@RequestParam(required = false) Frequency frequency,
                        @RequestParam(required = false) Integer dueWithinDays,
-                       @AuthenticationPrincipal UserDetails principal,
+                       OrgContext orgContext,
                        Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-
         Set<UUID> orgIds = guard.currentUserOrganizationIds();
         // Pull all properties + their schedules (N+1 by property is fine at personal scale).
         List<Property> properties = new ArrayList<>();
@@ -133,7 +122,7 @@ public class SchedulePageController {
         model.addAttribute("frequency", frequency);
         model.addAttribute("dueWithinDays", dueWithinDays);
         model.addAttribute("frequencies", Frequency.values());
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "schedules";
     }
 
@@ -143,21 +132,17 @@ public class SchedulePageController {
      * new service event.
      *
      * @param id        schedule id
-     * @param principal authenticated user
+     * @param orgContext authenticated user + organization
      * @param model     Thymeleaf model
      * @return the {@code schedule-detail} template, or {@code redirect:/} if
      *         the user has no organization
      */
     @GetMapping("/schedules/{id}")
     public String detail(@PathVariable UUID id,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         guard.verifyForSchedule(id);
-        renderDetail(id, ctx.user().getUsername(), model);
+        renderDetail(id, orgContext.username(), model);
         return "schedule-detail";
     }
 
@@ -172,7 +157,7 @@ public class SchedulePageController {
      * @param description short description (required, non-blank)
      * @param cost        optional cost
      * @param notes       optional free-form notes
-     * @param principal   authenticated user
+     * @param orgContext  authenticated user + organization
      * @param model       Thymeleaf model
      * @return redirect to the detail page on success; {@code schedule-detail}
      *         on a handled validation failure; {@code redirect:/} if no org
@@ -183,17 +168,13 @@ public class SchedulePageController {
                             @RequestParam(required = false) String description,
                             @RequestParam(required = false) BigDecimal cost,
                             @RequestParam(required = false) String notes,
-                            @AuthenticationPrincipal UserDetails principal,
+                            OrgContext orgContext,
                             Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         guard.verifyForSchedule(id);
 
         String error = validateRecordInputs(performedOn, description);
         if (error != null) {
-            renderDetail(id, ctx.user().getUsername(), model);
+            renderDetail(id, orgContext.username(), model);
             model.addAttribute("recordError", error);
             // Echo posted values back so the form keeps state.
             model.addAttribute("formPerformedOn", performedOn);
@@ -218,18 +199,14 @@ public class SchedulePageController {
      * "Add schedule" buttons.
      *
      * @param propertyId optional property id to pre-select in the picker
-     * @param principal  authenticated user
+     * @param orgContext authenticated user + organization
      * @param model      Thymeleaf model
      * @return the {@code schedule-form} template, or {@code redirect:/} if no org
      */
     @GetMapping("/schedules/new")
     public String newForm(@RequestParam(required = false) UUID propertyId,
-                          @AuthenticationPrincipal UserDetails principal, Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        renderForm(null, null, ctx.user().getUsername(), model);
+                          OrgContext orgContext, Model model) {
+        renderForm(null, null, orgContext.username(), model);
         if (propertyId != null) {
             model.addAttribute("formPropertyId", propertyId);
         }
@@ -240,23 +217,19 @@ public class SchedulePageController {
      * Renders the edit form pre-populated for an existing schedule.
      *
      * @param id        schedule id
-     * @param principal authenticated user
+     * @param orgContext authenticated user + organization
      * @param model     Thymeleaf model
      * @return the {@code schedule-form} template, or {@code redirect:/} if no org
      */
     @GetMapping("/schedules/{id}/edit")
     public String editForm(@PathVariable UUID id,
-                           @AuthenticationPrincipal UserDetails principal,
+                           OrgContext orgContext,
                            Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         guard.verifyForSchedule(id);
         MaintenanceSchedule existing = scheduleRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         EntityType.MAINTENANCE_SCHEDULE.name(), id));
-        renderForm(id, existing, ctx.user().getUsername(), model);
+        renderForm(id, existing, orgContext.username(), model);
         return "schedule-form";
     }
 
@@ -272,7 +245,7 @@ public class SchedulePageController {
      * @param contactId           optional service-contact id
      * @param customIntervalDays  optional, only meaningful with {@link Frequency#CUSTOM}
      * @param estimatedCost       optional cost-per-occurrence
-     * @param principal           authenticated user
+     * @param orgContext          authenticated user + organization
      * @param model               Thymeleaf model
      * @return redirect to the new schedule's detail page on success;
      *         {@code schedule-form} on a handled validation failure;
@@ -286,14 +259,10 @@ public class SchedulePageController {
                          @RequestParam(required = false) UUID contactId,
                          @RequestParam(required = false) Integer customIntervalDays,
                          @RequestParam(required = false) BigDecimal estimatedCost,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         if (propertyId == null) {
-            renderForm(null, null, ctx.user().getUsername(), model);
+            renderForm(null, null, orgContext.username(), model);
             model.addAttribute("formError", "Property is required.");
             echoFormState(model, propertyId, description, frequency, nextDue,
                     contactId, customIntervalDays, estimatedCost);
@@ -303,7 +272,7 @@ public class SchedulePageController {
 
         String error = validateFormInputs(description, frequency, nextDue);
         if (error != null) {
-            renderForm(null, null, ctx.user().getUsername(), model);
+            renderForm(null, null, orgContext.username(), model);
             model.addAttribute("formError", error);
             echoFormState(model, propertyId, description, frequency, nextDue,
                     contactId, customIntervalDays, estimatedCost);
@@ -335,7 +304,7 @@ public class SchedulePageController {
      * @param contactId           optional service-contact id
      * @param customIntervalDays  optional, only meaningful with {@link Frequency#CUSTOM}
      * @param estimatedCost       optional cost-per-occurrence
-     * @param principal           authenticated user
+     * @param orgContext          authenticated user + organization
      * @param model               Thymeleaf model
      * @return redirect to the schedule's detail page on success;
      *         {@code schedule-form} on a handled validation failure;
@@ -350,19 +319,15 @@ public class SchedulePageController {
                          @RequestParam(required = false) UUID contactId,
                          @RequestParam(required = false) Integer customIntervalDays,
                          @RequestParam(required = false) BigDecimal estimatedCost,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         guard.verifyForSchedule(id);
         MaintenanceSchedule existing = scheduleRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         EntityType.MAINTENANCE_SCHEDULE.name(), id));
 
         if (propertyId == null) {
-            renderForm(id, existing, ctx.user().getUsername(), model);
+            renderForm(id, existing, orgContext.username(), model);
             model.addAttribute("formError", "Property is required.");
             echoFormState(model, propertyId, description, frequency, nextDue,
                     contactId, customIntervalDays, estimatedCost);
@@ -376,7 +341,7 @@ public class SchedulePageController {
 
         String error = validateFormInputs(description, frequency, nextDue);
         if (error != null) {
-            renderForm(id, existing, ctx.user().getUsername(), model);
+            renderForm(id, existing, orgContext.username(), model);
             model.addAttribute("formError", error);
             echoFormState(model, propertyId, description, frequency, nextDue,
                     contactId, customIntervalDays, estimatedCost);

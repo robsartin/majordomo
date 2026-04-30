@@ -1,6 +1,6 @@
 package com.majordomo.adapter.in.web.envoy;
 
-import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.domain.model.envoy.Category;
 import com.majordomo.domain.model.envoy.CategoryScore;
 import com.majordomo.domain.model.envoy.JobPosting;
@@ -9,8 +9,6 @@ import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +40,6 @@ public class EnvoyComparatorController {
     private final QueryScoreReportsUseCase reports;
     private final RubricRepository rubricRepository;
     private final JobPostingRepository jobPostingRepository;
-    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * One column in the comparator table — a posting plus (optionally) the
@@ -93,16 +90,13 @@ public class EnvoyComparatorController {
      * @param reports              inbound port for report queries
      * @param rubricRepository     outbound port for rubric lookups
      * @param jobPostingRepository outbound port for posting lookups
-     * @param currentOrg           resolves the authenticated user's first organization
      */
     public EnvoyComparatorController(QueryScoreReportsUseCase reports,
                                      RubricRepository rubricRepository,
-                                     JobPostingRepository jobPostingRepository,
-                                     CurrentOrganizationResolver currentOrg) {
+                                     JobPostingRepository jobPostingRepository) {
         this.reports = reports;
         this.rubricRepository = rubricRepository;
         this.jobPostingRepository = jobPostingRepository;
-        this.currentOrg = currentOrg;
     }
 
     /**
@@ -120,26 +114,20 @@ public class EnvoyComparatorController {
      *       (the user still sees the company / title / location).</li>
      * </ul>
      *
-     * @param idsParam  comma-separated report ids
-     * @param rubric    rubric name to compare against (default {@code default})
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
-     * @return the {@code envoy-compare} template name, or a redirect to {@code /}
-     *         when the user has no organization
+     * @param idsParam   comma-separated report ids
+     * @param rubric     rubric name to compare against (default {@code default})
+     * @param orgContext authenticated user + organization
+     * @param model      Thymeleaf model
+     * @return the {@code envoy-compare} template name
      */
     @GetMapping("/envoy/compare")
     public String compare(@RequestParam(name = "ids") String idsParam,
                           @RequestParam(name = "rubric", defaultValue = DEFAULT_RUBRIC)
                           String rubric,
-                          @AuthenticationPrincipal UserDetails principal,
+                          OrgContext orgContext,
                           Model model) {
         List<UUID> ids = parseIds(idsParam);
-
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
 
         Rubric activeRubric = rubricRepository.findActiveByName(rubric, orgId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -157,7 +145,7 @@ public class EnvoyComparatorController {
         model.addAttribute("columns", columns);
         model.addAttribute("rows", rows);
         model.addAttribute("organizationId", orgId);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "envoy-compare";
     }
 
