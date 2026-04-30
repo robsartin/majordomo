@@ -3,6 +3,8 @@ package com.majordomo.adapter.in.web.steward;
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.application.steward.PropertyFilters;
+import com.majordomo.application.steward.PropertyQueryService;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.model.steward.Property;
@@ -19,14 +21,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -34,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /**
- * Slice tests for {@link PropertyPageController#list}: list + filter at {@code /properties}.
+ * Slice tests for {@link PropertyPageController#list}. Filter/sort behavior
+ * itself is covered by {@link com.majordomo.application.steward.PropertyQueryServiceTest}.
  */
 @WebMvcTest(PropertyPageController.class)
 @Import(SecurityConfig.class)
@@ -44,6 +47,7 @@ class PropertyPageListTest {
 
     @MockitoBean ManagePropertyUseCase propertyUseCase;
     @MockitoBean PropertyRepository propertyRepository;
+    @MockitoBean PropertyQueryService propertyQueryService;
     @MockitoBean com.majordomo.application.steward.PropertyDetailViewService propertyDetailViewService;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean com.majordomo.application.identity.OrganizationAccessService organizationAccessService;
@@ -59,92 +63,43 @@ class PropertyPageListTest {
                 .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
     }
 
-    /** Renders properties sorted by name with category, status, and location. */
+    /** Controller delegates to the service and renders its rows. */
     @Test
     @WithMockUser
-    void listRendersPropertiesSortedByName() throws Exception {
-        when(propertyRepository.findByOrganizationId(ORG_ID)).thenReturn(List.of(
-                property("Beach House", "vacation", PropertyStatus.ACTIVE, "Cape Cod", null),
-                property("Apartment", "rental", PropertyStatus.IN_SERVICE, "Boston", null)));
+    void listDelegatesToServiceAndRendersRows() throws Exception {
+        Property apartment = property("Apartment");
+        Property beach = property("Beach House");
+        when(propertyQueryService.list(eq(ORG_ID), any(PropertyFilters.class)))
+                .thenReturn(List.of(apartment, beach));
 
-        MvcResult result = mvc.perform(get("/properties"))
+        var result = mvc.perform(get("/properties"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("properties"))
                 .andReturn();
 
-        String body = result.getResponse().getContentAsString();
-        assertThat(body).contains("Beach House").contains("Apartment");
-        assertThat(body).contains("vacation").contains("rental");
-        assertThat(body).contains("ACTIVE").contains("IN_SERVICE");
-        // Apartment sorts before Beach House alphabetically.
-        int apt = body.indexOf("Apartment");
-        int beach = body.indexOf("Beach House");
-        assertThat(apt).isPositive().isLessThan(beach);
+        assertThat(result.getResponse().getContentAsString())
+                .contains("Apartment").contains("Beach House");
     }
 
-    /** Archived properties are filtered out. */
+    /** Filter parameters propagate to the service call. */
     @Test
     @WithMockUser
-    void listSkipsArchivedProperties() throws Exception {
-        when(propertyRepository.findByOrganizationId(ORG_ID)).thenReturn(List.of(
-                property("Active", "rental", PropertyStatus.ACTIVE, "x", null),
-                property("Archived old", "rental", PropertyStatus.DISPOSED, "y",
-                        Instant.parse("2025-01-01T00:00:00Z"))));
+    void listForwardsFiltersToService() throws Exception {
+        when(propertyQueryService.list(eq(ORG_ID), any(PropertyFilters.class)))
+                .thenReturn(List.of());
 
-        MvcResult result = mvc.perform(get("/properties"))
-                .andExpect(status().isOk())
-                .andReturn();
+        mvc.perform(get("/properties").param("category", "rental").param("q", "apt"))
+                .andExpect(status().isOk());
 
-        String body = result.getResponse().getContentAsString();
-        assertThat(body).contains("Active").doesNotContain("Archived old");
+        verify(propertyQueryService).list(eq(ORG_ID), eq(new PropertyFilters("rental", "apt")));
     }
 
-    /** Free-text query narrows results across name + description. */
+    /** Empty state renders when service returns no rows. */
     @Test
     @WithMockUser
-    void searchFiltersAcrossNameAndDescription() throws Exception {
-        Property cabin = property("Cabin", "vacation", PropertyStatus.ACTIVE, "Maine", null);
-        cabin.setDescription("Lakeside retreat with HVAC");
-        Property apartment = property("Apartment", "rental", PropertyStatus.ACTIVE, "Boston", null);
-        apartment.setDescription("City rental");
-        when(propertyRepository.findByOrganizationId(ORG_ID)).thenReturn(List.of(cabin, apartment));
-
-        // Match against description.
-        MvcResult lakeResult = mvc.perform(get("/properties").param("q", "lakeside"))
-                .andExpect(status().isOk())
-                .andReturn();
-        assertThat(lakeResult.getResponse().getContentAsString())
-                .contains("Cabin").doesNotContain("Apartment");
-
-        // Match against name.
-        MvcResult aptResult = mvc.perform(get("/properties").param("q", "apartment"))
-                .andExpect(status().isOk())
-                .andReturn();
-        assertThat(aptResult.getResponse().getContentAsString())
-                .contains("Apartment").doesNotContain("Cabin");
-    }
-
-    /** Category filter narrows results (case-insensitive exact match). */
-    @Test
-    @WithMockUser
-    void filterByCategoryNarrowsResults() throws Exception {
-        when(propertyRepository.findByOrganizationId(ORG_ID)).thenReturn(List.of(
-                property("Cabin", "vacation", PropertyStatus.ACTIVE, "Maine", null),
-                property("Apartment", "rental", PropertyStatus.ACTIVE, "Boston", null)));
-
-        MvcResult result = mvc.perform(get("/properties").param("category", "rental"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        String body = result.getResponse().getContentAsString();
-        assertThat(body).contains("Apartment").doesNotContain("Cabin");
-    }
-
-    /** Empty state renders when no properties match. */
-    @Test
-    @WithMockUser
-    void emptyStateRendersWhenNoMatches() throws Exception {
-        when(propertyRepository.findByOrganizationId(ORG_ID)).thenReturn(List.of());
+    void emptyStateRendersWhenNoRows() throws Exception {
+        when(propertyQueryService.list(eq(ORG_ID), any(PropertyFilters.class)))
+                .thenReturn(List.of());
 
         mvc.perform(get("/properties"))
                 .andExpect(status().isOk())
@@ -172,16 +127,12 @@ class PropertyPageListTest {
                 .andExpect(status().is3xxRedirection());
     }
 
-    private static Property property(String name, String category, PropertyStatus status,
-                                     String location, Instant archivedAt) {
+    private static Property property(String name) {
         Property p = new Property();
         p.setId(UuidFactory.newId());
         p.setOrganizationId(ORG_ID);
         p.setName(name);
-        p.setCategory(category);
-        p.setStatus(status);
-        p.setLocation(location);
-        p.setArchivedAt(archivedAt);
+        p.setStatus(PropertyStatus.ACTIVE);
         return p;
     }
 }

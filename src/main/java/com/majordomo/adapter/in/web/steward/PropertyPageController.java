@@ -6,6 +6,8 @@ import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.application.steward.PropertyDetailView;
 import com.majordomo.application.steward.PropertyDetailViewService;
+import com.majordomo.application.steward.PropertyFilters;
+import com.majordomo.application.steward.PropertyQueryService;
 import com.majordomo.domain.model.concierge.ContactRole;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
@@ -39,6 +41,7 @@ public class PropertyPageController {
 
     private final ManagePropertyUseCase propertyUseCase;
     private final PropertyRepository propertyRepository;
+    private final PropertyQueryService propertyQueryService;
     private final PropertyDetailViewService propertyDetailViewService;
     private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
@@ -47,18 +50,21 @@ public class PropertyPageController {
      * Constructs the property page controller.
      *
      * @param propertyUseCase           the inbound port for property management
-     * @param propertyRepository        the outbound port for property reads (used by the list view)
+     * @param propertyRepository        the outbound port for property reads (used by parent picker)
+     * @param propertyQueryService      application service for the list view's filter+sort
      * @param propertyDetailViewService application service that assembles the detail view
      * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies the caller has access to a given organization
      */
     public PropertyPageController(ManagePropertyUseCase propertyUseCase,
                                   PropertyRepository propertyRepository,
+                                  PropertyQueryService propertyQueryService,
                                   PropertyDetailViewService propertyDetailViewService,
                                   CurrentOrganizationResolver currentOrg,
                                   OrganizationAccessService organizationAccessService) {
         this.propertyUseCase = propertyUseCase;
         this.propertyRepository = propertyRepository;
+        this.propertyQueryService = propertyQueryService;
         this.propertyDetailViewService = propertyDetailViewService;
         this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
@@ -84,43 +90,13 @@ public class PropertyPageController {
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
-        UUID orgId = ctx.organizationId();
-        List<Property> raw = new ArrayList<>(propertyRepository.findByOrganizationId(orgId));
-
-        String categoryFilter = (category == null || category.isBlank()) ? null : category.trim();
-        String qLower = (q == null || q.isBlank()) ? null : q.trim().toLowerCase();
-
-        List<Property> rows = new ArrayList<>();
-        for (Property p : raw) {
-            if (p.getArchivedAt() != null) {
-                continue;
-            }
-            if (categoryFilter != null && !categoryFilter.equalsIgnoreCase(p.getCategory())) {
-                continue;
-            }
-            if (qLower != null && !matchesQuery(p, qLower)) {
-                continue;
-            }
-            rows.add(p);
-        }
-        rows.sort(Comparator.comparing(
-                Property::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
-
+        List<Property> rows = propertyQueryService.list(ctx.organizationId(),
+                new PropertyFilters(category, q));
         model.addAttribute("rows", rows);
         model.addAttribute("category", category);
         model.addAttribute("q", q);
         model.addAttribute("username", ctx.user().getUsername());
         return "properties";
-    }
-
-    private static boolean matchesQuery(Property p, String qLower) {
-        if (p.getName() != null && p.getName().toLowerCase().contains(qLower)) {
-            return true;
-        }
-        if (p.getDescription() != null && p.getDescription().toLowerCase().contains(qLower)) {
-            return true;
-        }
-        return false;
     }
 
     /**
