@@ -176,8 +176,7 @@ class ContactPageDetailTest {
         b.setId(propB);
         b.setOrganizationId(ORG_ID);
         b.setName("Mountain Cabin");
-        when(propertyUseCase.findById(propA)).thenReturn(Optional.of(a));
-        when(propertyUseCase.findById(propB)).thenReturn(Optional.of(b));
+        when(propertyRepository.findByIdIn(any())).thenReturn(List.of(a, b));
 
         MvcResult result = mvc.perform(get("/contacts/{id}", id))
                 .andExpect(status().isOk())

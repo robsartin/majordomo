@@ -11,6 +11,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +38,14 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
     @Override
     public Optional<Property> findById(UUID id) {
         return jpa.findById(id).map(PropertyMapper::toDomain);
+    }
+
+    @Override
+    public List<Property> findByIdIn(Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return jpa.findAllById(ids).stream().map(PropertyMapper::toDomain).toList();
     }
 
     @Override

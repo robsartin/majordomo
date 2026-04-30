@@ -2,6 +2,7 @@ package com.majordomo.domain.port.out.concierge;
 
 import com.majordomo.domain.model.concierge.Contact;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +29,15 @@ public interface ContactRepository {
      * @return the contact, or empty if not found
      */
     Optional<Contact> findById(UUID id);
+
+    /**
+     * Batch-fetches contacts by id. Used by detail handlers that need to
+     * hydrate a small set of linked contacts in a single round trip.
+     *
+     * @param ids the contact ids to load
+     * @return the matching contacts in arbitrary order, missing ids omitted
+     */
+    List<Contact> findByIdIn(Collection<UUID> ids);
 
     /**
      * Returns all contacts belonging to a given organization.
