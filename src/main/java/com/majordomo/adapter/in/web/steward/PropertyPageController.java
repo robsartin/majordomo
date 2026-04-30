@@ -216,9 +216,10 @@ public class PropertyPageController {
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
+        var fields = new PropertyFormFields(name, category, description, location, purchasePrice);
         if (name == null || name.isBlank()) {
             populateFormState(model, null, null, ctx.user().getUsername(),
-                    "Name is required.", name, category, description, location, purchasePrice);
+                    "Name is required.", fields);
             return "property-form";
         }
         java.math.BigDecimal price;
@@ -226,7 +227,7 @@ public class PropertyPageController {
             price = parsePrice(purchasePrice);
         } catch (PriceFormatException ex) {
             populateFormState(model, null, null, ctx.user().getUsername(),
-                    ex.getMessage(), name, category, description, location, purchasePrice);
+                    ex.getMessage(), fields);
             return "property-form";
         }
         Property property = new Property();
@@ -292,19 +293,31 @@ public class PropertyPageController {
         }
     }
 
+    /**
+     * Bundle of property-form field strings echoed back when re-rendering on
+     * a validation failure. Reduces what was a 9-arg call into a small record.
+     *
+     * @param name          submitted name
+     * @param category      submitted category
+     * @param description   submitted description
+     * @param location      submitted location
+     * @param purchasePrice submitted purchase-price string (raw, unparsed)
+     */
+    private record PropertyFormFields(String name, String category, String description,
+                                      String location, String purchasePrice) { }
+
     private static void populateFormState(Model model, UUID editingId, Property existing,
                                           String username, String formError,
-                                          String name, String category, String description,
-                                          String location, String purchasePrice) {
+                                          PropertyFormFields fields) {
         model.addAttribute("editingId", editingId);
         model.addAttribute("existing", existing);
         model.addAttribute("username", username);
         model.addAttribute("formError", formError);
-        model.addAttribute("formName", name);
-        model.addAttribute("formCategory", category);
-        model.addAttribute("formDescription", description);
-        model.addAttribute("formLocation", location);
-        model.addAttribute("formPurchasePrice", purchasePrice);
+        model.addAttribute("formName", fields.name());
+        model.addAttribute("formCategory", fields.category());
+        model.addAttribute("formDescription", fields.description());
+        model.addAttribute("formLocation", fields.location());
+        model.addAttribute("formPurchasePrice", fields.purchasePrice());
     }
 
     /**
@@ -339,9 +352,10 @@ public class PropertyPageController {
                 .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
+        var fields = new PropertyFormFields(name, category, description, location, purchasePrice);
         if (name == null || name.isBlank()) {
             populateFormState(model, id, existing, ctx.user().getUsername(),
-                    "Name is required.", name, category, description, location, purchasePrice);
+                    "Name is required.", fields);
             return "property-form";
         }
         java.math.BigDecimal price;
@@ -349,7 +363,7 @@ public class PropertyPageController {
             price = parsePrice(purchasePrice);
         } catch (PriceFormatException ex) {
             populateFormState(model, id, existing, ctx.user().getUsername(),
-                    ex.getMessage(), name, category, description, location, purchasePrice);
+                    ex.getMessage(), fields);
             return "property-form";
         }
         Property updated = new Property();
