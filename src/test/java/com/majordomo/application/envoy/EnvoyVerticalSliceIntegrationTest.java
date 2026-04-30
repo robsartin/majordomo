@@ -36,9 +36,18 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Vertical slice covering ingest → score → persist → notify with a mocked
+ * Anthropic client. Renamed to {@code *IntegrationTest} so it runs only under
+ * the {@code integration-tests} profile (Testcontainers Postgres) — the
+ * default H2 test profile rejects PostgreSQL-flavored array DDL like
+ * {@code text[]} that Hibernate generates for {@link com.majordomo.adapter.out.persistence.concierge.ContactEntity}
+ * and {@code user_preferences}, causing ordering-dependent failures when the
+ * full unit-test suite runs (issue #257).
+ */
 @SpringBootTest
-@ActiveProfiles("test")
-class EnvoyVerticalSliceTest {
+@ActiveProfiles("integration")
+class EnvoyVerticalSliceIntegrationTest {
 
     private static MockWebServer server;
     private static final UUID ORG_ID = UuidFactory.newId();
