@@ -6,10 +6,12 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
+import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
+import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.springframework.stereotype.Service;
 
@@ -31,6 +33,7 @@ public class ScheduleService implements ManageScheduleUseCase {
 
     private final MaintenanceScheduleRepository scheduleRepository;
     private final ServiceRecordRepository serviceRecordRepository;
+    private final PropertyRepository propertyRepository;
     private final EventPublisher eventPublisher;
 
     /**
@@ -38,14 +41,18 @@ public class ScheduleService implements ManageScheduleUseCase {
      *
      * @param scheduleRepository      the outbound port for schedule persistence
      * @param serviceRecordRepository the outbound port for service record persistence
+     * @param propertyRepository      the outbound port for property reads (used to
+     *                                resolve organizationId for ServiceRecordCreated)
      * @param eventPublisher          the outbound port for publishing domain events
      */
     public ScheduleService(
             MaintenanceScheduleRepository scheduleRepository,
             ServiceRecordRepository serviceRecordRepository,
+            PropertyRepository propertyRepository,
             EventPublisher eventPublisher) {
         this.scheduleRepository = scheduleRepository;
         this.serviceRecordRepository = serviceRecordRepository;
+        this.propertyRepository = propertyRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -90,8 +97,11 @@ public class ScheduleService implements ManageScheduleUseCase {
         record.setId(UuidFactory.newId());
         record.setScheduleId(scheduleId);
         var saved = serviceRecordRepository.save(record);
+        UUID organizationId = propertyRepository.findById(saved.getPropertyId())
+                .map(Property::getOrganizationId)
+                .orElse(null);
         eventPublisher.publish(new ServiceRecordCreated(
-                saved.getId(), saved.getPropertyId(),
+                saved.getId(), organizationId, saved.getPropertyId(),
                 saved.getScheduleId(), Instant.now()));
         return saved;
     }

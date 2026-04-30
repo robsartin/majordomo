@@ -7,12 +7,14 @@ import java.util.UUID;
  * Published when a new service record is created for a property.
  *
  * @param serviceRecordId the ID of the newly created service record
+ * @param organizationId  the organization the property belongs to (non-null)
  * @param propertyId      the property the service was performed on
  * @param scheduleId      the schedule that prompted the service (may be null)
  * @param occurredAt      when the event occurred
  */
 public record ServiceRecordCreated(
     UUID serviceRecordId,
+    UUID organizationId,
     UUID propertyId,
     UUID scheduleId,
     Instant occurredAt

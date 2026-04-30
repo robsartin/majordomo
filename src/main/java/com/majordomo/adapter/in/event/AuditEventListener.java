@@ -47,7 +47,7 @@ public class AuditEventListener {
      */
     @EventListener
     public void onServiceRecordCreated(ServiceRecordCreated event) {
-        log(null, EntityType.SERVICE_RECORD.name(), event.serviceRecordId(),
+        log(event.organizationId(), EntityType.SERVICE_RECORD.name(), event.serviceRecordId(),
                 AuditAction.CREATE.name(), event.occurredAt());
     }
 

@@ -41,11 +41,12 @@ class AuditEventListenerTest {
     @Test
     void onServiceRecordCreatedWritesAuditEntry() {
         UUID recordId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
         UUID propertyId = UUID.randomUUID();
         Instant now = Instant.now();
 
         listener.onServiceRecordCreated(
-                new ServiceRecordCreated(recordId, propertyId, null, now));
+                new ServiceRecordCreated(recordId, orgId, propertyId, null, now));
 
         var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
         verify(auditLogRepository).save(captor.capture());

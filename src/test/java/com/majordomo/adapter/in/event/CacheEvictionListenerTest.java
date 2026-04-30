@@ -30,7 +30,7 @@ class CacheEvictionListenerTest {
 
         var listener = new CacheEvictionListener(cacheManager);
         listener.onServiceRecordCreated(new ServiceRecordCreated(
-                UUID.randomUUID(), UUID.randomUUID(), null, Instant.now()));
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, Instant.now()));
 
         verify(cache).clear();
     }
