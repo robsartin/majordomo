@@ -1,7 +1,7 @@
 package com.majordomo.adapter.in.web.concierge;
 
 import com.majordomo.adapter.in.web.FormBindingHelper;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.EntityType;
@@ -15,8 +15,6 @@ import com.majordomo.domain.port.out.concierge.ContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +41,6 @@ public class ContactPageController {
     private final ContactRepository contactRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyContactRepository propertyContactRepository;
-    private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
 
     /**
@@ -53,20 +50,17 @@ public class ContactPageController {
      * @param contactRepository         outbound port for contact reads (used by list view)
      * @param propertyRepository        outbound port for property reads (link picker, batch hydration)
      * @param propertyContactRepository outbound port for property–contact associations
-     * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies caller has access to a given organization
      */
     public ContactPageController(ManageContactUseCase contactUseCase,
                                  ContactRepository contactRepository,
                                  PropertyRepository propertyRepository,
                                  PropertyContactRepository propertyContactRepository,
-                                 CurrentOrganizationResolver currentOrg,
                                  OrganizationAccessService organizationAccessService) {
         this.contactUseCase = contactUseCase;
         this.contactRepository = contactRepository;
         this.propertyRepository = propertyRepository;
         this.propertyContactRepository = propertyContactRepository;
-        this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
     }
 
@@ -76,20 +70,16 @@ public class ContactPageController {
      *
      * @param organization optional exact-match organization filter
      * @param q            optional case-insensitive query (name + organization + emails)
-     * @param principal    authenticated user
+     * @param orgContext   authenticated user + organization
      * @param model        Thymeleaf model
      * @return the {@code contacts} template
      */
     @GetMapping
     public String list(@RequestParam(required = false) String organization,
                        @RequestParam(required = false) String q,
-                       @AuthenticationPrincipal UserDetails principal,
+                       OrgContext orgContext,
                        Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
         List<Contact> raw = new ArrayList<>(contactRepository.findByOrganizationId(orgId));
 
         String organizationFilter =
@@ -126,7 +116,7 @@ public class ContactPageController {
         model.addAttribute("organizations", organizations);
         model.addAttribute("organization", organization);
         model.addAttribute("q", q);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "contacts";
     }
 
@@ -134,18 +124,14 @@ public class ContactPageController {
      * Renders the contact detail page.
      *
      * @param id        contact UUID
-     * @param principal authenticated user
+     * @param orgContext authenticated user + organization
      * @param model     Thymeleaf model
      * @return the {@code contact-detail} template
      */
     @GetMapping("/{id}")
     public String detail(@PathVariable UUID id,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         Contact contact = contactRepository.findById(id)
                 .filter(c -> c.getArchivedAt() == null)
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
@@ -179,7 +165,7 @@ public class ContactPageController {
         model.addAttribute("propertyCandidates", propertyCandidates);
         model.addAttribute("contactRoles",
                 com.majordomo.domain.model.concierge.ContactRole.values());
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "contact-detail";
     }
 
@@ -195,19 +181,15 @@ public class ContactPageController {
     /**
      * Renders the new-contact form.
      *
-     * @param principal authenticated user
+     * @param orgContext authenticated user + organization
      * @param model     Thymeleaf model
      * @return the {@code contact-form} template
      */
     @GetMapping("/new")
-    public String newForm(@AuthenticationPrincipal UserDetails principal, Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
+    public String newForm(OrgContext orgContext, Model model) {
         model.addAttribute("editingId", null);
         model.addAttribute("existing", null);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "contact-form";
     }
 
@@ -225,7 +207,7 @@ public class ContactPageController {
      * @param urls          newline-separated URLs
      * @param nicknames     newline-separated nicknames
      * @param command       indexed addresses sub-form
-     * @param principal     authenticated user
+     * @param orgContext    authenticated user + organization
      * @param model         Thymeleaf model
      * @return redirect to the new contact's detail page on success
      */
@@ -241,27 +223,23 @@ public class ContactPageController {
                          @RequestParam(required = false) String urls,
                          @RequestParam(required = false) String nicknames,
                          @ModelAttribute ContactFormCommand command,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         var fields = new ContactFormFields(formattedName, givenName, familyName,
                 organization, title, notes, emails, telephones, urls, nicknames);
         if (formattedName == null || formattedName.isBlank()) {
-            populateFormState(model, null, null, ctx.user().getUsername(),
+            populateFormState(model, null, null, orgContext.username(),
                     "Formatted name is required.", fields);
             return "contact-form";
         }
         List<String> emailList = FormBindingHelper.splitLines(emails);
         String emailError = validateEmails(emailList);
         if (emailError != null) {
-            populateFormState(model, null, null, ctx.user().getUsername(), emailError, fields);
+            populateFormState(model, null, null, orgContext.username(), emailError, fields);
             return "contact-form";
         }
         Contact contact = new Contact();
-        contact.setOrganizationId(ctx.organizationId());
+        contact.setOrganizationId(orgContext.organizationId());
         contact.setFormattedName(formattedName);
         contact.setGivenName(FormBindingHelper.blankToNull(givenName));
         contact.setFamilyName(FormBindingHelper.blankToNull(familyName));
@@ -281,24 +259,20 @@ public class ContactPageController {
      * Renders the edit-contact form, pre-populated.
      *
      * @param id        the contact's UUID
-     * @param principal authenticated user
+     * @param orgContext authenticated user + organization
      * @param model     Thymeleaf model
      * @return the {@code contact-form} template
      */
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable UUID id,
-                           @AuthenticationPrincipal UserDetails principal,
+                           OrgContext orgContext,
                            Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         Contact existing = contactRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
         model.addAttribute("editingId", id);
         model.addAttribute("existing", existing);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "contact-form";
     }
 
@@ -317,7 +291,7 @@ public class ContactPageController {
      * @param urls          newline-separated URLs
      * @param nicknames     newline-separated nicknames
      * @param command       indexed addresses sub-form
-     * @param principal     authenticated user
+     * @param orgContext    authenticated user + organization
      * @param model         Thymeleaf model
      * @return redirect to the contact's detail page on success
      */
@@ -334,26 +308,22 @@ public class ContactPageController {
                          @RequestParam(required = false) String urls,
                          @RequestParam(required = false) String nicknames,
                          @ModelAttribute ContactFormCommand command,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         Contact existing = contactRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
         var fields = new ContactFormFields(formattedName, givenName, familyName,
                 organization, title, notes, emails, telephones, urls, nicknames);
         if (formattedName == null || formattedName.isBlank()) {
-            populateFormState(model, id, existing, ctx.user().getUsername(),
+            populateFormState(model, id, existing, orgContext.username(),
                     "Formatted name is required.", fields);
             return "contact-form";
         }
         List<String> emailList = FormBindingHelper.splitLines(emails);
         String emailError = validateEmails(emailList);
         if (emailError != null) {
-            populateFormState(model, id, existing, ctx.user().getUsername(), emailError, fields);
+            populateFormState(model, id, existing, orgContext.username(), emailError, fields);
             return "contact-form";
         }
         Contact updated = new Contact();

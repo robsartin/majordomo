@@ -2,7 +2,6 @@ package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.adapter.in.web.FormBindingHelper;
 import com.majordomo.adapter.in.web.config.OrgContext;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.application.steward.PropertyDetailView;
 import com.majordomo.application.steward.PropertyDetailViewService;
@@ -13,8 +12,6 @@ import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,7 +40,6 @@ public class PropertyPageController {
     private final PropertyRepository propertyRepository;
     private final PropertyQueryService propertyQueryService;
     private final PropertyDetailViewService propertyDetailViewService;
-    private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
 
     /**
@@ -53,20 +49,17 @@ public class PropertyPageController {
      * @param propertyRepository        the outbound port for property reads (used by parent picker)
      * @param propertyQueryService      application service for the list view's filter+sort
      * @param propertyDetailViewService application service that assembles the detail view
-     * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies the caller has access to a given organization
      */
     public PropertyPageController(ManagePropertyUseCase propertyUseCase,
                                   PropertyRepository propertyRepository,
                                   PropertyQueryService propertyQueryService,
                                   PropertyDetailViewService propertyDetailViewService,
-                                  CurrentOrganizationResolver currentOrg,
                                   OrganizationAccessService organizationAccessService) {
         this.propertyUseCase = propertyUseCase;
         this.propertyRepository = propertyRepository;
         this.propertyQueryService = propertyQueryService;
         this.propertyDetailViewService = propertyDetailViewService;
-        this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
     }
 
@@ -76,46 +69,37 @@ public class PropertyPageController {
      *
      * @param category  optional exact-match category filter
      * @param q         optional case-insensitive query across name + description
-     * @param principal authenticated user
+     * @param orgContext authenticated user + organization
      * @param model     Thymeleaf model
-     * @return the {@code properties} template, or a redirect home if the user
-     *         has no organization
+     * @return the {@code properties} template
      */
     @GetMapping
     public String list(@RequestParam(required = false) String category,
                        @RequestParam(required = false) String q,
-                       @AuthenticationPrincipal UserDetails principal,
+                       OrgContext orgContext,
                        Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        List<Property> rows = propertyQueryService.list(ctx.organizationId(),
+        List<Property> rows = propertyQueryService.list(orgContext.organizationId(),
                 new PropertyFilters(category, q));
         model.addAttribute("rows", rows);
         model.addAttribute("category", category);
         model.addAttribute("q", q);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "properties";
     }
 
     /**
      * Renders the new-property form.
      *
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
+     * @param orgContext authenticated user + organization
+     * @param model      Thymeleaf model
      * @return the {@code property-form} template
      */
     @GetMapping("/new")
-    public String newForm(@AuthenticationPrincipal UserDetails principal, Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
+    public String newForm(OrgContext orgContext, Model model) {
         model.addAttribute("editingId", null);
         model.addAttribute("existing", null);
-        model.addAttribute("username", ctx.user().getUsername());
-        model.addAttribute("parentCandidates", candidateParents(ctx.organizationId(), null));
+        model.addAttribute("username", orgContext.username());
+        model.addAttribute("parentCandidates", candidateParents(orgContext.organizationId(), null));
         return "property-form";
     }
 
@@ -128,7 +112,7 @@ public class PropertyPageController {
      * @param location      optional address / location
      * @param purchasePrice optional purchase price (decimal)
      * @param parentId      optional parent property ID
-     * @param principal     authenticated user
+     * @param orgContext    authenticated user + organization
      * @param model         Thymeleaf model
      * @return redirect to the new property's detail page on success
      */
@@ -139,15 +123,11 @@ public class PropertyPageController {
                          @RequestParam(required = false) String location,
                          @RequestParam(required = false) String purchasePrice,
                          @RequestParam(required = false) String parentId,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         var fields = new PropertyFormFields(name, category, description, location, purchasePrice);
         if (name == null || name.isBlank()) {
-            populateFormState(model, null, null, ctx.user().getUsername(),
+            populateFormState(model, null, null, orgContext.username(),
                     "Name is required.", fields);
             return "property-form";
         }
@@ -155,12 +135,12 @@ public class PropertyPageController {
         try {
             price = parsePrice(purchasePrice);
         } catch (PriceFormatException ex) {
-            populateFormState(model, null, null, ctx.user().getUsername(),
+            populateFormState(model, null, null, orgContext.username(),
                     ex.getMessage(), fields);
             return "property-form";
         }
         Property property = new Property();
-        property.setOrganizationId(ctx.organizationId());
+        property.setOrganizationId(orgContext.organizationId());
         property.setName(name);
         property.setCategory(category);
         property.setDescription(FormBindingHelper.blankToNull(description));
@@ -259,7 +239,7 @@ public class PropertyPageController {
      * @param location      optional address / location
      * @param purchasePrice optional purchase price (decimal)
      * @param parentId      optional parent property ID
-     * @param principal     authenticated user
+     * @param orgContext    authenticated user + organization
      * @param model         Thymeleaf model
      * @return redirect to the property's detail page on success
      */
@@ -271,19 +251,15 @@ public class PropertyPageController {
                          @RequestParam(required = false) String location,
                          @RequestParam(required = false) String purchasePrice,
                          @RequestParam(required = false) String parentId,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         Property existing = propertyUseCase.findById(id)
                 .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
         var fields = new PropertyFormFields(name, category, description, location, purchasePrice);
         if (name == null || name.isBlank()) {
-            populateFormState(model, id, existing, ctx.user().getUsername(),
+            populateFormState(model, id, existing, orgContext.username(),
                     "Name is required.", fields);
             return "property-form";
         }
@@ -291,7 +267,7 @@ public class PropertyPageController {
         try {
             price = parsePrice(purchasePrice);
         } catch (PriceFormatException ex) {
-            populateFormState(model, id, existing, ctx.user().getUsername(),
+            populateFormState(model, id, existing, orgContext.username(),
                     ex.getMessage(), fields);
             return "property-form";
         }
@@ -311,26 +287,22 @@ public class PropertyPageController {
     /**
      * Renders the edit form for an existing property, pre-populated.
      *
-     * @param id        the UUID of the property to edit
-     * @param principal authenticated user
-     * @param model     Thymeleaf model
+     * @param id         the UUID of the property to edit
+     * @param orgContext authenticated user + organization
+     * @param model      Thymeleaf model
      * @return the {@code property-form} template
      */
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable UUID id,
-                           @AuthenticationPrincipal UserDetails principal,
+                           OrgContext orgContext,
                            Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
         Property existing = propertyUseCase.findById(id)
                 .orElseThrow(() -> new com.majordomo.domain.model.EntityNotFoundException(
                         com.majordomo.domain.model.EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
         model.addAttribute("editingId", id);
         model.addAttribute("existing", existing);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         model.addAttribute("parentCandidates",
                 candidateParents(existing.getOrganizationId(), id));
         return "property-form";

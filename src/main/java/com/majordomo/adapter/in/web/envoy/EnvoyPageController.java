@@ -1,7 +1,7 @@
 package com.majordomo.adapter.in.web.envoy;
 
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.envoy.LlmScoringException;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.envoy.JobPosting;
 import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
@@ -16,8 +16,6 @@ import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,7 +51,6 @@ public class EnvoyPageController {
     private final MarkPostingConversionUseCase conversionUseCase;
     private final GetApplyNowConversionStatUseCase conversionStatUseCase;
     private final JobPostingRepository jobPostingRepository;
-    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * View-model row binding a {@link ScoreReport} to its source {@link JobPosting}.
@@ -74,22 +71,19 @@ public class EnvoyPageController {
      * @param conversionUseCase     inbound port for marking APPLY_NOW conversion outcome
      * @param conversionStatUseCase inbound port for the APPLY_NOW conversion rollup
      * @param jobPostingRepository  outbound port for posting lookups
-     * @param currentOrg            resolves the authenticated user's first organization
      */
     public EnvoyPageController(QueryScoreReportsUseCase reports,
                                IngestJobPostingUseCase ingestUseCase,
                                ScoreJobPostingUseCase scoreUseCase,
                                MarkPostingConversionUseCase conversionUseCase,
                                GetApplyNowConversionStatUseCase conversionStatUseCase,
-                               JobPostingRepository jobPostingRepository,
-                               CurrentOrganizationResolver currentOrg) {
+                               JobPostingRepository jobPostingRepository) {
         this.reports = reports;
         this.ingestUseCase = ingestUseCase;
         this.scoreUseCase = scoreUseCase;
         this.conversionUseCase = conversionUseCase;
         this.conversionStatUseCase = conversionStatUseCase;
         this.jobPostingRepository = jobPostingRepository;
-        this.currentOrg = currentOrg;
     }
 
     /**
@@ -109,21 +103,16 @@ public class EnvoyPageController {
      *
      * @param minFinalScore  optional min score lower bound (null = no filter)
      * @param recommendation optional recommendation tier filter (null = any)
-     * @param principal      the authenticated user
+     * @param orgContext     authenticated user + organization
      * @param model          the Thymeleaf model
-     * @return the {@code envoy} template name, or a redirect to {@code /} if
-     *         the user has no organization
+     * @return the {@code envoy} template name
      */
     @GetMapping("/envoy")
     public String envoy(@RequestParam(required = false) Integer minFinalScore,
                         @RequestParam(required = false) Recommendation recommendation,
-                        @AuthenticationPrincipal UserDetails principal,
+                        OrgContext orgContext,
                         Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        renderEnvoyPage(ctx, minFinalScore, recommendation, model);
+        renderEnvoyPage(orgContext, minFinalScore, recommendation, model);
         return "envoy";
     }
 
@@ -145,16 +134,15 @@ public class EnvoyPageController {
      * filtered out, so the LLM extractor only sees hints the caller actually
      * provided.</p>
      *
-     * @param type      source discriminator (defaults to {@code "manual"})
-     * @param payload   raw posting text / URL / source-specific id
-     * @param company   optional company hint
-     * @param title     optional title hint
-     * @param location  optional location hint
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model
+     * @param type       source discriminator (defaults to {@code "manual"})
+     * @param payload    raw posting text / URL / source-specific id
+     * @param company    optional company hint
+     * @param title      optional title hint
+     * @param location   optional location hint
+     * @param orgContext authenticated user + organization
+     * @param model      the Thymeleaf model
      * @return {@code redirect:/envoy} on success; {@code envoy} (with an
-     *         {@code ingestError} attribute) on a handled failure;
-     *         {@code redirect:/} if the user has no organization
+     *         {@code ingestError} attribute) on a handled failure
      */
     @PostMapping("/envoy")
     public String submitIngest(@RequestParam(defaultValue = "manual") String type,
@@ -162,16 +150,12 @@ public class EnvoyPageController {
                                @RequestParam(required = false) String company,
                                @RequestParam(required = false) String title,
                                @RequestParam(required = false) String location,
-                               @AuthenticationPrincipal UserDetails principal,
+                               OrgContext orgContext,
                                Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
 
         if (payload == null || payload.isBlank()) {
-            renderEnvoyPage(ctx, null, null, model);
+            renderEnvoyPage(orgContext, null, null, model);
             model.addAttribute("ingestError", "Payload is required.");
             return "envoy";
         }
@@ -186,7 +170,7 @@ public class EnvoyPageController {
         } catch (IllegalArgumentException | LlmScoringException ex) {
             LOG.warn("Inline ingest+score failed for org {} (type={}): {}",
                     orgId, type, ex.getMessage());
-            renderEnvoyPage(ctx, null, null, model);
+            renderEnvoyPage(orgContext, null, null, model);
             model.addAttribute("ingestError", ex.getMessage());
             return "envoy";
         }
@@ -197,11 +181,11 @@ public class EnvoyPageController {
      * (rows, filter echo values, org id, username). Shared between the GET
      * handler and the POST handler's error path.
      */
-    private void renderEnvoyPage(CurrentOrganizationResolver.Resolved ctx,
+    private void renderEnvoyPage(OrgContext orgContext,
                                  Integer minFinalScore,
                                  Recommendation recommendation,
                                  Model model) {
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
         List<ScoreReport> recent = reports
                 .query(orgId, new ScoreReportFilter(minFinalScore, recommendation),
                         null, DEFAULT_LIMIT)
@@ -219,7 +203,7 @@ public class EnvoyPageController {
         model.addAttribute("minFinalScore", minFinalScore);
         model.addAttribute("recommendation", recommendation);
         model.addAttribute("organizationId", orgId);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         model.addAttribute("applyNowTotal", stat.total());
         model.addAttribute("applyNowApplied", stat.applied());
     }
@@ -247,20 +231,16 @@ public class EnvoyPageController {
     /**
      * Marks a posting as applied (APPLY_NOW conversion path). Idempotent.
      *
-     * @param postingId the posting id (path variable)
-     * @param principal the authenticated user
+     * @param postingId  the posting id (path variable)
+     * @param orgContext authenticated user + organization
      * @return redirect back to the report detail page if the posting has any
      *         report; otherwise to the envoy list
      */
     @PostMapping("/envoy/postings/{postingId}/applied")
     public String markPostingApplied(@PathVariable UUID postingId,
-                                     @AuthenticationPrincipal UserDetails principal) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
+                                     OrgContext orgContext) {
         try {
-            conversionUseCase.markApplied(postingId, ctx.organizationId());
+            conversionUseCase.markApplied(postingId, orgContext.organizationId());
         } catch (IllegalArgumentException ignored) {
             // Posting not in user's org — silently swallow; the redirect target
             // will naturally 404 if the report id is not theirs.
@@ -271,19 +251,15 @@ public class EnvoyPageController {
     /**
      * Marks a posting as dismissed (not interested). Idempotent.
      *
-     * @param postingId the posting id (path variable)
-     * @param principal the authenticated user
+     * @param postingId  the posting id (path variable)
+     * @param orgContext authenticated user + organization
      * @return redirect to the envoy list
      */
     @PostMapping("/envoy/postings/{postingId}/dismissed")
     public String dismissPosting(@PathVariable UUID postingId,
-                                 @AuthenticationPrincipal UserDetails principal) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
+                                 OrgContext orgContext) {
         try {
-            conversionUseCase.dismiss(postingId, ctx.organizationId());
+            conversionUseCase.dismiss(postingId, orgContext.organizationId());
         } catch (IllegalArgumentException ignored) {
             // Same rationale as markPostingApplied.
         }
@@ -301,23 +277,18 @@ public class EnvoyPageController {
      * deleted from underneath the report we still render — the {@code posting}
      * model attribute is simply absent and the template degrades gracefully.</p>
      *
-     * @param id        the report id
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model
-     * @param response  used to set the 404 status when no report is found
-     * @return the {@code envoy-report} template, {@code error} on 404, or a
-     *         redirect to {@code /} if the user has no organization
+     * @param id         the report id
+     * @param orgContext authenticated user + organization
+     * @param model      the Thymeleaf model
+     * @param response   used to set the 404 status when no report is found
+     * @return the {@code envoy-report} template, or {@code error} on 404
      */
     @GetMapping("/envoy/reports/{id}")
     public String getReport(@PathVariable UUID id,
-                            @AuthenticationPrincipal UserDetails principal,
+                            OrgContext orgContext,
                             Model model,
                             HttpServletResponse response) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
 
         Optional<ScoreReport> reportOpt = reports.findById(id, orgId);
         if (reportOpt.isEmpty()) {
@@ -332,7 +303,7 @@ public class EnvoyPageController {
 
         model.addAttribute("report", report);
         model.addAttribute("organizationId", orgId);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "envoy-report";
     }
 

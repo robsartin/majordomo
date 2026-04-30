@@ -1,14 +1,12 @@
 package com.majordomo.adapter.in.web.audit;
 
 import com.majordomo.adapter.in.web.FormBindingHelper;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.domain.model.AuditLogEntry;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.port.out.AuditLogRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,7 +32,6 @@ public class AuditPageController {
 
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
-    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * View-model row pairing an audit entry with the resolved actor username.
@@ -49,14 +46,11 @@ public class AuditPageController {
      *
      * @param auditLogRepository outbound port for audit-log queries
      * @param userRepository     outbound port for user lookups (actor resolution)
-     * @param currentOrg         resolves the authenticated user's organization
      */
     public AuditPageController(AuditLogRepository auditLogRepository,
-                               UserRepository userRepository,
-                               CurrentOrganizationResolver currentOrg) {
+                               UserRepository userRepository) {
         this.auditLogRepository = auditLogRepository;
         this.userRepository = userRepository;
-        this.currentOrg = currentOrg;
     }
 
     /**
@@ -66,22 +60,18 @@ public class AuditPageController {
      * @param actor      optional actor-username filter
      * @param since      optional inclusive lower-bound date (yyyy-MM-dd)
      * @param until      optional exclusive upper-bound date (yyyy-MM-dd)
-     * @param principal  authenticated user
+     * @param orgContext authenticated user + organization
      * @param model      Thymeleaf model
-     * @return the {@code audit} template, or a redirect home if no org
+     * @return the {@code audit} template
      */
     @GetMapping("/audit")
     public String list(@RequestParam(required = false) String entityType,
                        @RequestParam(required = false) String actor,
                        @RequestParam(required = false) String since,
                        @RequestParam(required = false) String until,
-                       @AuthenticationPrincipal UserDetails principal,
+                       OrgContext orgContext,
                        Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
 
         String entityTypeFilter = FormBindingHelper.blankToNull(entityType);
         UUID actorId = resolveActor(actor);
@@ -108,7 +98,7 @@ public class AuditPageController {
         model.addAttribute("since", since);
         model.addAttribute("until", until);
         model.addAttribute("entityTypeOptions", entityTypeOptions(entries));
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "audit";
     }
 

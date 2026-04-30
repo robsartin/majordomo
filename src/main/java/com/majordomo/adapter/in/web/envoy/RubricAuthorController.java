@@ -1,6 +1,6 @@
 package com.majordomo.adapter.in.web.envoy;
 
-import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.envoy.Category;
 import com.majordomo.domain.model.envoy.Rubric;
@@ -8,8 +8,6 @@ import com.majordomo.domain.model.envoy.Thresholds;
 import com.majordomo.domain.model.envoy.Tier;
 import com.majordomo.domain.port.in.envoy.ManageRubricUseCase;
 import com.majordomo.domain.port.out.envoy.RubricRepository;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -41,21 +39,17 @@ public class RubricAuthorController {
 
     private final ManageRubricUseCase rubrics;
     private final RubricRepository rubricRepository;
-    private final CurrentOrganizationResolver currentOrg;
 
     /**
      * Constructs the controller.
      *
      * @param rubrics          inbound port for rubric authoring
      * @param rubricRepository outbound port for rubric reads
-     * @param currentOrg       resolves the authenticated user's first organization
      */
     public RubricAuthorController(ManageRubricUseCase rubrics,
-                                  RubricRepository rubricRepository,
-                                  CurrentOrganizationResolver currentOrg) {
+                                  RubricRepository rubricRepository) {
         this.rubrics = rubrics;
         this.rubricRepository = rubricRepository;
-        this.currentOrg = currentOrg;
     }
 
     /**
@@ -63,22 +57,17 @@ public class RubricAuthorController {
      * first organization (org-specific actives plus system-default rubrics
      * the org has not yet authored).
      *
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model
-     * @return the {@code rubrics-list} template, or a redirect home if the
-     *         user has no organization
+     * @param orgContext authenticated user + organization
+     * @param model      the Thymeleaf model
+     * @return the {@code rubrics-list} template
      */
     @GetMapping("/envoy/rubrics")
-    public String list(@AuthenticationPrincipal UserDetails principal, Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+    public String list(OrgContext orgContext, Model model) {
+        UUID orgId = orgContext.organizationId();
         List<Rubric> activeRubrics = rubricRepository.findActiveRubricsForOrg(orgId);
         model.addAttribute("rubrics", activeRubrics);
         model.addAttribute("organizationId", orgId);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "rubrics-list";
     }
 
@@ -87,21 +76,16 @@ public class RubricAuthorController {
      * rubric for the org if one exists; otherwise renders a blank form for
      * authoring a new rubric under that name.
      *
-     * @param name      logical rubric name (path variable)
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model
-     * @return the {@code rubric-edit} template, or a redirect home if the
-     *         user has no organization
+     * @param name       logical rubric name (path variable)
+     * @param orgContext authenticated user + organization
+     * @param model      the Thymeleaf model
+     * @return the {@code rubric-edit} template
      */
     @GetMapping("/envoy/rubrics/{name}/edit")
     public String editForm(@PathVariable String name,
-                           @AuthenticationPrincipal UserDetails principal,
+                           OrgContext orgContext,
                            Model model) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
         Optional<Rubric> existing = rubricRepository.findActiveByName(name, orgId);
         RubricFormDto form = existing.map(RubricAuthorController::toForm)
                 .orElseGet(RubricFormDto::new);
@@ -110,7 +94,7 @@ public class RubricAuthorController {
         model.addAttribute("rubricName", name);
         model.addAttribute("isNew", existing.isEmpty());
         model.addAttribute("organizationId", orgId);
-        model.addAttribute("username", ctx.user().getUsername());
+        model.addAttribute("username", orgContext.username());
         return "rubric-edit";
     }
 
@@ -120,34 +104,29 @@ public class RubricAuthorController {
      * redirects to the list page with a flash message; on failure re-renders
      * the form with the submitted values and field-level errors preserved.
      *
-     * @param name      logical rubric name (path variable)
-     * @param form      the submitted form (auto-bound)
-     * @param result    binding/validation result
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model used for re-render on error
-     * @param redirect  flash attribute target on success
-     * @return the list redirect on success, or {@code rubric-edit} on error;
-     *         redirect home if user has no organization
+     * @param name       logical rubric name (path variable)
+     * @param form       the submitted form (auto-bound)
+     * @param result     binding/validation result
+     * @param orgContext authenticated user + organization
+     * @param model      the Thymeleaf model used for re-render on error
+     * @param redirect   flash attribute target on success
+     * @return the list redirect on success, or {@code rubric-edit} on error
      */
     @PostMapping("/envoy/rubrics/{name}")
     public String submit(@PathVariable String name,
                          @ModelAttribute("form") RubricFormDto form,
                          BindingResult result,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model,
                          RedirectAttributes redirect) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
-        UUID orgId = ctx.organizationId();
+        UUID orgId = orgContext.organizationId();
 
         validate(form, result);
         if (result.hasErrors()) {
             model.addAttribute("rubricName", name);
             model.addAttribute("isNew", rubricRepository.findActiveByName(name, orgId).isEmpty());
             model.addAttribute("organizationId", orgId);
-            model.addAttribute("username", ctx.user().getUsername());
+            model.addAttribute("username", orgContext.username());
             return "rubric-edit";
         }
 

@@ -1,7 +1,7 @@
 package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.adapter.in.web.FormBindingHelper;
-import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.EntityType;
@@ -13,8 +13,6 @@ import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,7 +34,6 @@ public class PropertyContactLinkController {
     private final ManagePropertyUseCase propertyUseCase;
     private final ContactRepository contactRepository;
     private final PropertyContactRepository propertyContactRepository;
-    private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
 
     /**
@@ -45,29 +42,27 @@ public class PropertyContactLinkController {
      * @param propertyUseCase           inbound port for property lookups
      * @param contactRepository         outbound port for contact reads
      * @param propertyContactRepository outbound port for property–contact rows
-     * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies caller has access to a given organization
      */
     public PropertyContactLinkController(ManagePropertyUseCase propertyUseCase,
                                          ContactRepository contactRepository,
                                          PropertyContactRepository propertyContactRepository,
-                                         CurrentOrganizationResolver currentOrg,
                                          OrganizationAccessService organizationAccessService) {
         this.propertyUseCase = propertyUseCase;
         this.contactRepository = contactRepository;
         this.propertyContactRepository = propertyContactRepository;
-        this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
     }
 
     /**
      * Links a contact to a property.
      *
-     * @param id        property UUID
-     * @param contactId the contact to link
-     * @param role      role classification (defaults to OTHER if blank/unknown)
-     * @param notes     optional free-form notes
-     * @param principal authenticated user
+     * @param id         property UUID
+     * @param contactId  the contact to link
+     * @param role       role classification (defaults to OTHER if blank/unknown)
+     * @param notes      optional free-form notes
+     * @param orgContext authenticated user + organization (presence ensures
+     *                   the caller is authenticated and has an org)
      * @return redirect to the property detail page
      */
     @PostMapping("/{id}/contacts")
@@ -75,11 +70,7 @@ public class PropertyContactLinkController {
                        @RequestParam UUID contactId,
                        @RequestParam(required = false) String role,
                        @RequestParam(required = false) String notes,
-                       @AuthenticationPrincipal UserDetails principal) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
+                       OrgContext orgContext) {
         Property property = propertyUseCase.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(property.getOrganizationId());
@@ -100,19 +91,15 @@ public class PropertyContactLinkController {
     /**
      * Unlinks (soft-deletes) a contact association.
      *
-     * @param id        property UUID
-     * @param linkId    PropertyContact row UUID
-     * @param principal authenticated user
+     * @param id         property UUID
+     * @param linkId     PropertyContact row UUID
+     * @param orgContext authenticated user + organization
      * @return redirect to the property detail page
      */
     @PostMapping("/{id}/contacts/{linkId}/unlink")
     public String unlink(@PathVariable UUID id,
                          @PathVariable UUID linkId,
-                         @AuthenticationPrincipal UserDetails principal) {
-        var ctx = currentOrg.resolve(principal);
-        if (ctx.organizationId() == null) {
-            return "redirect:/";
-        }
+                         OrgContext orgContext) {
         Property property = propertyUseCase.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.PROPERTY.name(), id));
         organizationAccessService.verifyAccess(property.getOrganizationId());
