@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.audit;
 
+import com.majordomo.adapter.in.web.FormBindingHelper;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.domain.model.AuditLogEntry;
 import com.majordomo.domain.model.identity.User;
@@ -82,7 +83,7 @@ public class AuditPageController {
         }
         UUID orgId = ctx.organizationId();
 
-        String entityTypeFilter = blankToNull(entityType);
+        String entityTypeFilter = FormBindingHelper.blankToNull(entityType);
         UUID actorId = resolveActor(actor);
         Instant sinceInstant = parseDate(since);
         Instant untilInstant = parseDate(until);
@@ -125,10 +126,6 @@ public class AuditPageController {
             return null;
         }
         return LocalDate.parse(iso.trim()).atStartOfDay(ZoneOffset.UTC).toInstant();
-    }
-
-    private static String blankToNull(String s) {
-        return (s == null || s.isBlank()) ? null : s;
     }
 
     /** Ordered set of entity types appearing in the current result page (for the filter dropdown). */
