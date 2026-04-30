@@ -6,6 +6,7 @@ import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.herald.MaintenanceScheduleRepository;
 import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
+import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.mockito.Mockito.mock;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -41,8 +44,8 @@ class ScheduleServiceTest {
 
     @BeforeEach
     void setUp() {
-        scheduleService = new ScheduleService(scheduleRepository, serviceRecordRepository,
-                eventPublisher);
+        scheduleService = new ScheduleService(scheduleRepository,
+                serviceRecordRepository, mock(PropertyRepository.class), eventPublisher);
     }
 
     @Test
