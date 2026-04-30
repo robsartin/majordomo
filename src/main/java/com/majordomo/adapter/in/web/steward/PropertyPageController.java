@@ -1,22 +1,14 @@
 package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.adapter.in.web.FormBindingHelper;
+import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
-import com.majordomo.domain.model.concierge.Contact;
+import com.majordomo.application.steward.PropertyDetailView;
+import com.majordomo.application.steward.PropertyDetailViewService;
 import com.majordomo.domain.model.concierge.ContactRole;
-import com.majordomo.domain.model.herald.MaintenanceSchedule;
-import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.model.steward.Property;
-import com.majordomo.domain.model.steward.PropertyContact;
-import com.majordomo.domain.port.in.ManageAttachmentUseCase;
-import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
-import com.majordomo.domain.port.out.concierge.ContactRepository;
-import com.majordomo.domain.port.out.herald.ServiceRecordRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
-import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,8 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -48,67 +38,30 @@ import java.util.UUID;
 public class PropertyPageController {
 
     private final ManagePropertyUseCase propertyUseCase;
-    private final ManageScheduleUseCase scheduleUseCase;
-    private final ManageAttachmentUseCase attachmentUseCase;
-    private final PropertyContactRepository propertyContactRepository;
     private final PropertyRepository propertyRepository;
-    private final ContactRepository contactRepository;
-    private final ServiceRecordRepository serviceRecordRepository;
+    private final PropertyDetailViewService propertyDetailViewService;
     private final CurrentOrganizationResolver currentOrg;
     private final OrganizationAccessService organizationAccessService;
-    private final UserRepository userRepository;
-    private final MembershipRepository membershipRepository;
-
-    /** Maximum service-records to surface in the "Recent service records" panel. */
-    private static final int RECENT_RECORDS_LIMIT = 10;
-
-    /**
-     * View-model row binding a {@link MaintenanceSchedule} to its days-until-due
-     * delta for the property-detail page.
-     *
-     * @param schedule    the schedule
-     * @param daysUntilDue {@code null} if {@code nextDue} is null; otherwise the
-     *                    integer day delta (negative = overdue, 0 = today)
-     */
-    public record ScheduleRow(MaintenanceSchedule schedule, Integer daysUntilDue) { }
 
     /**
      * Constructs the property page controller.
      *
      * @param propertyUseCase           the inbound port for property management
-     * @param scheduleUseCase           the inbound port for maintenance schedule management
-     * @param attachmentUseCase         the inbound port for attachment management
-     * @param propertyContactRepository the outbound port for property-contact associations
      * @param propertyRepository        the outbound port for property reads (used by the list view)
-     * @param contactRepository         the outbound port for contact reads (link picker, batch hydration)
-     * @param serviceRecordRepository   the outbound port for service-record reads (recent activity panel)
+     * @param propertyDetailViewService application service that assembles the detail view
      * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies the caller has access to a given organization
-     * @param userRepository            the outbound port for user lookups
-     * @param membershipRepository      the outbound port for membership lookups
      */
     public PropertyPageController(ManagePropertyUseCase propertyUseCase,
-                                  ManageScheduleUseCase scheduleUseCase,
-                                  ManageAttachmentUseCase attachmentUseCase,
-                                  PropertyContactRepository propertyContactRepository,
                                   PropertyRepository propertyRepository,
-                                  ContactRepository contactRepository,
-                                  ServiceRecordRepository serviceRecordRepository,
+                                  PropertyDetailViewService propertyDetailViewService,
                                   CurrentOrganizationResolver currentOrg,
-                                  OrganizationAccessService organizationAccessService,
-                                  UserRepository userRepository,
-                                  MembershipRepository membershipRepository) {
+                                  OrganizationAccessService organizationAccessService) {
         this.propertyUseCase = propertyUseCase;
-        this.scheduleUseCase = scheduleUseCase;
-        this.attachmentUseCase = attachmentUseCase;
-        this.propertyContactRepository = propertyContactRepository;
         this.propertyRepository = propertyRepository;
-        this.contactRepository = contactRepository;
-        this.serviceRecordRepository = serviceRecordRepository;
+        this.propertyDetailViewService = propertyDetailViewService;
         this.currentOrg = currentOrg;
         this.organizationAccessService = organizationAccessService;
-        this.userRepository = userRepository;
-        this.membershipRepository = membershipRepository;
     }
 
     /**
@@ -410,84 +363,27 @@ public class PropertyPageController {
     /**
      * Renders the property detail page for the given property ID.
      *
-     * @param id        the UUID of the property to display
-     * @param principal the authenticated user
-     * @param model     the Thymeleaf model
-     * @return the property-detail template name, or a redirect if the property is not found
+     * @param id         the UUID of the property to display
+     * @param orgContext authenticated user + organization
+     * @param model      the Thymeleaf model
+     * @return the property-detail template name
      */
     @GetMapping("/{id}")
     public String detail(@PathVariable UUID id,
-                         @AuthenticationPrincipal UserDetails principal,
+                         OrgContext orgContext,
                          Model model) {
-        var propertyOpt = propertyUseCase.findById(id);
-        if (propertyOpt.isEmpty()) {
-            return "redirect:/dashboard";
-        }
-        Property property = propertyOpt.get();
-
-        Property parent = null;
-        if (property.getParentId() != null) {
-            parent = propertyUseCase.findById(property.getParentId()).orElse(null);
-        }
-
-        List<Property> children = propertyUseCase.findByParentId(id);
-
-        List<PropertyContact> propertyContacts = propertyContactRepository.findByPropertyId(id).stream()
-                .filter(pc -> pc.getArchivedAt() == null)
-                .toList();
-        java.util.Set<UUID> linkedContactIds = propertyContacts.stream()
-                .map(PropertyContact::getContactId)
-                .collect(java.util.stream.Collectors.toSet());
-        java.util.Map<UUID, Contact> contactsById = contactRepository.findByIdIn(linkedContactIds).stream()
-                .collect(java.util.stream.Collectors.toMap(Contact::getId, c -> c));
-        List<Contact> contacts = propertyContacts.stream()
-                .map(pc -> contactsById.get(pc.getContactId()))
-                .filter(c -> c != null)
-                .toList();
-        List<Contact> contactCandidates = contactRepository
-                .findActiveByOrganizationIdExcluding(property.getOrganizationId(), linkedContactIds).stream()
-                .sorted(Comparator.comparing(Contact::getFormattedName,
-                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                .toList();
-
-        LocalDate today = LocalDate.now();
-        List<ScheduleRow> scheduleRows = new ArrayList<>();
-        for (MaintenanceSchedule s : scheduleUseCase.findByPropertyId(id)) {
-            if (s.getArchivedAt() != null) {
-                continue;
-            }
-            Integer days = s.getNextDue() == null ? null
-                    : (int) ChronoUnit.DAYS.between(today, s.getNextDue());
-            scheduleRows.add(new ScheduleRow(s, days));
-        }
-        scheduleRows.sort(Comparator.comparing(
-                (ScheduleRow r) -> r.daysUntilDue() == null ? Integer.MAX_VALUE : r.daysUntilDue()));
-
-        List<ServiceRecord> recentRecords = new ArrayList<>(
-                serviceRecordRepository.findByPropertyId(id));
-        recentRecords.removeIf(r -> r.getArchivedAt() != null);
-        recentRecords.sort(Comparator.comparing(
-                ServiceRecord::getPerformedOn, Comparator.nullsLast(Comparator.reverseOrder())));
-        if (recentRecords.size() > RECENT_RECORDS_LIMIT) {
-            recentRecords = new ArrayList<>(recentRecords.subList(0, RECENT_RECORDS_LIMIT));
-        }
-
-        var attachments = attachmentUseCase.list("property", id);
-
-        var user = userRepository.findByUsername(principal.getUsername()).orElseThrow();
-
-        model.addAttribute("property", property);
-        model.addAttribute("parent", parent);
-        model.addAttribute("children", children);
-        model.addAttribute("propertyContacts", propertyContacts);
-        model.addAttribute("contacts", contacts);
-        model.addAttribute("contactCandidates", contactCandidates);
+        PropertyDetailView view = propertyDetailViewService.assemble(id);
+        model.addAttribute("property", view.property());
+        model.addAttribute("parent", view.parent());
+        model.addAttribute("children", view.children());
+        model.addAttribute("propertyContacts", view.propertyContacts());
+        model.addAttribute("contacts", view.linkedContacts());
+        model.addAttribute("contactCandidates", view.contactCandidates());
         model.addAttribute("contactRoles", ContactRole.values());
-        model.addAttribute("scheduleRows", scheduleRows);
-        model.addAttribute("recentRecords", recentRecords);
-        model.addAttribute("attachments", attachments);
-        model.addAttribute("username", user.getUsername());
-
+        model.addAttribute("scheduleRows", view.scheduleRows());
+        model.addAttribute("recentRecords", view.recentRecords());
+        model.addAttribute("attachments", view.attachments());
+        model.addAttribute("username", orgContext.username());
         return "property-detail";
     }
 }
