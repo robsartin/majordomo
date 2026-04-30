@@ -15,125 +15,120 @@ import org.mockito.ArgumentCaptor;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests for {@link AuditEventListener}.
+ * Tests for {@link AuditEventListener}'s registry-driven dispatch.
  */
 class AuditEventListenerTest {
 
     private AuditLogRepository auditLogRepository;
+    private AuditExtractorRegistry registry;
     private AuditEventListener listener;
 
     @BeforeEach
     void setUp() {
         auditLogRepository = mock(AuditLogRepository.class);
         when(auditLogRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        listener = new AuditEventListener(auditLogRepository);
+        registry = new AuditExtractorRegistry();
+        listener = new AuditEventListener(auditLogRepository, registry);
+        listener.registerExtractors();
     }
 
-    /** A ServiceRecordCreated event should produce a CREATE audit entry for ServiceRecord. */
+    /** ServiceRecordCreated → CREATE audit entry for SERVICE_RECORD. */
     @Test
-    void onServiceRecordCreatedWritesAuditEntry() {
+    void serviceRecordCreatedWritesAuditEntry() {
         UUID recordId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         UUID propertyId = UUID.randomUUID();
         Instant now = Instant.now();
 
-        listener.onServiceRecordCreated(
-                new ServiceRecordCreated(recordId, orgId, propertyId, null, now));
+        listener.onEvent(new ServiceRecordCreated(recordId, orgId, propertyId, null, now));
 
-        var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
-        verify(auditLogRepository).save(captor.capture());
-
-        AuditLogEntry entry = captor.getValue();
-        assertNotNull(entry.getId());
-        assertEquals("SERVICE_RECORD", entry.getEntityType());
-        assertEquals(recordId, entry.getEntityId());
-        assertEquals("CREATE", entry.getAction());
-        assertEquals(now, entry.getOccurredAt());
+        AuditLogEntry entry = capture();
+        assertThat(entry.getId()).isNotNull();
+        assertThat(entry.getOrganizationId()).isEqualTo(orgId);
+        assertThat(entry.getEntityType()).isEqualTo("SERVICE_RECORD");
+        assertThat(entry.getEntityId()).isEqualTo(recordId);
+        assertThat(entry.getAction()).isEqualTo("CREATE");
+        assertThat(entry.getOccurredAt()).isEqualTo(now);
     }
 
-    /** A PropertyArchived event should produce an ARCHIVE audit entry for Property. */
+    /** PropertyArchived → ARCHIVE audit entry for PROPERTY. */
     @Test
-    void onPropertyArchivedWritesAuditEntry() {
+    void propertyArchivedWritesAuditEntry() {
         UUID propertyId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         Instant now = Instant.now();
 
-        listener.onPropertyArchived(new PropertyArchived(propertyId, orgId, now));
+        listener.onEvent(new PropertyArchived(propertyId, orgId, now));
 
-        var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
-        verify(auditLogRepository).save(captor.capture());
-
-        AuditLogEntry entry = captor.getValue();
-        assertNotNull(entry.getId());
-        assertEquals("PROPERTY", entry.getEntityType());
-        assertEquals(propertyId, entry.getEntityId());
-        assertEquals("ARCHIVE", entry.getAction());
-        assertEquals(now, entry.getOccurredAt());
+        AuditLogEntry entry = capture();
+        assertThat(entry.getEntityType()).isEqualTo("PROPERTY");
+        assertThat(entry.getEntityId()).isEqualTo(propertyId);
+        assertThat(entry.getAction()).isEqualTo("ARCHIVE");
+        assertThat(entry.getOccurredAt()).isEqualTo(now);
     }
 
-    /** A PostingMarkedApplied event should produce an APPLY audit entry for the posting. */
+    /** PostingMarkedApplied → APPLY audit entry for JOB_POSTING. */
     @Test
-    void onPostingMarkedAppliedWritesAuditEntry() {
+    void postingMarkedAppliedWritesAuditEntry() {
         UUID postingId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         Instant now = Instant.now();
 
-        listener.onPostingMarkedApplied(new PostingMarkedApplied(postingId, orgId, now));
+        listener.onEvent(new PostingMarkedApplied(postingId, orgId, now));
 
-        var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
-        verify(auditLogRepository).save(captor.capture());
-
-        AuditLogEntry entry = captor.getValue();
-        assertEquals("JOB_POSTING", entry.getEntityType());
-        assertEquals(postingId, entry.getEntityId());
-        assertEquals("APPLY", entry.getAction());
-        assertEquals(now, entry.getOccurredAt());
+        AuditLogEntry entry = capture();
+        assertThat(entry.getEntityType()).isEqualTo("JOB_POSTING");
+        assertThat(entry.getAction()).isEqualTo("APPLY");
+        assertThat(entry.getEntityId()).isEqualTo(postingId);
     }
 
-    /** A PostingDismissed event should produce a DISMISS audit entry for the posting. */
+    /** PostingDismissed → DISMISS audit entry for JOB_POSTING. */
     @Test
-    void onPostingDismissedWritesAuditEntry() {
+    void postingDismissedWritesAuditEntry() {
         UUID postingId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         Instant now = Instant.now();
 
-        listener.onPostingDismissed(new PostingDismissed(postingId, orgId, now));
+        listener.onEvent(new PostingDismissed(postingId, orgId, now));
 
-        var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
-        verify(auditLogRepository).save(captor.capture());
-
-        AuditLogEntry entry = captor.getValue();
-        assertEquals("JOB_POSTING", entry.getEntityType());
-        assertEquals(postingId, entry.getEntityId());
-        assertEquals("DISMISS", entry.getAction());
-        assertEquals(now, entry.getOccurredAt());
+        AuditLogEntry entry = capture();
+        assertThat(entry.getEntityType()).isEqualTo("JOB_POSTING");
+        assertThat(entry.getAction()).isEqualTo("DISMISS");
     }
 
-    /** A UserCreated event should produce a CREATE audit entry for User. */
+    /** UserCreated → CREATE audit entry for USER. */
     @Test
-    void onUserCreatedWritesAuditEntry() {
+    void userCreatedWritesAuditEntry() {
         UUID userId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         Instant now = Instant.now();
 
-        listener.onUserCreated(new UserCreated(userId, orgId, "testuser", now));
+        listener.onEvent(new UserCreated(userId, orgId, "testuser", now));
 
+        AuditLogEntry entry = capture();
+        assertThat(entry.getEntityType()).isEqualTo("USER");
+        assertThat(entry.getEntityId()).isEqualTo(userId);
+        assertThat(entry.getAction()).isEqualTo("CREATE");
+    }
+
+    /** Events without a registered extractor are ignored, not failed. */
+    @Test
+    void unregisteredEventIsIgnored() {
+        listener.onEvent("an-unrelated-event-payload");
+        verify(auditLogRepository, never()).save(any());
+    }
+
+    private AuditLogEntry capture() {
         var captor = ArgumentCaptor.forClass(AuditLogEntry.class);
         verify(auditLogRepository).save(captor.capture());
-
-        AuditLogEntry entry = captor.getValue();
-        assertNotNull(entry.getId());
-        assertEquals("USER", entry.getEntityType());
-        assertEquals(userId, entry.getEntityId());
-        assertEquals("CREATE", entry.getAction());
-        assertEquals(now, entry.getOccurredAt());
+        return captor.getValue();
     }
 }
