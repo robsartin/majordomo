@@ -234,6 +234,7 @@ classDiagram
 
     %% ── Audit Log ──
     class AuditLogEntry {
+        +uuid_v7 organization_id
         +string entity_type
         +uuid_v7 entity_id
         +string action
@@ -252,10 +253,77 @@ classDiagram
 
     UserPreferences --> NotificationCategory
 
+    %% ── The Envoy (Job-Posting Scoring, ADR-0022) ──
+    class JobPosting {
+        +uuid_v7 organization_id
+        +string source_type
+        +string source_url
+        +string title
+        +string company
+        +string location
+        +string raw_text
+    }
+
+    class Rubric {
+        +uuid_v7 organization_id
+        +string name
+        +int version
+        +List~Category~ categories
+        +Thresholds thresholds
+    }
+
+    class ScoreReport {
+        +uuid_v7 organization_id
+        +uuid_v7 posting_id
+        +uuid_v7 rubric_id
+        +int total_score
+        +Recommendation recommendation
+        +List~Category~ categories
+        +List~Flag~ flags
+        +LlmUsage llm_usage
+    }
+
+    class Recommendation {
+        <<enumeration>>
+        APPLY_NOW
+        CONSIDER
+        SKIP
+    }
+
+    JobPosting --|> BaseEntity
+    Rubric --|> BaseEntity
+    ScoreReport --|> BaseEntity
+    JobPosting "1" --> "*" ScoreReport
+    Rubric "1" --> "*" ScoreReport
+    ScoreReport --> Recommendation
+
     %% ── Ownership ──
     Organization "1" --> "*" Property
     Organization "1" --> "*" Contact
+    Organization "1" --> "*" JobPosting
+    Organization "1" --> "*" Rubric
 ```
+
+## Recent additions
+
+- **`AuditLogEntry.organization_id`** (#242, V18 migration): scopes audit
+  entries to an organization so the `/audit` page filters cross-org rows
+  out. Populated from domain events that already carry `organizationId`;
+  events that don't (notably `ServiceRecordCreated`) record `null` until
+  enriched.
+- **`Property.parent_id`**: enables the parent-property picker on the add /
+  edit form (#229). Cycle prevention happens in `PropertyPageController`
+  by walking `findByParentId(...)` on the editing subtree.
+- **`Contact.addresses`**: editable as an indexed sub-form (#239) via the
+  `addresses[N].field` Spring binding pattern. Backed by
+  `ContactFormCommand` + `AddressFormRow`.
+- **`PropertyContact` link/unlink** (#240): the `archivedAt` field is now
+  the soft-delete signal for unlinks; both the property-detail and
+  contact-detail pages filter on it.
+- **`Envoy` aggregates** (ADR-0022): rubric versioning is append-only;
+  rescoring a posting against a new rubric version creates a new
+  `ScoreReport` rather than mutating the old one.
+
 
 ## Authentication Sequence
 
