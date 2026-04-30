@@ -3,7 +3,6 @@ package com.majordomo.adapter.in.event;
 import com.majordomo.domain.model.AuditAction;
 import com.majordomo.domain.model.AuditLogEntry;
 import com.majordomo.domain.model.EntityType;
-import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.event.JobPostingIngested;
 import com.majordomo.domain.model.event.JobPostingScored;
 import com.majordomo.domain.model.event.PostingDismissed;
@@ -13,16 +12,16 @@ import com.majordomo.domain.model.event.ServiceRecordCreated;
 import com.majordomo.domain.model.event.UserCreated;
 import com.majordomo.domain.port.out.AuditLogRepository;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
- * Listens for domain events and persists audit log entries.
+ * Persists audit log entries for state-changing domain events. Adding a new
+ * audited event type is a single registration in {@link #registerExtractors()}
+ * — no new {@code @EventListener} method, no new test seam.
  */
 @Component
 public class AuditEventListener {
@@ -30,103 +29,64 @@ public class AuditEventListener {
     private static final Logger LOG = LoggerFactory.getLogger(AuditEventListener.class);
 
     private final AuditLogRepository auditLogRepository;
+    private final AuditExtractorRegistry registry;
 
     /**
-     * Constructs the listener with the audit log repository.
+     * Constructs the listener.
      *
-     * @param auditLogRepository the outbound port for audit log persistence
+     * @param auditLogRepository outbound port for audit log persistence
+     * @param registry           registry of per-event extractors
      */
-    public AuditEventListener(AuditLogRepository auditLogRepository) {
+    public AuditEventListener(AuditLogRepository auditLogRepository,
+                              AuditExtractorRegistry registry) {
         this.auditLogRepository = auditLogRepository;
+        this.registry = registry;
     }
 
     /**
-     * Records an audit entry when a service record is created.
-     *
-     * @param event the service record creation event
+     * Registers every extractor at bean construction. New audited events:
+     * add one line here.
      */
-    @EventListener
-    public void onServiceRecordCreated(ServiceRecordCreated event) {
-        log(event.organizationId(), EntityType.SERVICE_RECORD.name(), event.serviceRecordId(),
-                AuditAction.CREATE.name(), event.occurredAt());
+    @PostConstruct
+    public void registerExtractors() {
+        registry.register(ServiceRecordCreated.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.SERVICE_RECORD.name(), e.serviceRecordId(),
+                AuditAction.CREATE.name(), e.occurredAt()));
+        registry.register(PropertyArchived.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.PROPERTY.name(), e.propertyId(),
+                AuditAction.ARCHIVE.name(), e.occurredAt()));
+        registry.register(UserCreated.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.USER.name(), e.userId(),
+                AuditAction.CREATE.name(), e.occurredAt()));
+        registry.register(JobPostingIngested.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.JOB_POSTING.name(), e.postingId(),
+                AuditAction.CREATE.name(), e.occurredAt()));
+        registry.register(JobPostingScored.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.SCORE_REPORT.name(), e.reportId(),
+                AuditAction.CREATE.name(), e.occurredAt()));
+        registry.register(PostingMarkedApplied.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.JOB_POSTING.name(), e.postingId(),
+                AuditAction.APPLY.name(), e.occurredAt()));
+        registry.register(PostingDismissed.class, e -> new AuditExtraction(
+                e.organizationId(), EntityType.JOB_POSTING.name(), e.postingId(),
+                AuditAction.DISMISS.name(), e.occurredAt()));
     }
 
     /**
-     * Records an audit entry when a property is archived.
+     * Single generic listener: find the extractor for the event's class and
+     * persist whatever it produces. Events without a registered extractor are
+     * ignored (so the listener doesn't fail on unrelated app events).
      *
-     * @param event the property archived event
+     * @param event any application event
      */
     @EventListener
-    public void onPropertyArchived(PropertyArchived event) {
-        log(event.organizationId(), EntityType.PROPERTY.name(), event.propertyId(),
-                AuditAction.ARCHIVE.name(), event.occurredAt());
+    public void onEvent(Object event) {
+        registry.extract(event).ifPresent(this::persist);
     }
 
-    /**
-     * Records an audit entry when a user is created.
-     *
-     * @param event the user created event
-     */
-    @EventListener
-    public void onUserCreated(UserCreated event) {
-        log(event.organizationId(), EntityType.USER.name(), event.userId(),
-                AuditAction.CREATE.name(), event.occurredAt());
-    }
-
-    /**
-     * Records an audit entry when a job posting is ingested.
-     *
-     * @param event the posting ingestion event
-     */
-    @EventListener
-    public void onJobPostingIngested(JobPostingIngested event) {
-        log(event.organizationId(), EntityType.JOB_POSTING.name(), event.postingId(),
-                AuditAction.CREATE.name(), event.occurredAt());
-    }
-
-    /**
-     * Records an audit entry when a job posting is scored.
-     *
-     * @param event the scoring event
-     */
-    @EventListener
-    public void onJobPostingScored(JobPostingScored event) {
-        log(event.organizationId(), EntityType.SCORE_REPORT.name(), event.reportId(),
-                AuditAction.CREATE.name(), event.occurredAt());
-    }
-
-    /**
-     * Records an audit entry when a posting is marked as applied.
-     *
-     * @param event the apply event
-     */
-    @EventListener
-    public void onPostingMarkedApplied(PostingMarkedApplied event) {
-        log(event.organizationId(), EntityType.JOB_POSTING.name(), event.postingId(),
-                AuditAction.APPLY.name(), event.occurredAt());
-    }
-
-    /**
-     * Records an audit entry when a posting is dismissed.
-     *
-     * @param event the dismiss event
-     */
-    @EventListener
-    public void onPostingDismissed(PostingDismissed event) {
-        log(event.organizationId(), EntityType.JOB_POSTING.name(), event.postingId(),
-                AuditAction.DISMISS.name(), event.occurredAt());
-    }
-
-    private void log(UUID organizationId, String entityType, UUID entityId,
-                     String action, Instant occurredAt) {
-        var entry = new AuditLogEntry();
-        entry.setId(UuidFactory.newId());
-        entry.setOrganizationId(organizationId);
-        entry.setEntityType(entityType);
-        entry.setEntityId(entityId);
-        entry.setAction(action);
-        entry.setOccurredAt(occurredAt);
+    private void persist(AuditLogEntry entry) {
         auditLogRepository.save(entry);
-        LOG.debug("Audit log: {} {} {}", action, entityType, entityId);
+        LOG.debug("Audit log: {} {} {}",
+                entry.getAction(), entry.getEntityType(), entry.getEntityId());
     }
 }
