@@ -50,6 +50,17 @@ public interface PropertyRepository {
     List<Property> findByOrganizationId(UUID organizationId);
 
     /**
+     * Returns active (non-archived) properties in an organization, excluding
+     * the given ids. Used by link-picker dropdowns that need "every property
+     * in the org except those already linked here".
+     *
+     * @param organizationId the organization scope
+     * @param excludedIds    ids to omit from the result (may be empty)
+     * @return list of matching active properties; empty if the org has none
+     */
+    List<Property> findActiveByOrganizationIdExcluding(UUID organizationId, Collection<UUID> excludedIds);
+
+    /**
      * Returns properties for an organization with cursor-based pagination.
      *
      * @param organizationId the organization ID
