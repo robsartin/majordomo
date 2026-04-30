@@ -3,7 +3,6 @@ package com.majordomo.adapter.in.web.envoy;
 import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.envoy.LlmScoringException;
 import com.majordomo.domain.model.envoy.JobPosting;
-import com.majordomo.domain.model.envoy.JobSourceRequest;
 import com.majordomo.domain.model.envoy.Recommendation;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.envoy.ScoreReportFilter;
@@ -19,13 +18,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -130,46 +128,35 @@ public class EnvoyPageController {
      * trivially testable.</p>
      *
      * <p>Optional hint fields ({@code company}, {@code title}, {@code location})
-     * are forwarded to the use case as a {@code Map} with blank values
-     * filtered out, so the LLM extractor only sees hints the caller actually
-     * provided.</p>
+     * on the bound {@link IngestForm} are forwarded to the use case as a
+     * {@code Map} with blank values filtered out, so the LLM extractor only
+     * sees hints the caller actually provided.</p>
      *
-     * @param type       source discriminator (defaults to {@code "manual"})
-     * @param payload    raw posting text / URL / source-specific id
-     * @param company    optional company hint
-     * @param title      optional title hint
-     * @param location   optional location hint
+     * @param form       the form bound from the request body
      * @param orgContext authenticated user + organization
      * @param model      the Thymeleaf model
      * @return {@code redirect:/envoy} on success; {@code envoy} (with an
      *         {@code ingestError} attribute) on a handled failure
      */
     @PostMapping("/envoy")
-    public String submitIngest(@RequestParam(defaultValue = "manual") String type,
-                               @RequestParam(required = false) String payload,
-                               @RequestParam(required = false) String company,
-                               @RequestParam(required = false) String title,
-                               @RequestParam(required = false) String location,
+    public String submitIngest(@ModelAttribute IngestForm form,
                                OrgContext orgContext,
                                Model model) {
         UUID orgId = orgContext.organizationId();
 
-        if (payload == null || payload.isBlank()) {
+        if (form.hasBlankPayload()) {
             renderEnvoyPage(orgContext, null, null, model);
             model.addAttribute("ingestError", "Payload is required.");
             return "envoy";
         }
 
-        Map<String, String> hints = buildHints(company, title, location);
-        JobSourceRequest request = new JobSourceRequest(type, payload, hints);
-
         try {
-            JobPosting saved = ingestUseCase.ingest(request, orgId);
+            JobPosting saved = ingestUseCase.ingest(form.toRequest(), orgId);
             scoreUseCase.score(saved.getId(), DEFAULT_RUBRIC, orgId);
             return "redirect:/envoy";
         } catch (IllegalArgumentException | LlmScoringException ex) {
             LOG.warn("Inline ingest+score failed for org {} (type={}): {}",
-                    orgId, type, ex.getMessage());
+                    orgId, form.type(), ex.getMessage());
             renderEnvoyPage(orgContext, null, null, model);
             model.addAttribute("ingestError", ex.getMessage());
             return "envoy";
@@ -206,26 +193,6 @@ public class EnvoyPageController {
         model.addAttribute("username", orgContext.username());
         model.addAttribute("applyNowTotal", stat.total());
         model.addAttribute("applyNowApplied", stat.applied());
-    }
-
-    /**
-     * Builds the hint map for the ingest request, dropping blank entries so the
-     * downstream LLM extractor doesn't see noise.
-     */
-    private static Map<String, String> buildHints(String company,
-                                                  String title,
-                                                  String location) {
-        Map<String, String> hints = new LinkedHashMap<>();
-        putIfNotBlank(hints, "company", company);
-        putIfNotBlank(hints, "title", title);
-        putIfNotBlank(hints, "location", location);
-        return hints;
-    }
-
-    private static void putIfNotBlank(Map<String, String> hints, String key, String value) {
-        if (value != null && !value.isBlank()) {
-            hints.put(key, value.trim());
-        }
     }
 
     /**
