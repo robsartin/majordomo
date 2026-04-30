@@ -249,18 +249,17 @@ public class ContactPageController {
         if (ctx.organizationId() == null) {
             return "redirect:/";
         }
+        var fields = new ContactFormFields(formattedName, givenName, familyName,
+                organization, title, notes, emails, telephones, urls, nicknames);
         if (formattedName == null || formattedName.isBlank()) {
             populateFormState(model, null, null, ctx.user().getUsername(),
-                    "Formatted name is required.", formattedName, givenName, familyName,
-                    organization, title, notes, emails, telephones, urls, nicknames);
+                    "Formatted name is required.", fields);
             return "contact-form";
         }
         List<String> emailList = FormBindingHelper.splitLines(emails);
         String emailError = validateEmails(emailList);
         if (emailError != null) {
-            populateFormState(model, null, null, ctx.user().getUsername(), emailError,
-                    formattedName, givenName, familyName, organization, title, notes,
-                    emails, telephones, urls, nicknames);
+            populateFormState(model, null, null, ctx.user().getUsername(), emailError, fields);
             return "contact-form";
         }
         Contact contact = new Contact();
@@ -346,18 +345,17 @@ public class ContactPageController {
         Contact existing = contactRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(EntityType.CONTACT.name(), id));
         organizationAccessService.verifyAccess(existing.getOrganizationId());
+        var fields = new ContactFormFields(formattedName, givenName, familyName,
+                organization, title, notes, emails, telephones, urls, nicknames);
         if (formattedName == null || formattedName.isBlank()) {
             populateFormState(model, id, existing, ctx.user().getUsername(),
-                    "Formatted name is required.", formattedName, givenName, familyName,
-                    organization, title, notes, emails, telephones, urls, nicknames);
+                    "Formatted name is required.", fields);
             return "contact-form";
         }
         List<String> emailList = FormBindingHelper.splitLines(emails);
         String emailError = validateEmails(emailList);
         if (emailError != null) {
-            populateFormState(model, id, existing, ctx.user().getUsername(), emailError,
-                    formattedName, givenName, familyName, organization, title, notes,
-                    emails, telephones, urls, nicknames);
+            populateFormState(model, id, existing, ctx.user().getUsername(), emailError, fields);
             return "contact-form";
         }
         Contact updated = new Contact();
@@ -418,26 +416,43 @@ public class ContactPageController {
     private static final java.util.regex.Pattern EMAIL_PATTERN =
             java.util.regex.Pattern.compile("^[^\\s@]+@[^\\s@.]+(\\.[^\\s@.]+)+$");
 
+    /**
+     * Bundle of contact-form field strings echoed back when re-rendering on
+     * a validation failure. Reduces what was a 14-arg call into a record.
+     *
+     * @param formattedName submitted formatted name (display)
+     * @param givenName     submitted given name
+     * @param familyName    submitted family name
+     * @param organization  submitted organization
+     * @param title         submitted title
+     * @param notes         submitted notes
+     * @param emails        submitted multi-line emails (raw)
+     * @param telephones    submitted multi-line phones (raw)
+     * @param urls          submitted multi-line URLs (raw)
+     * @param nicknames     submitted multi-line nicknames (raw)
+     */
+    private record ContactFormFields(String formattedName, String givenName, String familyName,
+                                     String organization, String title, String notes,
+                                     String emails, String telephones, String urls,
+                                     String nicknames) { }
+
     private static void populateFormState(Model model, UUID editingId, Contact existing,
                                           String username, String formError,
-                                          String formattedName, String givenName, String familyName,
-                                          String organization, String title, String notes,
-                                          String emails, String telephones, String urls,
-                                          String nicknames) {
+                                          ContactFormFields fields) {
         model.addAttribute("editingId", editingId);
         model.addAttribute("existing", existing);
         model.addAttribute("username", username);
         model.addAttribute("formError", formError);
-        model.addAttribute("formFormattedName", formattedName);
-        model.addAttribute("formGivenName", givenName);
-        model.addAttribute("formFamilyName", familyName);
-        model.addAttribute("formOrganization", organization);
-        model.addAttribute("formTitle", title);
-        model.addAttribute("formNotes", notes);
-        model.addAttribute("formEmails", emails);
-        model.addAttribute("formTelephones", telephones);
-        model.addAttribute("formUrls", urls);
-        model.addAttribute("formNicknames", nicknames);
+        model.addAttribute("formFormattedName", fields.formattedName());
+        model.addAttribute("formGivenName", fields.givenName());
+        model.addAttribute("formFamilyName", fields.familyName());
+        model.addAttribute("formOrganization", fields.organization());
+        model.addAttribute("formTitle", fields.title());
+        model.addAttribute("formNotes", fields.notes());
+        model.addAttribute("formEmails", fields.emails());
+        model.addAttribute("formTelephones", fields.telephones());
+        model.addAttribute("formUrls", fields.urls());
+        model.addAttribute("formNicknames", fields.nicknames());
     }
 
     private static boolean matchesQuery(Contact c, String qLower) {
