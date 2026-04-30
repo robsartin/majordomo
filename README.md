@@ -83,6 +83,10 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home
 ./mvnw verify -DskipITs
 ```
 
+## For users
+
+- **[doc/user-guide/](doc/user-guide/index.md)** — feature tour: properties, contacts, schedules, ledger, envoy, audit, API keys.
+
 ## For developers
 
 - **[CLAUDE.md](CLAUDE.md)** — full developer guide: tech stack, ADR index, conventions, build commands.
