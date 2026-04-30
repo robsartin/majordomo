@@ -430,9 +430,8 @@ public class PropertyPageController {
                 .map(pc -> contactsById.get(pc.getContactId()))
                 .filter(c -> c != null)
                 .toList();
-        List<Contact> contactCandidates = contactRepository.findByOrganizationId(property.getOrganizationId()).stream()
-                .filter(c -> c.getArchivedAt() == null)
-                .filter(c -> !linkedContactIds.contains(c.getId()))
+        List<Contact> contactCandidates = contactRepository
+                .findActiveByOrganizationIdExcluding(property.getOrganizationId(), linkedContactIds).stream()
                 .sorted(Comparator.comparing(Contact::getFormattedName,
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();

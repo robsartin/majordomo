@@ -49,6 +49,15 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
     }
 
     @Override
+    public List<Property> findActiveByOrganizationIdExcluding(UUID organizationId,
+                                                              Collection<UUID> excludedIds) {
+        List<PropertyEntity> rows = (excludedIds == null || excludedIds.isEmpty())
+                ? jpa.findByOrganizationIdAndArchivedAtIsNull(organizationId)
+                : jpa.findByOrganizationIdAndArchivedAtIsNullAndIdNotIn(organizationId, excludedIds);
+        return rows.stream().map(PropertyMapper::toDomain).toList();
+    }
+
+    @Override
     public List<Property> findByOrganizationId(UUID organizationId) {
         return jpa.findByOrganizationId(organizationId).stream().map(PropertyMapper::toDomain).toList();
     }

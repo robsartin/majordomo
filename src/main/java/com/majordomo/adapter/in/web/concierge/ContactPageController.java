@@ -168,13 +168,11 @@ public class ContactPageController {
                 .sorted(Comparator.comparing((LinkedPropertyRow r) -> r.property().getName(),
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
-        List<Property> propertyCandidates =
-                propertyRepository.findByOrganizationId(contact.getOrganizationId()).stream()
-                        .filter(p -> p.getArchivedAt() == null)
-                        .filter(p -> !linkedIds.contains(p.getId()))
-                        .sorted(Comparator.comparing(Property::getName,
-                                Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                        .toList();
+        List<Property> propertyCandidates = propertyRepository
+                .findActiveByOrganizationIdExcluding(contact.getOrganizationId(), linkedIds).stream()
+                .sorted(Comparator.comparing(Property::getName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
 
         model.addAttribute("contact", contact);
         model.addAttribute("linkedRows", linkedRows);

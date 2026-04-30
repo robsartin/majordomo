@@ -48,6 +48,17 @@ public interface ContactRepository {
     List<Contact> findByOrganizationId(UUID organizationId);
 
     /**
+     * Returns active (non-archived) contacts in an organization, excluding the
+     * given ids. Used by link-picker dropdowns that need "everyone in the org
+     * except those already linked here".
+     *
+     * @param organizationId the organization scope
+     * @param excludedIds    ids to omit from the result (may be empty)
+     * @return list of matching active contacts; empty if the org has none
+     */
+    List<Contact> findActiveByOrganizationIdExcluding(UUID organizationId, Collection<UUID> excludedIds);
+
+    /**
      * Returns contacts for an organization with cursor-based pagination.
      *
      * @param organizationId the organization ID

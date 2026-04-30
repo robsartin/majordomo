@@ -47,6 +47,15 @@ public class ContactRepositoryAdapter implements ContactRepository {
     }
 
     @Override
+    public List<Contact> findActiveByOrganizationIdExcluding(UUID organizationId,
+                                                             Collection<UUID> excludedIds) {
+        List<ContactEntity> rows = (excludedIds == null || excludedIds.isEmpty())
+                ? jpa.findByOrganizationIdAndArchivedAtIsNull(organizationId)
+                : jpa.findByOrganizationIdAndArchivedAtIsNullAndIdNotIn(organizationId, excludedIds);
+        return rows.stream().map(ContactMapper::toDomain).toList();
+    }
+
+    @Override
     public List<Contact> findByOrganizationId(UUID organizationId) {
         return jpa.findByOrganizationId(organizationId).stream().map(ContactMapper::toDomain).toList();
     }
