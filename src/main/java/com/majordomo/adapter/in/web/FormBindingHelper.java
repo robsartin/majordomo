@@ -1,8 +1,10 @@
 package com.majordomo.adapter.in.web;
 
+import com.majordomo.domain.model.concierge.ContactRole;
+
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -33,21 +35,17 @@ public final class FormBindingHelper {
     /**
      * Splits a textarea-style multi-line value into trimmed, non-blank lines.
      *
-     * @param raw newline-separated input ({@code \r?\n})
+     * @param raw newline-separated input (handles {@code \r}, {@code \n}, {@code \r\n})
      * @return ordered list of trimmed lines, possibly empty (never null)
      */
     public static List<String> splitLines(String raw) {
         if (raw == null || raw.isBlank()) {
             return List.of();
         }
-        List<String> out = new ArrayList<>();
-        for (String line : raw.split("\\r?\\n")) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty()) {
-                out.add(trimmed);
-            }
-        }
-        return out;
+        return raw.lines()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 
     /**
@@ -76,5 +74,24 @@ public final class FormBindingHelper {
             return null;
         }
         return new BigDecimal(s.trim());
+    }
+
+    /**
+     * Parses a contact-role form value, falling back to {@link ContactRole#OTHER}
+     * for blank or unrecognized input. Used by the property↔contact link forms
+     * where a role dropdown is always offered but the underlying enum may evolve.
+     *
+     * @param role the form value (may be null/blank)
+     * @return the matching {@link ContactRole}, or {@code OTHER} when unrecognized
+     */
+    public static ContactRole parseRole(String role) {
+        if (role == null || role.isBlank()) {
+            return ContactRole.OTHER;
+        }
+        try {
+            return ContactRole.valueOf(role.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return ContactRole.OTHER;
+        }
     }
 }
