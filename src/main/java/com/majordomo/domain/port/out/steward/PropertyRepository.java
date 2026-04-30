@@ -3,6 +3,7 @@ package com.majordomo.domain.port.out.steward;
 import com.majordomo.domain.model.steward.Property;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,15 @@ public interface PropertyRepository {
      * @return the property, or empty if not found
      */
     Optional<Property> findById(UUID id);
+
+    /**
+     * Batch-fetches properties by id. Used by detail handlers that need to
+     * hydrate a small set of linked properties in a single round trip.
+     *
+     * @param ids the property ids to load
+     * @return the matching properties in arbitrary order, missing ids omitted
+     */
+    List<Property> findByIdIn(Collection<UUID> ids);
 
     /**
      * Returns all top-level and nested properties belonging to a given organization.

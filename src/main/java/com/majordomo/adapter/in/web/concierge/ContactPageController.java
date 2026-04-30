@@ -11,7 +11,6 @@ import com.majordomo.domain.model.concierge.Contact;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyContact;
 import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
-import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
@@ -42,7 +41,6 @@ public class ContactPageController {
 
     private final ManageContactUseCase contactUseCase;
     private final ContactRepository contactRepository;
-    private final ManagePropertyUseCase propertyUseCase;
     private final PropertyRepository propertyRepository;
     private final PropertyContactRepository propertyContactRepository;
     private final CurrentOrganizationResolver currentOrg;
@@ -53,22 +51,19 @@ public class ContactPageController {
      *
      * @param contactUseCase            inbound port for contact management
      * @param contactRepository         outbound port for contact reads (used by list view)
-     * @param propertyUseCase           inbound port for property lookups
-     * @param propertyRepository        outbound port for property reads (link picker)
+     * @param propertyRepository        outbound port for property reads (link picker, batch hydration)
      * @param propertyContactRepository outbound port for property–contact associations
      * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies caller has access to a given organization
      */
     public ContactPageController(ManageContactUseCase contactUseCase,
                                  ContactRepository contactRepository,
-                                 ManagePropertyUseCase propertyUseCase,
                                  PropertyRepository propertyRepository,
                                  PropertyContactRepository propertyContactRepository,
                                  CurrentOrganizationResolver currentOrg,
                                  OrganizationAccessService organizationAccessService) {
         this.contactUseCase = contactUseCase;
         this.contactRepository = contactRepository;
-        this.propertyUseCase = propertyUseCase;
         this.propertyRepository = propertyRepository;
         this.propertyContactRepository = propertyContactRepository;
         this.currentOrg = currentOrg;
@@ -159,19 +154,20 @@ public class ContactPageController {
         List<PropertyContact> activeLinks = propertyContactRepository.findByContactId(id).stream()
                 .filter(pc -> pc.getArchivedAt() == null)
                 .toList();
+        java.util.Set<UUID> linkedIds = activeLinks.stream()
+                .map(PropertyContact::getPropertyId)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Map<UUID, Property> propertiesById = propertyRepository.findByIdIn(linkedIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Property::getId, p -> p));
         List<LinkedPropertyRow> linkedRows = activeLinks.stream()
                 .map(pc -> {
-                    Property p = propertyUseCase.findById(pc.getPropertyId()).orElse(null);
+                    Property p = propertiesById.get(pc.getPropertyId());
                     return p == null ? null : new LinkedPropertyRow(pc, p);
                 })
                 .filter(r -> r != null)
                 .sorted(Comparator.comparing((LinkedPropertyRow r) -> r.property().getName(),
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
-
-        java.util.Set<UUID> linkedIds = activeLinks.stream()
-                .map(PropertyContact::getPropertyId)
-                .collect(java.util.stream.Collectors.toSet());
         List<Property> propertyCandidates =
                 propertyRepository.findByOrganizationId(contact.getOrganizationId()).stream()
                         .filter(p -> p.getArchivedAt() == null)

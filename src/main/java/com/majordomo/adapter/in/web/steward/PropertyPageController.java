@@ -10,7 +10,6 @@ import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyContact;
 import com.majordomo.domain.port.in.ManageAttachmentUseCase;
-import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
 import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
@@ -50,7 +49,6 @@ public class PropertyPageController {
 
     private final ManagePropertyUseCase propertyUseCase;
     private final ManageScheduleUseCase scheduleUseCase;
-    private final ManageContactUseCase contactUseCase;
     private final ManageAttachmentUseCase attachmentUseCase;
     private final PropertyContactRepository propertyContactRepository;
     private final PropertyRepository propertyRepository;
@@ -79,11 +77,10 @@ public class PropertyPageController {
      *
      * @param propertyUseCase           the inbound port for property management
      * @param scheduleUseCase           the inbound port for maintenance schedule management
-     * @param contactUseCase            the inbound port for contact management
      * @param attachmentUseCase         the inbound port for attachment management
      * @param propertyContactRepository the outbound port for property-contact associations
      * @param propertyRepository        the outbound port for property reads (used by the list view)
-     * @param contactRepository         the outbound port for contact reads (used by the link picker)
+     * @param contactRepository         the outbound port for contact reads (link picker, batch hydration)
      * @param serviceRecordRepository   the outbound port for service-record reads (recent activity panel)
      * @param currentOrg                resolves the authenticated user's organization
      * @param organizationAccessService verifies the caller has access to a given organization
@@ -92,7 +89,6 @@ public class PropertyPageController {
      */
     public PropertyPageController(ManagePropertyUseCase propertyUseCase,
                                   ManageScheduleUseCase scheduleUseCase,
-                                  ManageContactUseCase contactUseCase,
                                   ManageAttachmentUseCase attachmentUseCase,
                                   PropertyContactRepository propertyContactRepository,
                                   PropertyRepository propertyRepository,
@@ -104,7 +100,6 @@ public class PropertyPageController {
                                   MembershipRepository membershipRepository) {
         this.propertyUseCase = propertyUseCase;
         this.scheduleUseCase = scheduleUseCase;
-        this.contactUseCase = contactUseCase;
         this.attachmentUseCase = attachmentUseCase;
         this.propertyContactRepository = propertyContactRepository;
         this.propertyRepository = propertyRepository;
@@ -426,13 +421,15 @@ public class PropertyPageController {
         List<PropertyContact> propertyContacts = propertyContactRepository.findByPropertyId(id).stream()
                 .filter(pc -> pc.getArchivedAt() == null)
                 .toList();
-        List<Contact> contacts = propertyContacts.stream()
-                .map(pc -> contactUseCase.findById(pc.getContactId()).orElse(null))
-                .filter(c -> c != null)
-                .toList();
         java.util.Set<UUID> linkedContactIds = propertyContacts.stream()
                 .map(PropertyContact::getContactId)
                 .collect(java.util.stream.Collectors.toSet());
+        java.util.Map<UUID, Contact> contactsById = contactRepository.findByIdIn(linkedContactIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Contact::getId, c -> c));
+        List<Contact> contacts = propertyContacts.stream()
+                .map(pc -> contactsById.get(pc.getContactId()))
+                .filter(c -> c != null)
+                .toList();
         List<Contact> contactCandidates = contactRepository.findByOrganizationId(property.getOrganizationId()).stream()
                 .filter(c -> c.getArchivedAt() == null)
                 .filter(c -> !linkedContactIds.contains(c.getId()))
