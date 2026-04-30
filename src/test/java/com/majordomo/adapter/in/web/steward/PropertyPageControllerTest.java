@@ -2,32 +2,33 @@ package com.majordomo.adapter.in.web.steward;
 
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
-import com.majordomo.domain.model.concierge.Contact;
+import com.majordomo.application.identity.CurrentOrganizationResolver;
+import com.majordomo.application.identity.OrganizationAccessService;
+import com.majordomo.application.steward.PropertyDetailView;
+import com.majordomo.application.steward.PropertyDetailViewService;
+import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.EntityType;
+import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.model.steward.Property;
-import com.majordomo.domain.model.steward.PropertyContact;
-import com.majordomo.domain.model.steward.PropertyStatus;
-import com.majordomo.domain.port.in.ManageAttachmentUseCase;
-import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
-import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
-import com.majordomo.domain.port.out.steward.PropertyContactRepository;
+import com.majordomo.domain.port.out.steward.PropertyRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -35,170 +36,72 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /**
- * Tests for {@link PropertyPageController}.
+ * Slice tests for {@link PropertyPageController}'s detail handler.
+ * Assembly logic is covered by {@code PropertyDetailViewServiceTest}.
  */
 @WebMvcTest(PropertyPageController.class)
 @Import(SecurityConfig.class)
 class PropertyPageControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired MockMvc mockMvc;
 
-    @MockitoBean
-    private ManagePropertyUseCase propertyUseCase;
+    @MockitoBean ManagePropertyUseCase propertyUseCase;
+    @MockitoBean PropertyRepository propertyRepository;
+    @MockitoBean PropertyDetailViewService propertyDetailViewService;
+    @MockitoBean CurrentOrganizationResolver currentOrg;
+    @MockitoBean OrganizationAccessService organizationAccessService;
+    @MockitoBean ApiKeyRepository apiKeyRepository;
+    @MockitoBean OAuth2UserService oAuth2UserService;
 
-    @MockitoBean
-    private ManageScheduleUseCase scheduleUseCase;
+    private static final UUID ORG_ID = UuidFactory.newId();
 
-    @MockitoBean
-    private ManageContactUseCase contactUseCase;
+    @BeforeEach
+    void seedAuth() {
+        User user = new User(UuidFactory.newId(), "testuser", "test@example.com");
+        when(currentOrg.resolve(any(UserDetails.class)))
+                .thenReturn(new CurrentOrganizationResolver.Resolved(user, ORG_ID));
+    }
 
-    @MockitoBean
-    private ManageAttachmentUseCase attachmentUseCase;
-
-    @MockitoBean
-    private PropertyContactRepository propertyContactRepository;
-
-    @MockitoBean
-    private com.majordomo.domain.port.out.steward.PropertyRepository propertyRepository;
-
-    @MockitoBean
-    private com.majordomo.domain.port.out.concierge.ContactRepository contactRepository;
-
-    @MockitoBean
-    private com.majordomo.domain.port.out.herald.ServiceRecordRepository serviceRecordRepository;
-
-    @MockitoBean
-    private com.majordomo.application.identity.CurrentOrganizationResolver currentOrg;
-
-    @MockitoBean
-    private com.majordomo.application.identity.OrganizationAccessService organizationAccessService;
-
-    @MockitoBean
-    private UserRepository userRepository;
-
-    @MockitoBean
-    private MembershipRepository membershipRepository;
-
-    @MockitoBean
-    private ApiKeyRepository apiKeyRepository;
-
-    @MockitoBean
-    private OAuth2UserService oAuth2UserService;
-
-    /** Authenticated user requesting an existing property receives 200 and the detail view. */
+    /** Detail handler delegates to the service and exposes its view fields. */
     @Test
     @WithMockUser(username = "testuser")
-    void detailReturns200ForAuthenticatedUser() throws Exception {
-        UUID propertyId = UUID.randomUUID();
-
+    void detailDelegatesToServiceAndExposesView() throws Exception {
+        UUID propertyId = UuidFactory.newId();
         Property property = new Property();
         property.setId(propertyId);
         property.setName("Test Property");
-        property.setStatus(PropertyStatus.ACTIVE);
-
-        User user = new User(UUID.randomUUID(), "testuser", "test@example.com");
-
-        when(propertyUseCase.findById(propertyId)).thenReturn(Optional.of(property));
-        when(propertyUseCase.findByParentId(propertyId)).thenReturn(List.of());
-        when(propertyContactRepository.findByPropertyId(propertyId)).thenReturn(List.of());
-        when(scheduleUseCase.findByPropertyId(propertyId)).thenReturn(List.of());
-        when(attachmentUseCase.list("property", propertyId)).thenReturn(List.of());
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        property.setOrganizationId(ORG_ID);
+        PropertyDetailView view = new PropertyDetailView(property, null, List.of(),
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        when(propertyDetailViewService.assemble(propertyId)).thenReturn(view);
 
         mockMvc.perform(get("/properties/{id}", propertyId))
                 .andExpect(status().isOk())
                 .andExpect(view().name("property-detail"))
                 .andExpect(model().attributeExists("property"))
-                .andExpect(model().attributeExists("username"));
+                .andExpect(model().attributeExists("username"))
+                .andExpect(model().attributeExists("scheduleRows"))
+                .andExpect(model().attributeExists("contactCandidates"))
+                .andExpect(model().attributeExists("contactRoles"));
     }
 
-    /** Unauthenticated access to the property detail page redirects to login. */
+    /** Unauthenticated access redirects to login. */
     @Test
     void detailRequiresAuthentication() throws Exception {
-        UUID propertyId = UUID.randomUUID();
-
+        UUID propertyId = UuidFactory.newId();
         mockMvc.perform(get("/properties/{id}", propertyId))
                 .andExpect(status().is3xxRedirection());
     }
 
-    /** Requesting a non-existent property redirects to the dashboard. */
+    /** When the service throws EntityNotFoundException the GlobalExceptionHandler maps to 404. */
     @Test
     @WithMockUser(username = "testuser")
-    void detailRedirectsWhenPropertyNotFound() throws Exception {
-        UUID propertyId = UUID.randomUUID();
-
-        when(propertyUseCase.findById(propertyId)).thenReturn(Optional.empty());
-
-        mockMvc.perform(get("/properties/{id}", propertyId))
-                .andExpect(status().is3xxRedirection());
-    }
-
-    /** Property with a parent loads the parent and adds it to the model. */
-    @Test
-    @WithMockUser(username = "testuser")
-    void detailLoadsParentProperty() throws Exception {
-        UUID parentId = UUID.randomUUID();
-        UUID propertyId = UUID.randomUUID();
-
-        Property parent = new Property();
-        parent.setId(parentId);
-        parent.setName("Parent Property");
-
-        Property property = new Property();
-        property.setId(propertyId);
-        property.setName("Child Property");
-        property.setParentId(parentId);
-
-        User user = new User(UUID.randomUUID(), "testuser", "test@example.com");
-
-        when(propertyUseCase.findById(propertyId)).thenReturn(Optional.of(property));
-        when(propertyUseCase.findById(parentId)).thenReturn(Optional.of(parent));
-        when(propertyUseCase.findByParentId(propertyId)).thenReturn(List.of());
-        when(propertyContactRepository.findByPropertyId(propertyId)).thenReturn(List.of());
-        when(scheduleUseCase.findByPropertyId(propertyId)).thenReturn(List.of());
-        when(attachmentUseCase.list("property", propertyId)).thenReturn(List.of());
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+    void detailReturns404WhenServiceMissing() throws Exception {
+        UUID propertyId = UuidFactory.newId();
+        when(propertyDetailViewService.assemble(propertyId))
+                .thenThrow(new EntityNotFoundException(EntityType.PROPERTY.name(), propertyId));
 
         mockMvc.perform(get("/properties/{id}", propertyId))
-                .andExpect(status().isOk())
-                .andExpect(view().name("property-detail"))
-                .andExpect(model().attributeExists("parent"));
-    }
-
-    /** Property with linked contacts adds contacts and propertyContacts to the model. */
-    @Test
-    @WithMockUser(username = "testuser")
-    void detailLoadsLinkedContacts() throws Exception {
-        UUID propertyId = UUID.randomUUID();
-        UUID contactId = UUID.randomUUID();
-
-        Property property = new Property();
-        property.setId(propertyId);
-        property.setName("Test Property");
-
-        PropertyContact pc = new PropertyContact();
-        pc.setId(UUID.randomUUID());
-        pc.setPropertyId(propertyId);
-        pc.setContactId(contactId);
-
-        Contact contact = new Contact();
-        contact.setId(contactId);
-        contact.setFormattedName("Acme Plumbing");
-
-        User user = new User(UUID.randomUUID(), "testuser", "test@example.com");
-
-        when(propertyUseCase.findById(propertyId)).thenReturn(Optional.of(property));
-        when(propertyUseCase.findByParentId(propertyId)).thenReturn(List.of());
-        when(propertyContactRepository.findByPropertyId(propertyId)).thenReturn(List.of(pc));
-        when(contactUseCase.findById(contactId)).thenReturn(Optional.of(contact));
-        when(scheduleUseCase.findByPropertyId(propertyId)).thenReturn(List.of());
-        when(attachmentUseCase.list("property", propertyId)).thenReturn(List.of());
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-
-        mockMvc.perform(get("/properties/{id}", propertyId))
-                .andExpect(status().isOk())
-                .andExpect(model().attributeExists("contacts"))
-                .andExpect(model().attributeExists("propertyContacts"));
+                .andExpect(status().isNotFound());
     }
 }

@@ -7,14 +7,8 @@ import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.User;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyStatus;
-import com.majordomo.domain.port.in.ManageAttachmentUseCase;
-import com.majordomo.domain.port.in.concierge.ManageContactUseCase;
-import com.majordomo.domain.port.in.herald.ManageScheduleUseCase;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
-import com.majordomo.domain.port.out.identity.MembershipRepository;
-import com.majordomo.domain.port.out.identity.UserRepository;
-import com.majordomo.domain.port.out.steward.PropertyContactRepository;
 import com.majordomo.domain.port.out.steward.PropertyRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,17 +43,10 @@ class PropertyPageListTest {
     @Autowired MockMvc mvc;
 
     @MockitoBean ManagePropertyUseCase propertyUseCase;
-    @MockitoBean ManageScheduleUseCase scheduleUseCase;
-    @MockitoBean ManageContactUseCase contactUseCase;
-    @MockitoBean ManageAttachmentUseCase attachmentUseCase;
-    @MockitoBean PropertyContactRepository propertyContactRepository;
     @MockitoBean PropertyRepository propertyRepository;
-    @MockitoBean com.majordomo.domain.port.out.concierge.ContactRepository contactRepository;
-    @MockitoBean com.majordomo.domain.port.out.herald.ServiceRecordRepository serviceRecordRepository;
+    @MockitoBean com.majordomo.application.steward.PropertyDetailViewService propertyDetailViewService;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean com.majordomo.application.identity.OrganizationAccessService organizationAccessService;
-    @MockitoBean UserRepository userRepository;
-    @MockitoBean MembershipRepository membershipRepository;
     @MockitoBean ApiKeyRepository apiKeyRepository;
     @MockitoBean OAuth2UserService oAuth2UserService;
 
