@@ -10,16 +10,33 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
- * Evicts caches in response to domain events to ensure consistency.
+ * Evicts caches in response to domain events. A static class &rarr; cache-name
+ * registry maps each handled event type to the set of caches its arrival
+ * invalidates; a single dispatcher consumes the registered events and clears
+ * the corresponding caches.
+ *
+ * <p>Adding a new event &times; cache mapping is a one-line entry in
+ * {@link #EVICTIONS} plus a class on the {@link EventListener#classes()} array
+ * &mdash; no new method body.</p>
  */
 @Component
 public class CacheEvictionListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(CacheEvictionListener.class);
 
+    private static final String SPEND_CACHE = "spend";
     private static final String APPLY_NOW_CACHE = "envoy-apply-now";
     private static final String APPLY_NOW_STAT_CACHE = "envoy-apply-now-stat";
+
+    private static final Map<Class<?>, Set<String>> EVICTIONS = Map.of(
+            ServiceRecordCreated.class, Set.of(SPEND_CACHE),
+            JobPostingScored.class, Set.of(APPLY_NOW_CACHE, APPLY_NOW_STAT_CACHE),
+            PostingMarkedApplied.class, Set.of(APPLY_NOW_STAT_CACHE),
+            PostingDismissed.class, Set.of(APPLY_NOW_STAT_CACHE));
 
     private final CacheManager cacheManager;
 
@@ -33,49 +50,26 @@ public class CacheEvictionListener {
     }
 
     /**
-     * Evicts spend cache when a service record is created.
+     * Dispatches an incoming domain event by clearing each cache registered for
+     * its concrete type. Unregistered events are a no-op so the dispatcher
+     * stays safe even if a future {@link EventListener#classes()} entry is
+     * added without a matching {@link #EVICTIONS} entry.
      *
-     * @param event the service record creation event
+     * @param event the domain event
      */
-    @EventListener
-    public void onServiceRecordCreated(ServiceRecordCreated event) {
-        LOG.debug("Evicting spend cache after service record created");
-        evict("spend");
-    }
-
-    /**
-     * Evicts the APPLY_NOW dashboard caches after a posting is scored, so
-     * newly-scored APPLY_NOW postings appear promptly on summary surfaces.
-     *
-     * @param event the scoring event
-     */
-    @EventListener
-    public void onJobPostingScored(JobPostingScored event) {
-        LOG.debug("Evicting envoy-apply-now caches after posting scored");
-        evict(APPLY_NOW_CACHE);
-        evict(APPLY_NOW_STAT_CACHE);
-    }
-
-    /**
-     * Evicts the APPLY_NOW conversion stat after a user marks a posting applied.
-     *
-     * @param event the apply event
-     */
-    @EventListener
-    public void onPostingMarkedApplied(PostingMarkedApplied event) {
-        LOG.debug("Evicting envoy-apply-now-stat cache after posting marked applied");
-        evict(APPLY_NOW_STAT_CACHE);
-    }
-
-    /**
-     * Evicts the APPLY_NOW conversion stat after a user dismisses a posting.
-     *
-     * @param event the dismiss event
-     */
-    @EventListener
-    public void onPostingDismissed(PostingDismissed event) {
-        LOG.debug("Evicting envoy-apply-now-stat cache after posting dismissed");
-        evict(APPLY_NOW_STAT_CACHE);
+    @EventListener(classes = {
+            ServiceRecordCreated.class,
+            JobPostingScored.class,
+            PostingMarkedApplied.class,
+            PostingDismissed.class
+    })
+    public void onDomainEvent(Object event) {
+        Set<String> caches = EVICTIONS.get(event.getClass());
+        if (caches == null) {
+            return;
+        }
+        LOG.debug("Evicting caches {} after {}", caches, event.getClass().getSimpleName());
+        caches.forEach(this::evict);
     }
 
     private void evict(String cacheName) {
