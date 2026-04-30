@@ -39,6 +39,7 @@ class PropertyPageFormTest {
 
     @MockitoBean ManagePropertyUseCase propertyUseCase;
     @MockitoBean PropertyRepository propertyRepository;
+    @MockitoBean com.majordomo.application.steward.PropertyQueryService propertyQueryService;
     @MockitoBean com.majordomo.application.steward.PropertyDetailViewService propertyDetailViewService;
     @MockitoBean CurrentOrganizationResolver currentOrg;
     @MockitoBean OrganizationAccessService organizationAccessService;
