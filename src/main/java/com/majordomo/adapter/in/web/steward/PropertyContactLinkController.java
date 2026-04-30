@@ -7,7 +7,6 @@ import com.majordomo.domain.model.EntityNotFoundException;
 import com.majordomo.domain.model.EntityType;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.concierge.Contact;
-import com.majordomo.domain.model.concierge.ContactRole;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.model.steward.PropertyContact;
 import com.majordomo.domain.port.in.steward.ManagePropertyUseCase;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.Instant;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -93,7 +91,7 @@ public class PropertyContactLinkController {
         link.setId(UuidFactory.newId());
         link.setPropertyId(id);
         link.setContactId(contactId);
-        link.setRole(parseRole(role));
+        link.setRole(FormBindingHelper.parseRole(role));
         link.setNotes(FormBindingHelper.blankToNull(notes));
         propertyContactRepository.save(link);
         return "redirect:/properties/" + id;
@@ -125,17 +123,6 @@ public class PropertyContactLinkController {
             }
         });
         return "redirect:/properties/" + id;
-    }
-
-    private static ContactRole parseRole(String role) {
-        if (role == null || role.isBlank()) {
-            return ContactRole.OTHER;
-        }
-        try {
-            return ContactRole.valueOf(role.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ex) {
-            return ContactRole.OTHER;
-        }
     }
 
 }

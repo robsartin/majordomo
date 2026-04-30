@@ -83,8 +83,8 @@ class HexagonalArchitectureTest {
 
     /**
      * Inbound adapters (controllers) must not depend on outbound adapters
-     * (persistence, notification, storage). They go through ports only.
-     * Per #248 / ADR-0004.
+     * (persistence, notification, storage). They go through ports only
+     * (ADR-0004).
      */
     @Test
     void inboundAdaptersHaveNoOutboundDependency() {
