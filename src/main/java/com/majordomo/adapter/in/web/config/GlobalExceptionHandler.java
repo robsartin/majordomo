@@ -41,6 +41,20 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles {@link MissingOrganizationException} thrown by the {@code OrgContext}
+     * argument resolver when an authenticated user has no organization
+     * membership. Redirects the user home rather than surfacing an error page.
+     *
+     * @param ex the exception (logged for diagnostics)
+     * @return view name {@code redirect:/}
+     */
+    @ExceptionHandler(MissingOrganizationException.class)
+    public String handleMissingOrganization(MissingOrganizationException ex) {
+        LOG.debug("Missing organization for authenticated user: {}", ex.getMessage());
+        return "redirect:/";
+    }
+
+    /**
      * Handles illegal argument exceptions.
      *
      * @param ex      the exception
