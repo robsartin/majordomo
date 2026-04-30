@@ -14,12 +14,13 @@ Majordomo is built as a collection of independent services, each named after a r
 
 | Service | Role | Responsibility |
 |---------|------|----------------|
-| **The Steward** | Property Service | Manages physical assets, their current state, and documentation (manuals, receipts) |
-| **The Concierge** | Contact Service | Manages relationships — vendors, maintenance professionals, and sellers |
-| **The Herald** | Calendar/Notification Service | Handles scheduling — service dates, reminders, warranty expirations |
-| **The Ledger** | Finance Service | Tracks costs from purchase price to lifetime maintenance spend |
+| **The Steward** | Property Service | Manages physical assets, their current state, parent/child hierarchy, and documentation (manuals, receipts, attachments) |
+| **The Concierge** | Contact Service | Manages relationships — vendors, maintenance professionals, sellers — and links them to properties |
+| **The Herald** | Calendar/Notification Service | Maintenance schedules, service-record history, due-date reminders, warranty expirations |
+| **The Ledger** | Finance Service | Tracks costs from purchase price to lifetime maintenance spend; per-property and org-level rollups |
+| **The Envoy** | Job-Posting Scoring (ADR-0022) | LLM-graded scoring of job postings against versioned rubrics; ingest from manual paste, URL, or Greenhouse |
 | **Identity** | User/Auth Service | Users, organizations, memberships, API keys, OAuth links |
-| **The Dashboard** | Summary Service | Aggregated overview of properties, contacts, maintenance, and spending |
+| **The Dashboard** | Summary Service | Aggregated overview — properties, contacts, upcoming maintenance, total/projected spend, recent apply-now postings |
 
 The **Majordomo** itself is the orchestration layer that ties these services together.
 
@@ -60,13 +61,13 @@ For detailed developer documentation, see [doc/authentication.md](doc/authentica
 # Start PostgreSQL and Redis
 docker-compose up -d
 
-# Run the application
+# Run the application (Java 25 required)
 ./mvnw spring-boot:run
 
 # Access
-# App:     http://localhost:8080
-# Login:   http://localhost:8080/login (robsartin / xyzzyPLAN9)
-# Swagger: http://localhost:8080/swagger-ui.html
+# App:      http://localhost:8080
+# Login:    http://localhost:8080/login  (robsartin / xyzzyPLAN9)
+# Swagger:  http://localhost:8080/swagger-ui.html
 ```
 
 To stop:
@@ -75,9 +76,24 @@ docker-compose down        # Stop containers (keep data)
 docker-compose down -v     # Stop and remove data volume
 ```
 
+If your shell defaults to JDK 17 or earlier (e.g. via SDKMAN), point Maven at a JDK 25 install:
+
+```bash
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-25.jdk/Contents/Home
+./mvnw verify -DskipITs
+```
+
+## For developers
+
+- **[CLAUDE.md](CLAUDE.md)** — full developer guide: tech stack, ADR index, conventions, build commands.
+- **[doc/architecture.md](doc/architecture.md)** — top-down view of services, ports, adapters, and request flow.
+- **[doc/development.md](doc/development.md)** — build commands, test conventions, pre-PR checklist.
+- **[doc/domain-model.md](doc/domain-model.md)** — aggregate diagrams.
+- **[doc/adr/](doc/adr/)** — every architectural decision, numbered.
+
 ## Status
 
-Feature-complete. All services implemented, authentication operational (form login, OAuth2, API keys), documentation finalized. Architecture decisions recorded in `doc/adr/`.
+Active development. Core services (Steward, Concierge, Herald, Ledger, Envoy, Identity) and their web UIs are operational. Architecture decisions recorded in `doc/adr/`.
 
 ## License
 
