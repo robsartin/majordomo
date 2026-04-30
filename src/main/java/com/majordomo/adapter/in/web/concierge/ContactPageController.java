@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.concierge;
 
+import com.majordomo.adapter.in.web.FormBindingHelper;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.EntityNotFoundException;
@@ -258,7 +259,7 @@ public class ContactPageController {
                     organization, title, notes, emails, telephones, urls, nicknames);
             return "contact-form";
         }
-        List<String> emailList = splitLines(emails);
+        List<String> emailList = FormBindingHelper.splitLines(emails);
         String emailError = validateEmails(emailList);
         if (emailError != null) {
             populateFormState(model, null, null, ctx.user().getUsername(), emailError,
@@ -269,15 +270,15 @@ public class ContactPageController {
         Contact contact = new Contact();
         contact.setOrganizationId(ctx.organizationId());
         contact.setFormattedName(formattedName);
-        contact.setGivenName(blankToNull(givenName));
-        contact.setFamilyName(blankToNull(familyName));
-        contact.setOrganization(blankToNull(organization));
-        contact.setTitle(blankToNull(title));
-        contact.setNotes(blankToNull(notes));
+        contact.setGivenName(FormBindingHelper.blankToNull(givenName));
+        contact.setFamilyName(FormBindingHelper.blankToNull(familyName));
+        contact.setOrganization(FormBindingHelper.blankToNull(organization));
+        contact.setTitle(FormBindingHelper.blankToNull(title));
+        contact.setNotes(FormBindingHelper.blankToNull(notes));
         contact.setEmails(emailList);
-        contact.setTelephones(splitLines(telephones));
-        contact.setUrls(splitLines(urls));
-        contact.setNicknames(splitLines(nicknames));
+        contact.setTelephones(FormBindingHelper.splitLines(telephones));
+        contact.setUrls(FormBindingHelper.splitLines(urls));
+        contact.setNicknames(FormBindingHelper.splitLines(nicknames));
         contact.setAddresses(toAddresses(command.getAddresses(), null));
         Contact saved = contactUseCase.create(contact);
         return "redirect:/contacts/" + saved.getId();
@@ -355,7 +356,7 @@ public class ContactPageController {
                     organization, title, notes, emails, telephones, urls, nicknames);
             return "contact-form";
         }
-        List<String> emailList = splitLines(emails);
+        List<String> emailList = FormBindingHelper.splitLines(emails);
         String emailError = validateEmails(emailList);
         if (emailError != null) {
             populateFormState(model, id, existing, ctx.user().getUsername(), emailError,
@@ -367,22 +368,18 @@ public class ContactPageController {
         updated.setId(id);
         updated.setOrganizationId(existing.getOrganizationId());
         updated.setFormattedName(formattedName);
-        updated.setGivenName(blankToNull(givenName));
-        updated.setFamilyName(blankToNull(familyName));
-        updated.setOrganization(blankToNull(organization));
-        updated.setTitle(blankToNull(title));
-        updated.setNotes(blankToNull(notes));
+        updated.setGivenName(FormBindingHelper.blankToNull(givenName));
+        updated.setFamilyName(FormBindingHelper.blankToNull(familyName));
+        updated.setOrganization(FormBindingHelper.blankToNull(organization));
+        updated.setTitle(FormBindingHelper.blankToNull(title));
+        updated.setNotes(FormBindingHelper.blankToNull(notes));
         updated.setEmails(emailList);
-        updated.setTelephones(splitLines(telephones));
-        updated.setUrls(splitLines(urls));
-        updated.setNicknames(splitLines(nicknames));
+        updated.setTelephones(FormBindingHelper.splitLines(telephones));
+        updated.setUrls(FormBindingHelper.splitLines(urls));
+        updated.setNicknames(FormBindingHelper.splitLines(nicknames));
         updated.setAddresses(toAddresses(command.getAddresses(), id));
         contactUseCase.update(id, updated);
         return "redirect:/contacts/" + id;
-    }
-
-    private static String blankToNull(String s) {
-        return (s == null || s.isBlank()) ? null : s;
     }
 
     /** Drops blank rows; mints a fresh row id for each remaining row. */
@@ -397,25 +394,11 @@ public class ContactPageController {
             }
             out.add(new Address(
                     UuidFactory.newId(), contactId,
-                    blankToNull(r.getLabel()), blankToNull(r.getStreet()),
-                    blankToNull(r.getCity()), blankToNull(r.getState()),
-                    blankToNull(r.getPostalCode()), blankToNull(r.getCountry())));
+                    FormBindingHelper.blankToNull(r.getLabel()), FormBindingHelper.blankToNull(r.getStreet()),
+                    FormBindingHelper.blankToNull(r.getCity()), FormBindingHelper.blankToNull(r.getState()),
+                    FormBindingHelper.blankToNull(r.getPostalCode()), FormBindingHelper.blankToNull(r.getCountry())));
         }
         return out;
-    }
-
-    private static List<String> splitLines(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return List.of();
-        }
-        List<String> lines = new ArrayList<>();
-        for (String line : raw.split("\\r?\\n")) {
-            String trimmed = line.trim();
-            if (!trimmed.isEmpty()) {
-                lines.add(trimmed);
-            }
-        }
-        return lines;
     }
 
     /** Returns null if all emails parse, or an error message naming the first bad line. */

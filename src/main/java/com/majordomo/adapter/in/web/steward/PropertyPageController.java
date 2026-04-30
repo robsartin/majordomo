@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.steward;
 
+import com.majordomo.adapter.in.web.FormBindingHelper;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.concierge.Contact;
@@ -237,23 +238,12 @@ public class PropertyPageController {
         property.setOrganizationId(ctx.organizationId());
         property.setName(name);
         property.setCategory(category);
-        property.setDescription(blankToNull(description));
-        property.setLocation(blankToNull(location));
+        property.setDescription(FormBindingHelper.blankToNull(description));
+        property.setLocation(FormBindingHelper.blankToNull(location));
         property.setPurchasePrice(price);
-        property.setParentId(parseUuid(parentId));
+        property.setParentId(FormBindingHelper.parseUuid(parentId));
         Property saved = propertyUseCase.create(property);
         return "redirect:/properties/" + saved.getId();
-    }
-
-    private static String blankToNull(String s) {
-        return (s == null || s.isBlank()) ? null : s;
-    }
-
-    private static UUID parseUuid(String s) {
-        if (s == null || s.isBlank()) {
-            return null;
-        }
-        return UUID.fromString(s.trim());
     }
 
     /**
@@ -372,10 +362,10 @@ public class PropertyPageController {
         updated.setOrganizationId(existing.getOrganizationId());
         updated.setName(name);
         updated.setCategory(category);
-        updated.setDescription(blankToNull(description));
-        updated.setLocation(blankToNull(location));
+        updated.setDescription(FormBindingHelper.blankToNull(description));
+        updated.setLocation(FormBindingHelper.blankToNull(location));
         updated.setPurchasePrice(price);
-        updated.setParentId(parseUuid(parentId));
+        updated.setParentId(FormBindingHelper.parseUuid(parentId));
         propertyUseCase.update(id, updated);
         return "redirect:/properties/" + id;
     }

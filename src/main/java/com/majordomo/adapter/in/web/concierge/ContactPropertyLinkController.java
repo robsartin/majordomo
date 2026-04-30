@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.concierge;
 
+import com.majordomo.adapter.in.web.FormBindingHelper;
 import com.majordomo.application.identity.CurrentOrganizationResolver;
 import com.majordomo.application.identity.OrganizationAccessService;
 import com.majordomo.domain.model.EntityNotFoundException;
@@ -93,7 +94,7 @@ public class ContactPropertyLinkController {
         link.setPropertyId(propertyId);
         link.setContactId(id);
         link.setRole(parseRole(role));
-        link.setNotes(blankToNull(notes));
+        link.setNotes(FormBindingHelper.blankToNull(notes));
         propertyContactRepository.save(link);
         return "redirect:/contacts/" + id;
     }
@@ -137,7 +138,4 @@ public class ContactPropertyLinkController {
         }
     }
 
-    private static String blankToNull(String s) {
-        return (s == null || s.isBlank()) ? null : s;
-    }
 }
