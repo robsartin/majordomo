@@ -59,7 +59,8 @@ class JobScorerServiceTest {
         meterRegistry = new SimpleMeterRegistry();
         scorer = new JobScorerService(
                 rubrics, postings, reports, llm, new ScoreAssembler(),
-                eventPublisher, new LlmCallObserver(new EnvoyMetrics(meterRegistry)));
+                eventPublisher, new LlmCallObserver(new EnvoyMetrics(meterRegistry)),
+                new PostingContentHasher());
         rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
                 List.of(),
                 List.of(new Category("compensation", "pay", 20,
@@ -87,6 +88,66 @@ class JobScorerServiceTest {
         assertThat(r.recommendation()).isEqualTo(Recommendation.APPLY);
         assertThat(r.llmModel()).isEqualTo("claude-sonnet-4-6");
         verify(eventPublisher).publish(any(JobPostingScored.class));
+    }
+
+    @Test
+    void reusesPriorReportWithoutCallingLlmWhenPostingUnchanged() {
+        String contentHash = new PostingContentHasher().hash(posting);
+        ScoreReport prior = new ScoreReport(
+                UuidFactory.newId(), orgId, posting.getId(), rubric.id(), rubric.version(),
+                Optional.empty(), List.of(), List.of(), 15, 15,
+                Recommendation.APPLY, "claude-sonnet-4-6", Instant.now(),
+                Optional.empty(), Optional.of(contentHash));
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(reports.findLatestScored(posting.getId(), rubric.id(), orgId))
+                .thenReturn(Optional.of(prior));
+
+        ScoreReport r = scorer.score(posting.getId(), "default", orgId);
+
+        assertThat(r).isSameAs(prior);
+        verify(llm, never()).score(any(), any());
+        verify(reports, never()).save(any());
+        verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void rescoresWhenPriorReportContentHashDiffers() {
+        ScoreReport stale = new ScoreReport(
+                UuidFactory.newId(), orgId, posting.getId(), rubric.id(), rubric.version(),
+                Optional.empty(), List.of(), List.of(), 15, 15,
+                Recommendation.APPLY, "claude-sonnet-4-6", Instant.now(),
+                Optional.empty(), Optional.of("stale-hash-from-old-content"));
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(reports.findLatestScored(posting.getId(), rubric.id(), orgId))
+                .thenReturn(Optional.of(stale));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ScoreReport r = scorer.score(posting.getId(), "default", orgId);
+
+        verify(llm).score(any(), any());
+        verify(reports).save(any());
+        assertThat(r.contentHash()).contains(new PostingContentHasher().hash(posting));
+    }
+
+    @Test
+    void freshScoreRecordsCurrentContentHashOnReport() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ScoreReport r = scorer.score(posting.getId(), "default", orgId);
+
+        assertThat(r.contentHash()).contains(new PostingContentHasher().hash(posting));
     }
 
     @Test

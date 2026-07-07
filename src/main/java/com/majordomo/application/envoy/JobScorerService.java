@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -39,6 +40,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
     private final ScoreAssembler assembler;
     private final EventPublisher eventPublisher;
     private final LlmCallObserver llmObserver;
+    private final PostingContentHasher contentHasher;
 
     /**
      * Constructs the scorer with all required collaborators.
@@ -50,6 +52,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
      * @param assembler      deterministic LLM-response validator
      * @param eventPublisher domain event publisher
      * @param llmObserver    observer that wraps each LLM call with metrics
+     * @param contentHasher  fingerprints posting content for idempotent scoring
      */
     public JobScorerService(RubricRepository rubrics,
                             JobPostingRepository postings,
@@ -57,7 +60,8 @@ public class JobScorerService implements ScoreJobPostingUseCase {
                             LlmScoringPort llm,
                             ScoreAssembler assembler,
                             EventPublisher eventPublisher,
-                            LlmCallObserver llmObserver) {
+                            LlmCallObserver llmObserver,
+                            PostingContentHasher contentHasher) {
         this.rubrics = rubrics;
         this.postings = postings;
         this.reports = reports;
@@ -65,6 +69,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
         this.assembler = assembler;
         this.eventPublisher = eventPublisher;
         this.llmObserver = llmObserver;
+        this.contentHasher = contentHasher;
     }
 
     @Override
@@ -100,8 +105,16 @@ public class JobScorerService implements ScoreJobPostingUseCase {
     }
 
     private ScoreReport runOne(JobPosting posting, Rubric rubric) {
+        String contentHash = contentHasher.hash(posting);
+        Optional<ScoreReport> prior = reports.findLatestScored(
+                posting.getId(), rubric.id(), posting.getOrganizationId());
+        if (prior.isPresent() && prior.get().contentHash().equals(Optional.of(contentHash))) {
+            // Posting unchanged since the last score under this rubric version:
+            // reuse the prior report instead of re-invoking the LLM.
+            return prior.get();
+        }
         LlmScoreResponse resp = llmObserver.observe(llm, posting, rubric);
-        ScoreReport report = assembler.assemble(posting, rubric, resp, llm.modelId());
+        ScoreReport report = assembler.assemble(posting, rubric, resp, llm.modelId(), contentHash);
         ScoreReport saved = reports.save(report);
         eventPublisher.publish(new JobPostingScored(
                 saved.id(), saved.organizationId(), saved.postingId(),

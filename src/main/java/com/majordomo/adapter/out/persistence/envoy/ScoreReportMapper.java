@@ -69,7 +69,8 @@ final class ScoreReportMapper {
                     fromBody.recommendation(),
                     fromBody.llmModel(),
                     fromBody.scoredAt(),
-                    columnUsage);
+                    columnUsage,
+                    fromBody.contentHash());
         }
         return fromBody;
     }

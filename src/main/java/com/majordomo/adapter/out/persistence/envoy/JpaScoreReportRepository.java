@@ -23,6 +23,18 @@ public interface JpaScoreReportRepository extends JpaRepository<ScoreReportEntit
     Optional<ScoreReportEntity> findByIdAndOrganizationId(UUID id, UUID organizationId);
 
     /**
+     * Finds the most recent report for a (posting, rubric) pair within an org,
+     * ordered by scoring time descending.
+     *
+     * @param postingId      the scored posting
+     * @param rubricId       the rubric version used
+     * @param organizationId owning org
+     * @return the latest matching report, or empty
+     */
+    Optional<ScoreReportEntity> findFirstByPostingIdAndRubricIdAndOrganizationIdOrderByScoredAtDesc(
+            UUID postingId, UUID rubricId, UUID organizationId);
+
+    /**
      * Cursor-paginated query. Returns {@code limit + 1} rows when more pages
      * exist so the caller can construct a {@code Page} with {@code hasMore}.
      *
