@@ -112,6 +112,31 @@ class JobScorerServiceTest {
     }
 
     @Test
+    void forceRescoreBypassesCacheAndCallsLlmEvenWhenPriorReportMatches() {
+        String contentHash = new PostingContentHasher().hash(posting);
+        ScoreReport prior = new ScoreReport(
+                UuidFactory.newId(), orgId, posting.getId(), rubric.id(), rubric.version(),
+                Optional.empty(), List.of(), List.of(), 15, 15,
+                Recommendation.APPLY, "claude-sonnet-4-6", Instant.now(),
+                Optional.empty(), Optional.of(contentHash));
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ScoreReport r = scorer.score(posting.getId(), "default", orgId, true);
+
+        assertThat(r).isNotSameAs(prior);
+        verify(llm).score(any(), any());
+        verify(reports).save(any());
+        // Cache is never consulted on a forced rescore.
+        verify(reports, never()).findLatestScored(any(), any(), any());
+    }
+
+    @Test
     void rescoresWhenPriorReportContentHashDiffers() {
         ScoreReport stale = new ScoreReport(
                 UuidFactory.newId(), orgId, posting.getId(), rubric.id(), rubric.version(),

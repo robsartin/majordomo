@@ -74,12 +74,18 @@ public class JobScorerService implements ScoreJobPostingUseCase {
 
     @Override
     public ScoreReport score(UUID postingId, String rubricName, UUID organizationId) {
+        return score(postingId, rubricName, organizationId, false);
+    }
+
+    @Override
+    public ScoreReport score(UUID postingId, String rubricName, UUID organizationId,
+                             boolean forceRescore) {
         JobPosting posting = postings.findById(postingId, organizationId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         EntityType.JOB_POSTING.name(), postingId));
         Rubric rubric = rubrics.findActiveByName(rubricName, organizationId)
                 .orElseThrow(() -> new EntityNotFoundException("RUBRIC", rubricName));
-        return runOne(posting, rubric);
+        return runOne(posting, rubric, forceRescore);
     }
 
     @Override
@@ -99,19 +105,21 @@ public class JobScorerService implements ScoreJobPostingUseCase {
         }
         List<ScoreReport> saved = new ArrayList<>(resolved.size());
         for (Rubric rubric : resolved) {
-            saved.add(runOne(posting, rubric));
+            saved.add(runOne(posting, rubric, false));
         }
         return saved;
     }
 
-    private ScoreReport runOne(JobPosting posting, Rubric rubric) {
+    private ScoreReport runOne(JobPosting posting, Rubric rubric, boolean forceRescore) {
         String contentHash = contentHasher.hash(posting);
-        Optional<ScoreReport> prior = reports.findLatestScored(
-                posting.getId(), rubric.id(), posting.getOrganizationId());
-        if (prior.isPresent() && prior.get().contentHash().equals(Optional.of(contentHash))) {
-            // Posting unchanged since the last score under this rubric version:
-            // reuse the prior report instead of re-invoking the LLM.
-            return prior.get();
+        if (!forceRescore) {
+            Optional<ScoreReport> prior = reports.findLatestScored(
+                    posting.getId(), rubric.id(), posting.getOrganizationId());
+            if (prior.isPresent() && prior.get().contentHash().equals(Optional.of(contentHash))) {
+                // Posting unchanged since the last score under this rubric version:
+                // reuse the prior report instead of re-invoking the LLM.
+                return prior.get();
+            }
         }
         LlmScoreResponse resp = llmObserver.observe(llm, posting, rubric);
         ScoreReport report = assembler.assemble(posting, rubric, resp, llm.modelId(), contentHash);
