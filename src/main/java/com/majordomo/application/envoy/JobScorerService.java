@@ -41,6 +41,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
     private final EventPublisher eventPublisher;
     private final LlmCallObserver llmObserver;
     private final PostingContentHasher contentHasher;
+    private final EnvoyMetrics metrics;
 
     /**
      * Constructs the scorer with all required collaborators.
@@ -53,6 +54,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
      * @param eventPublisher domain event publisher
      * @param llmObserver    observer that wraps each LLM call with metrics
      * @param contentHasher  fingerprints posting content for idempotent scoring
+     * @param metrics        envoy metrics helper (records cache hit/miss)
      */
     public JobScorerService(RubricRepository rubrics,
                             JobPostingRepository postings,
@@ -61,7 +63,8 @@ public class JobScorerService implements ScoreJobPostingUseCase {
                             ScoreAssembler assembler,
                             EventPublisher eventPublisher,
                             LlmCallObserver llmObserver,
-                            PostingContentHasher contentHasher) {
+                            PostingContentHasher contentHasher,
+                            EnvoyMetrics metrics) {
         this.rubrics = rubrics;
         this.postings = postings;
         this.reports = reports;
@@ -70,6 +73,7 @@ public class JobScorerService implements ScoreJobPostingUseCase {
         this.eventPublisher = eventPublisher;
         this.llmObserver = llmObserver;
         this.contentHasher = contentHasher;
+        this.metrics = metrics;
     }
 
     @Override
@@ -118,8 +122,12 @@ public class JobScorerService implements ScoreJobPostingUseCase {
             if (prior.isPresent() && prior.get().contentHash().equals(Optional.of(contentHash))) {
                 // Posting unchanged since the last score under this rubric version:
                 // reuse the prior report instead of re-invoking the LLM.
+                metrics.recordScoreCacheOutcome(
+                        rubric.name(), EnvoyMetrics.ScoreCacheOutcome.HIT);
                 return prior.get();
             }
+            metrics.recordScoreCacheOutcome(
+                    rubric.name(), EnvoyMetrics.ScoreCacheOutcome.MISS);
         }
         LlmScoreResponse resp = llmObserver.observe(llm, posting, rubric);
         ScoreReport report = assembler.assemble(posting, rubric, resp, llm.modelId(), contentHash);

@@ -71,4 +71,23 @@ class EnvoyMetricsTest {
         assertThat(applied.count()).isEqualTo(1.0);
         assertThat(dismissed.count()).isEqualTo(1.0);
     }
+
+    /** Score-cache counter is tagged by rubric and outcome={hit,miss}. */
+    @Test
+    void recordScoreCacheOutcomeUsesCorrectTags() {
+        metrics.recordScoreCacheOutcome("default", EnvoyMetrics.ScoreCacheOutcome.HIT);
+        metrics.recordScoreCacheOutcome("default", EnvoyMetrics.ScoreCacheOutcome.MISS);
+        metrics.recordScoreCacheOutcome("default", EnvoyMetrics.ScoreCacheOutcome.HIT);
+
+        var hit = registry.get("envoy_score_cache_total")
+                .tag("rubric", "default")
+                .tag("outcome", "hit")
+                .counter();
+        var miss = registry.get("envoy_score_cache_total")
+                .tag("rubric", "default")
+                .tag("outcome", "miss")
+                .counter();
+        assertThat(hit.count()).isEqualTo(2.0);
+        assertThat(miss.count()).isEqualTo(1.0);
+    }
 }

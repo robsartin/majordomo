@@ -30,6 +30,9 @@ public class EnvoyMetrics {
     /** Counter: APPLY_NOW conversions, by outcome (applied / dismissed). */
     static final String APPLY_NOW_CONVERSION = "envoy_apply_now_conversion_total";
 
+    /** Counter: idempotent-scoring cache lookups, by outcome (hit / miss). */
+    static final String SCORE_CACHE = "envoy_score_cache_total";
+
     static final String TAG_ORG = "org";
     static final String TAG_MODEL = "model";
     static final String TAG_RUBRIC = "rubric";
@@ -43,6 +46,24 @@ public class EnvoyMetrics {
         private final String tag;
 
         ConversionOutcome(String tag) {
+            this.tag = tag;
+        }
+
+        String tag() {
+            return tag;
+        }
+    }
+
+    /** Outcome tag values for {@link #SCORE_CACHE}. */
+    public enum ScoreCacheOutcome {
+        /** A prior report for an unchanged posting was reused; no LLM call. */
+        HIT("hit"),
+        /** No reusable report existed; the LLM was invoked. */
+        MISS("miss");
+
+        private final String tag;
+
+        ScoreCacheOutcome(String tag) {
             this.tag = tag;
         }
 
@@ -115,6 +136,25 @@ public class EnvoyMetrics {
         Counter.builder(APPLY_NOW_CONVERSION)
                 .description("APPLY_NOW posting conversions, by outcome")
                 .tag(TAG_ORG, organizationId.toString())
+                .tag(TAG_OUTCOME, outcome.tag())
+                .register(meterRegistry)
+                .increment();
+    }
+
+    /**
+     * Records the outcome of an idempotent-scoring cache lookup. A {@code HIT}
+     * means a prior report was reused and no LLM call was made; a {@code MISS}
+     * means the LLM was invoked. The hit rate over these two is the token-cost
+     * saving from idempotent scoring. Forced rescores never consult the cache
+     * and so are not recorded here.
+     *
+     * @param rubricName the rubric name the lookup was scoped to
+     * @param outcome    {@link ScoreCacheOutcome#HIT} or {@link ScoreCacheOutcome#MISS}
+     */
+    public void recordScoreCacheOutcome(String rubricName, ScoreCacheOutcome outcome) {
+        Counter.builder(SCORE_CACHE)
+                .description("Idempotent-scoring cache lookups, by outcome")
+                .tag(TAG_RUBRIC, rubricName)
                 .tag(TAG_OUTCOME, outcome.tag())
                 .register(meterRegistry)
                 .increment();
