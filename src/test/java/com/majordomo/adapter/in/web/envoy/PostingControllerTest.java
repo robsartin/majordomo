@@ -100,17 +100,18 @@ class PostingControllerTest {
                 UuidFactory.newId(), 1, Optional.empty(),
                 List.of(), List.of(), 70, 70, Recommendation.APPLY,
                 "claude-sonnet-4-6", Instant.now());
-        when(scoreUseCase.score(any(), eq("default"), eq(ORG_ID))).thenReturn(report);
+        when(scoreUseCase.score(any(), eq("default"), eq(ORG_ID), eq(true))).thenReturn(report);
 
         mvc.perform(post("/api/envoy/postings/rescore")
                         .param("organizationId", ORG_ID.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.count").value(2));
 
+        // Rescore is the explicit force path: it must bypass the cache (force=true).
         org.mockito.Mockito.verify(scoreUseCase)
-                .score(eq(p1.getId()), eq("default"), eq(ORG_ID));
+                .score(eq(p1.getId()), eq("default"), eq(ORG_ID), eq(true));
         org.mockito.Mockito.verify(scoreUseCase)
-                .score(eq(p2.getId()), eq("default"), eq(ORG_ID));
+                .score(eq(p2.getId()), eq("default"), eq(ORG_ID), eq(true));
     }
 
     @Test
@@ -128,7 +129,7 @@ class PostingControllerTest {
                 UuidFactory.newId(), 1, Optional.empty(),
                 List.of(), List.of(), 70, 70, Recommendation.APPLY,
                 "claude-sonnet-4-6", Instant.now());
-        when(scoreUseCase.score(any(), eq("strict"), eq(ORG_ID))).thenReturn(report);
+        when(scoreUseCase.score(any(), eq("strict"), eq(ORG_ID), eq(true))).thenReturn(report);
 
         mvc.perform(post("/api/envoy/postings/rescore")
                         .param("organizationId", ORG_ID.toString())
@@ -137,7 +138,7 @@ class PostingControllerTest {
                 .andExpect(jsonPath("$.count").value(1));
 
         org.mockito.Mockito.verify(scoreUseCase)
-                .score(eq(p1.getId()), eq("strict"), eq(ORG_ID));
+                .score(eq(p1.getId()), eq("strict"), eq(ORG_ID), eq(true));
     }
 
     @Test

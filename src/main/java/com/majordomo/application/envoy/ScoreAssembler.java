@@ -30,14 +30,37 @@ public class ScoreAssembler {
      * Validates {@code resp} against {@code rubric} and assembles a {@code ScoreReport}.
      * Does not persist.
      *
+     * @param posting     the posting being scored
+     * @param rubric      the rubric used to prompt the LLM
+     * @param resp        the LLM's structured response
+     * @param llmModel    model identifier to record on the report
+     * @param contentHash fingerprint of the scored posting content, recorded so a
+     *                    later unchanged re-score can reuse this report
+     * @return a fully-validated report ready to persist
+     */
+    public ScoreReport assemble(JobPosting posting, Rubric rubric,
+                                LlmScoreResponse resp, String llmModel, String contentHash) {
+        return doAssemble(posting, rubric, resp, llmModel, contentHash);
+    }
+
+    /**
+     * Assembles a report with no content fingerprint. For ephemeral uses such as
+     * side-by-side rubric comparison, where the result is never persisted or reused
+     * and so needs no idempotency key.
+     *
      * @param posting  the posting being scored
      * @param rubric   the rubric used to prompt the LLM
      * @param resp     the LLM's structured response
      * @param llmModel model identifier to record on the report
-     * @return a fully-validated report ready to persist
+     * @return a fully-validated report with an empty {@code contentHash}
      */
     public ScoreReport assemble(JobPosting posting, Rubric rubric,
                                 LlmScoreResponse resp, String llmModel) {
+        return doAssemble(posting, rubric, resp, llmModel, null);
+    }
+
+    private ScoreReport doAssemble(JobPosting posting, Rubric rubric,
+                                   LlmScoreResponse resp, String llmModel, String contentHash) {
 
         if (resp.disqualifierKey().isPresent()) {
             Disqualifier dq = lookupDisqualifier(rubric, resp.disqualifierKey().get());
@@ -54,7 +77,8 @@ public class ScoreAssembler {
                     Recommendation.SKIP,
                     llmModel,
                     Instant.now(),
-                    resp.usage());
+                    resp.usage(),
+                    Optional.ofNullable(contentHash));
         }
 
         List<CategoryScore> categoryScores = new ArrayList<>();
@@ -97,7 +121,8 @@ public class ScoreAssembler {
                 recommendation,
                 llmModel,
                 Instant.now(),
-                resp.usage());
+                resp.usage(),
+                Optional.ofNullable(contentHash));
     }
 
     private Disqualifier lookupDisqualifier(Rubric rubric, String key) {

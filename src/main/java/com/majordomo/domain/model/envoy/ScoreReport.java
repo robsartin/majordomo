@@ -36,6 +36,10 @@ import java.util.UUID;
  * @param usage           optional provider-supplied call metadata; empty when the adapter
  *                        did not capture usage data (e.g. legacy rows or providers that
  *                        omit token counts)
+ * @param contentHash     fingerprint of the posting content that produced this report;
+ *                        empty for legacy rows scored before idempotent scoring existed.
+ *                        Used to detect that a posting is unchanged so a re-score can
+ *                        reuse this report instead of re-invoking the LLM
  */
 public record ScoreReport(
         UUID id,
@@ -51,12 +55,53 @@ public record ScoreReport(
         Recommendation recommendation,
         String llmModel,
         Instant scoredAt,
-        Optional<LlmScoreResponse.Usage> usage
+        Optional<LlmScoreResponse.Usage> usage,
+        Optional<String> contentHash
 ) {
 
     /**
+     * Convenience constructor preserving the pre-{@code contentHash} signature.
+     * Equivalent to supplying {@link Optional#empty()} for {@code contentHash}.
+     *
+     * @param id              see {@link #id()}
+     * @param organizationId  see {@link #organizationId()}
+     * @param postingId       see {@link #postingId()}
+     * @param rubricId        see {@link #rubricId()}
+     * @param rubricVersion   see {@link #rubricVersion()}
+     * @param disqualifiedBy  see {@link #disqualifiedBy()}
+     * @param categoryScores  see {@link #categoryScores()}
+     * @param flagHits        see {@link #flagHits()}
+     * @param rawScore        see {@link #rawScore()}
+     * @param finalScore      see {@link #finalScore()}
+     * @param recommendation  see {@link #recommendation()}
+     * @param llmModel        see {@link #llmModel()}
+     * @param scoredAt        see {@link #scoredAt()}
+     * @param usage           see {@link #usage()}
+     */
+    public ScoreReport(
+            UUID id,
+            UUID organizationId,
+            UUID postingId,
+            UUID rubricId,
+            int rubricVersion,
+            Optional<Disqualifier> disqualifiedBy,
+            List<CategoryScore> categoryScores,
+            List<FlagHit> flagHits,
+            int rawScore,
+            int finalScore,
+            Recommendation recommendation,
+            String llmModel,
+            Instant scoredAt,
+            Optional<LlmScoreResponse.Usage> usage) {
+        this(id, organizationId, postingId, rubricId, rubricVersion,
+                disqualifiedBy, categoryScores, flagHits, rawScore, finalScore,
+                recommendation, llmModel, scoredAt, usage, Optional.empty());
+    }
+
+    /**
      * Convenience constructor for callers that have no usage data to attach.
-     * Equivalent to supplying {@link Optional#empty()} for {@code usage}.
+     * Equivalent to supplying {@link Optional#empty()} for both {@code usage}
+     * and {@code contentHash}.
      *
      * @param id              see {@link #id()}
      * @param organizationId  see {@link #organizationId()}
@@ -88,6 +133,6 @@ public record ScoreReport(
             Instant scoredAt) {
         this(id, organizationId, postingId, rubricId, rubricVersion,
                 disqualifiedBy, categoryScores, flagHits, rawScore, finalScore,
-                recommendation, llmModel, scoredAt, Optional.empty());
+                recommendation, llmModel, scoredAt, Optional.empty(), Optional.empty());
     }
 }

@@ -30,6 +30,20 @@ public interface ScoreReportRepository {
     Optional<ScoreReport> findById(UUID id, UUID organizationId);
 
     /**
+     * Finds the most recent report for a (posting, rubric) pair within an org.
+     * Because each rubric version is a distinct row with its own id, a version
+     * bump changes {@code rubricId} and so naturally misses. Used to detect an
+     * unchanged posting (via {@link ScoreReport#contentHash()}) so a re-score can
+     * reuse the prior report instead of re-invoking the LLM.
+     *
+     * @param postingId      the scored posting
+     * @param rubricId       the rubric version used
+     * @param organizationId org scope
+     * @return the latest matching report, or empty if none exists
+     */
+    Optional<ScoreReport> findLatestScored(UUID postingId, UUID rubricId, UUID organizationId);
+
+    /**
      * Cursor-paginated query over reports within an organization. Optional
      * filters are bundled into {@link ScoreReportFilter}; pass
      * {@link ScoreReportFilter#none()} for an unfiltered query.

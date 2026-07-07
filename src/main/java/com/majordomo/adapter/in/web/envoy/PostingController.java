@@ -125,6 +125,11 @@ public class PostingController {
      * fan-out is acceptable; queued/chunked backpressure can be added later if
      * the workload outgrows it.</p>
      *
+     * <p>This is the explicit force path: it bypasses the idempotent-scoring cache
+     * so an unchanged posting is still re-scored (that is the point of a manual
+     * rescore after a model upgrade). The automatic {@code score}/{@code score-all}
+     * paths remain cache-aware and skip the LLM for unchanged postings.</p>
+     *
      * @param organizationId owning org (caller must be a member)
      * @param rubricName     rubric to score against (defaults to {@code "default"})
      * @return JSON body with {@code count} = number of rescores triggered
@@ -138,7 +143,7 @@ public class PostingController {
         int succeeded = 0;
         for (JobPosting p : postings) {
             try {
-                scoreUseCase.score(p.getId(), rubricName, organizationId);
+                scoreUseCase.score(p.getId(), rubricName, organizationId, true);
                 succeeded++;
             } catch (RuntimeException ex) {
                 LOG.warn("Manual rescore failed for posting {} in org {}: {}",

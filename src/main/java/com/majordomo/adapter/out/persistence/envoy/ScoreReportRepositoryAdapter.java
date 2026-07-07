@@ -39,6 +39,14 @@ public class ScoreReportRepositoryAdapter implements ScoreReportRepository {
     }
 
     @Override
+    public Optional<ScoreReport> findLatestScored(
+            UUID postingId, UUID rubricId, UUID organizationId) {
+        return jpa.findFirstByPostingIdAndRubricIdAndOrganizationIdOrderByScoredAtDesc(
+                        postingId, rubricId, organizationId)
+                .map(ScoreReportMapper::toDomain);
+    }
+
+    @Override
     public Page<ScoreReport> query(UUID organizationId, ScoreReportFilter filter,
                                    UUID cursor, int limit) {
         int clamped = Math.max(1, Math.min(limit, 100));

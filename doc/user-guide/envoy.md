@@ -65,4 +65,16 @@ LLM is asked to choose from (e.g. "Excellent: 8–10 points", "Adequate:
 4–7", "Poor: 0–3"). The rubric also has **thresholds** — the score
 ranges that map to APPLY_NOW / CONSIDER / SKIP recommendations.
 
+## Idempotent scoring
+
+Scoring is cached on the posting's content. If you score a posting that
+hasn't changed against a rubric version it was already scored under,
+Envoy returns the **existing report** without calling the LLM again — so
+re-opening a posting or re-running `score-all` costs nothing. Any change
+to the posting content, or a new rubric version, produces a fresh score.
+
+`POST /api/envoy/rescore` is the exception: it **forces** a fresh score
+for every posting even when nothing changed. Use it after a model
+upgrade, when you want new opinions despite identical inputs.
+
 See ADR-0022 for the full design rationale.

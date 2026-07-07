@@ -19,6 +19,21 @@ public interface ScoreJobPostingUseCase {
     ScoreReport score(UUID postingId, String rubricName, UUID organizationId);
 
     /**
+     * Scores a posting, optionally forcing a fresh LLM call. When {@code forceRescore}
+     * is {@code false} and a prior report exists for an unchanged posting under the
+     * same rubric version, that report is reused and the LLM is not invoked. When
+     * {@code true}, the cache is bypassed and the LLM is always called — used by the
+     * manual rescore path (e.g. after a model upgrade with no rubric or content change).
+     *
+     * @param postingId      the posting to score
+     * @param rubricName     rubric name (e.g. "default")
+     * @param organizationId the requesting org (must own the posting)
+     * @param forceRescore   {@code true} to bypass the idempotency cache
+     * @return the score report (reused or freshly persisted)
+     */
+    ScoreReport score(UUID postingId, String rubricName, UUID organizationId, boolean forceRescore);
+
+    /**
      * Scores a posting against multiple rubrics in one operation. Each rubric
      * produces a separate persisted {@link ScoreReport} and a separate
      * {@code JobPostingScored} domain event. Fails fast: if any rubric (or the
