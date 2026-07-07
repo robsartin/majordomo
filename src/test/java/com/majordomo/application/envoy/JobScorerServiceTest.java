@@ -54,13 +54,16 @@ class JobScorerServiceTest {
     private Rubric rubric;
     private JobPosting posting;
 
+    private EnvoyMetrics envoyMetrics;
+
     @BeforeEach
     void setUp() {
         meterRegistry = new SimpleMeterRegistry();
+        envoyMetrics = new EnvoyMetrics(meterRegistry);
         scorer = new JobScorerService(
                 rubrics, postings, reports, llm, new ScoreAssembler(),
-                eventPublisher, new LlmCallObserver(new EnvoyMetrics(meterRegistry)),
-                new PostingContentHasher());
+                eventPublisher, new LlmCallObserver(envoyMetrics),
+                new PostingContentHasher(), envoyMetrics);
         rubric = new Rubric(UuidFactory.newId(), Optional.empty(), 1, "default",
                 List.of(),
                 List.of(new Category("compensation", "pay", 20,
@@ -109,6 +112,61 @@ class JobScorerServiceTest {
         verify(llm, never()).score(any(), any());
         verify(reports, never()).save(any());
         verify(eventPublisher, never()).publish(any());
+    }
+
+    @Test
+    void recordsCacheHitMetricWhenReusingPriorReport() {
+        String contentHash = new PostingContentHasher().hash(posting);
+        ScoreReport prior = new ScoreReport(
+                UuidFactory.newId(), orgId, posting.getId(), rubric.id(), rubric.version(),
+                Optional.empty(), List.of(), List.of(), 15, 15,
+                Recommendation.APPLY, "claude-sonnet-4-6", Instant.now(),
+                Optional.empty(), Optional.of(contentHash));
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(reports.findLatestScored(posting.getId(), rubric.id(), orgId))
+                .thenReturn(Optional.of(prior));
+
+        scorer.score(posting.getId(), "default", orgId);
+
+        assertThat(meterRegistry.get("envoy_score_cache_total")
+                .tag("outcome", "hit").tag("rubric", "default")
+                .counter().count()).isEqualTo(1.0);
+        assertThat(meterRegistry.find("envoy_score_cache_total")
+                .tag("outcome", "miss").counter()).isNull();
+    }
+
+    @Test
+    void recordsCacheMissMetricWhenScoringFresh() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        scorer.score(posting.getId(), "default", orgId);
+
+        assertThat(meterRegistry.get("envoy_score_cache_total")
+                .tag("outcome", "miss").tag("rubric", "default")
+                .counter().count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void forcedRescoreRecordsNoCacheOutcomeMetric() {
+        when(postings.findById(posting.getId(), orgId)).thenReturn(Optional.of(posting));
+        when(rubrics.findActiveByName("default", orgId)).thenReturn(Optional.of(rubric));
+        when(llm.score(any(), any())).thenReturn(LlmScoreResponse.of(null,
+                List.of(new LlmScoreResponse.CategoryVerdict("compensation", "Good", "listed")),
+                List.of()));
+        when(llm.modelId()).thenReturn("claude-sonnet-4-6");
+        when(reports.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        scorer.score(posting.getId(), "default", orgId, true);
+
+        // A forced rescore never consults the cache, so it is neither hit nor miss.
+        assertThat(meterRegistry.find("envoy_score_cache_total").counter()).isNull();
     }
 
     @Test
