@@ -29,6 +29,12 @@ public class ApiKeyEntity {
     @Column(name = "hashed_key", nullable = false)
     private String hashedKey;
 
+    @Column(name = "scope", nullable = false)
+    private String scope;
+
+    @Column(name = "last_used_at")
+    private Instant lastUsedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -52,6 +58,12 @@ public class ApiKeyEntity {
 
     public String getHashedKey() { return hashedKey; }
     public void setHashedKey(String hashedKey) { this.hashedKey = hashedKey; }
+
+    public String getScope() { return scope; }
+    public void setScope(String scope) { this.scope = scope; }
+
+    public Instant getLastUsedAt() { return lastUsedAt; }
+    public void setLastUsedAt(Instant lastUsedAt) { this.lastUsedAt = lastUsedAt; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

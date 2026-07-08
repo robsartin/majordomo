@@ -60,6 +60,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
                 var auth = new UsernamePasswordAuthenticationToken(
                         "apikey:" + apiKey.getOrganizationId(), null, List.of());
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                apiKeyRepository.touchLastUsed(apiKey.getId(), Instant.now());
             }
         }
         filterChain.doFilter(request, response);

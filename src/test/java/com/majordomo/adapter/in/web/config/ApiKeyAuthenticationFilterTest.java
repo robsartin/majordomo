@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -206,6 +207,34 @@ class ApiKeyAuthenticationFilterTest {
 
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void recordsLastUsedOnSuccessfulAuthentication() throws Exception {
+        String rawKey = "mjd_touch";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        var apiKey = new ApiKey(UUID.randomUUID(), UUID.randomUUID(), "k", hashedKey);
+        apiKey.setCreatedAt(Instant.now());
+        apiKey.setUpdatedAt(Instant.now());
+
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.of(apiKey));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(apiKeyRepository).touchLastUsed(eq(apiKey.getId()), any(Instant.class));
+    }
+
+    @Test
+    void doesNotRecordLastUsedForUnknownKey() throws Exception {
+        String rawKey = "mjd_nope";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.empty());
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(apiKeyRepository, never()).touchLastUsed(any(), any());
     }
 
     private static ApiKey readOnlyKey(UUID orgId, String hashedKey) {

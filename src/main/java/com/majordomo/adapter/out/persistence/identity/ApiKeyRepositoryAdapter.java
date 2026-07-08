@@ -4,7 +4,9 @@ import com.majordomo.domain.model.identity.ApiKey;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,5 +50,11 @@ public class ApiKeyRepositoryAdapter implements ApiKeyRepository {
         return jpa.findByOrganizationId(organizationId).stream()
                 .map(ApiKeyMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void touchLastUsed(UUID id, Instant lastUsedAt) {
+        jpa.touchLastUsed(id, lastUsedAt);
     }
 }
