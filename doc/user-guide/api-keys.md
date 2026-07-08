@@ -21,10 +21,19 @@ non-interactive callers.
    `/account/api-keys` directly).
 2. Type a memorable **name** for the key (e.g. "CI runner", "iOS
    shortcut").
-3. Click **+ Create key**.
-4. The plaintext key (64 hex characters) appears in a yellow banner
+3. Choose an **access** level:
+   - **Read & write** — full access (the default).
+   - **Read only** — may perform `GET`/read requests only; any
+     state-changing request (`POST`/`PUT`/`PATCH`/`DELETE`) is rejected
+     with `403 Forbidden`. Use this for dashboards, exports, or anything
+     that should never modify data.
+4. Click **+ Create key**.
+5. The plaintext key (64 hex characters) appears in a yellow banner
    above the form: **copy it now.** Majordomo only stores the
    SHA-256 hash; once you leave the page the plaintext is gone forever.
+
+The key list shows each key's **access** badge and when it was **last
+used** (or "Never"), so you can spot stale keys.
 
 ## Using a key
 
@@ -32,7 +41,8 @@ non-interactive callers.
 curl -H "X-API-Key: <your-key>" https://your-host/api/properties
 ```
 
-The key is scoped to the organization that minted it.
+The key is scoped to the organization that minted it. A read-only key
+authenticates reads but is rejected on writes.
 
 ## Revoking
 
