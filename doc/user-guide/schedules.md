@@ -58,3 +58,18 @@ Maintenance reminders are emailed when a schedule's `nextDue` is
 within the configured lead window. Per-user preferences let you mute
 the `MAINTENANCE_DUE`, `WARRANTY_EXPIRING`, and `SITE_UPDATES`
 categories independently — see your account preferences.
+
+## Subscribe to a calendar feed
+
+Prefer to see due dates in your own calendar app? Open **Calendar feed**
+from the header (or `/account/calendar`) and click **Create feed URL**.
+Copy the URL it shows — it's shown only once — and add it as a
+*subscription* in Apple Calendar, Google Calendar, or Outlook.
+
+The feed publishes your organization's upcoming maintenance due dates and
+property warranty expirations as all-day events (each with a one-day-ahead
+alarm), and it honours your notification-category preferences: mute
+`MAINTENANCE_DUE` or `WARRANTY_EXPIRING` and those events drop out of the
+feed. The URL contains a private token, so treat it like a password — anyone
+with it can read your dates. **Revoke** a feed at any time from the same page;
+subscribed calendars then stop updating.
