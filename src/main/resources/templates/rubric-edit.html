@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('envoy')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <nav class="mb-4" aria-label="Breadcrumb">
                 <ol class="flex items-center space-x-2 text-sm text-gray-500">
@@ -89,7 +89,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Key</label>
-                                    <input type="text"
+                                    <input type="text" aria-label="Category key"
                                            th:field="*{categories[__${catStat.index}__].key}"
                                            class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
                                            th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].key')} ? 'border-red-500' : ''">
@@ -99,7 +99,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Max points</label>
-                                    <input type="number" min="0"
+                                    <input type="number" min="0" aria-label="Category max points"
                                            th:field="*{categories[__${catStat.index}__].maxPoints}"
                                            class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5 cat-maxpoints"
                                            th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].maxPoints')} ? 'border-red-500' : ''">
@@ -109,7 +109,7 @@
                                 </div>
                                 <div class="sm:col-span-2">
                                     <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Description</label>
-                                    <input type="text"
+                                    <input type="text" aria-label="Category description"
                                            th:field="*{categories[__${catStat.index}__].description}"
                                            class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
                                 </div>
@@ -132,21 +132,21 @@
                                          th:attr="data-tier-index=${tierStat.index}">
                                         <div class="sm:col-span-3">
                                             <label class="block text-xs font-medium text-gray-500 mb-1">Label</label>
-                                            <input type="text"
+                                            <input type="text" aria-label="Tier label"
                                                    th:field="*{categories[__${catStat.index}__].tiers[__${tierStat.index}__].label}"
                                                    class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
                                                    th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].tiers[__${tierStat.index}__].label')} ? 'border-red-500' : ''">
                                         </div>
                                         <div class="sm:col-span-2">
                                             <label class="block text-xs font-medium text-gray-500 mb-1">Points</label>
-                                            <input type="number"
+                                            <input type="number" aria-label="Tier points"
                                                    th:field="*{categories[__${catStat.index}__].tiers[__${tierStat.index}__].points}"
                                                    class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5"
                                                    th:classappend="${#fields.hasErrors('categories[__${catStat.index}__].tiers[__${tierStat.index}__].points')} ? 'border-red-500' : ''">
                                         </div>
                                         <div class="sm:col-span-6">
                                             <label class="block text-xs font-medium text-gray-500 mb-1">Criteria</label>
-                                            <input type="text"
+                                            <input type="text" aria-label="Tier criteria"
                                                    th:field="*{categories[__${catStat.index}__].tiers[__${tierStat.index}__].criteria}"
                                                    class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
                                         </div>
@@ -179,19 +179,19 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Apply immediately</label>
-                                <input type="number"
+                                <input type="number" aria-label="Apply immediately threshold"
                                        th:field="*{thresholds.applyImmediately}"
                                        class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Apply</label>
-                                <input type="number"
+                                <input type="number" aria-label="Apply threshold"
                                        th:field="*{thresholds.apply}"
                                        class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Consider only</label>
-                                <input type="number"
+                                <input type="number" aria-label="Consider only threshold"
                                        th:field="*{thresholds.considerOnly}"
                                        class="block w-full rounded border-gray-300 text-sm focus:border-indigo-500 focus:ring-indigo-500 px-2 py-1.5">
                             </div>

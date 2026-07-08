@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('schedules')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <!-- Breadcrumb -->
             <nav class="mb-4" aria-label="Breadcrumb">
@@ -127,7 +127,7 @@
                     <h2 class="text-lg font-semibold text-gray-900">Service history</h2>
                 </div>
                 <div class="p-0">
-                    <p th:if="${#lists.isEmpty(records)}" class="p-6 text-gray-400 text-sm">
+                    <p th:if="${#lists.isEmpty(records)}" class="p-6 text-gray-500 text-sm">
                         No service events recorded yet.
                     </p>
                     <table th:unless="${#lists.isEmpty(records)}"

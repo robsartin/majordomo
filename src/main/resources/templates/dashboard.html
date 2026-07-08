@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('dashboard')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
         <h1 class="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
 
@@ -59,7 +59,7 @@
                     <h2 class="text-lg font-semibold text-gray-900">Upcoming Maintenance</h2>
                 </div>
                 <div class="p-6">
-                    <p th:if="${#lists.isEmpty(summary.upcomingMaintenance())}" class="text-gray-400 text-sm">
+                    <p th:if="${#lists.isEmpty(summary.upcomingMaintenance())}" class="text-gray-500 text-sm">
                         No upcoming maintenance items.
                     </p>
                     <ul class="space-y-3" th:unless="${#lists.isEmpty(summary.upcomingMaintenance())}">
@@ -89,7 +89,7 @@
                     <h2 class="text-lg font-semibold text-gray-900">Overdue Items</h2>
                 </div>
                 <div class="p-6">
-                    <p th:if="${#lists.isEmpty(summary.overdueItems())}" class="text-gray-400 text-sm">
+                    <p th:if="${#lists.isEmpty(summary.overdueItems())}" class="text-gray-500 text-sm">
                         No overdue items.
                     </p>
                     <ul class="space-y-3" th:unless="${#lists.isEmpty(summary.overdueItems())}">
@@ -116,7 +116,7 @@
                 <a href="/envoy" class="text-sm text-indigo-600 hover:text-indigo-800">View all &rarr;</a>
             </div>
             <div class="p-6">
-                <p th:if="${#lists.isEmpty(applyNowPostings)}" class="text-gray-400 text-sm">
+                <p th:if="${#lists.isEmpty(applyNowPostings)}" class="text-gray-500 text-sm">
                     No APPLY_NOW postings yet.
                 </p>
                 <ul class="space-y-3" th:unless="${#lists.isEmpty(applyNowPostings)}">
@@ -145,7 +145,7 @@
                 <h2 class="text-lg font-semibold text-gray-900">Recent Service Records</h2>
             </div>
             <div class="p-6">
-                <p th:if="${#lists.isEmpty(summary.recentServiceRecords())}" class="text-gray-400 text-sm">
+                <p th:if="${#lists.isEmpty(summary.recentServiceRecords())}" class="text-gray-500 text-sm">
                     No recent service records.
                 </p>
                 <div th:unless="${#lists.isEmpty(summary.recentServiceRecords())}" class="overflow-x-auto">
