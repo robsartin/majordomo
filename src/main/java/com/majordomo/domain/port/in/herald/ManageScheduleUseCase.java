@@ -80,6 +80,17 @@ public interface ManageScheduleUseCase {
     ServiceRecord recordService(UUID scheduleId, ServiceRecord record);
 
     /**
+     * Marks a schedule serviced on a date: records a service event against it and
+     * advances its next due date by one interval of its frequency. A one-click
+     * "mark serviced" that both logs the work and reschedules the recurrence.
+     *
+     * @param scheduleId  the schedule that was serviced
+     * @param completedOn the date the work was completed
+     * @return the updated schedule with its advanced next due date
+     */
+    MaintenanceSchedule completeService(UUID scheduleId, LocalDate completedOn);
+
+    /**
      * Lists all service records for a given schedule.
      *
      * @param scheduleId the maintenance schedule ID
