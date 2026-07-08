@@ -1,5 +1,6 @@
 package com.majordomo.adapter.in.web.config;
 
+import com.majordomo.domain.model.identity.ApiKey;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import jakarta.servlet.FilterChain;
@@ -18,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Authenticates requests bearing an {@code X-API-Key} header by looking up
@@ -45,19 +47,37 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
                                      FilterChain filterChain) throws ServletException, IOException {
         String rawKey = request.getHeader(API_KEY_HEADER);
         if (rawKey != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            String hashed = sha256(rawKey);
-            apiKeyRepository.findByHashedKey(hashed).ifPresent(apiKey -> {
-                if (apiKey.getArchivedAt() == null
-                        && (apiKey.getExpiresAt() == null
-                            || apiKey.getExpiresAt().isAfter(Instant.now()))) {
-                    var auth = new UsernamePasswordAuthenticationToken(
-                            "apikey:" + apiKey.getOrganizationId(),
-                            null, List.of());
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+            var found = apiKeyRepository.findByHashedKey(sha256(rawKey));
+            if (found.isPresent() && isActive(found.get())) {
+                var apiKey = found.get();
+                if (!apiKey.getScope().permitsWrites() && isWriteMethod(request.getMethod())) {
+                    // Read-only key attempting a state-changing request: reject with
+                    // 403 and stop — do not authenticate, do not proceed down the chain.
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                            "API key is read-only and cannot perform write operations");
+                    return;
                 }
-            });
+                var auth = new UsernamePasswordAuthenticationToken(
+                        "apikey:" + apiKey.getOrganizationId(), null, List.of());
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private static boolean isActive(ApiKey apiKey) {
+        return apiKey.getArchivedAt() == null
+                && (apiKey.getExpiresAt() == null || apiKey.getExpiresAt().isAfter(Instant.now()));
+    }
+
+    private static boolean isWriteMethod(String method) {
+        if (method == null) {
+            return false;
+        }
+        return switch (method.toUpperCase(Locale.ROOT)) {
+            case "POST", "PUT", "PATCH", "DELETE" -> true;
+            default -> false;
+        };
     }
 
     /**
