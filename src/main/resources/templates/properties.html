@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('properties')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <div class="flex items-baseline justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Properties</h1>
@@ -92,7 +92,7 @@
                                 <span th:if="${p.getStatus() != null}"
                                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
                                       th:text="${p.getStatus()}">STATUS</span>
-                                <span th:unless="${p.getStatus() != null}" class="text-gray-400">—</span>
+                                <span th:unless="${p.getStatus() != null}" class="text-gray-500">—</span>
                             </td>
                             <td class="px-6 py-3 text-sm text-gray-700"
                                 th:text="${p.getLocation() != null ? p.getLocation() : '—'}">location</td>

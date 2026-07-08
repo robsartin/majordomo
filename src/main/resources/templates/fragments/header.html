@@ -2,6 +2,8 @@
         xmlns:th="http://www.thymeleaf.org"
         xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
         class="bg-indigo-600 text-white px-6 py-3 flex items-center justify-between">
+    <a href="#main-content"
+       class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-indigo-700 focus:shadow focus:ring-2 focus:ring-indigo-500">Skip to main content</a>
     <a th:href="@{/dashboard}" class="text-xl font-bold hover:text-indigo-200">Majordomo</a>
     <div class="flex items-center gap-4" sec:authorize="isAuthenticated()">
         <span sec:authentication="name" class="text-sm">User</span>

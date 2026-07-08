@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('schedules')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <div class="flex items-baseline justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Schedules</h1>
@@ -94,7 +94,7 @@
                             <td class="px-6 py-3 text-sm text-gray-700"
                                 th:text="${row.schedule().getNextDue() != null ? row.schedule().getNextDue() : '—'}">date</td>
                             <td class="px-6 py-3 text-sm">
-                                <span th:if="${row.daysUntilDue() == null}" class="text-gray-400">—</span>
+                                <span th:if="${row.daysUntilDue() == null}" class="text-gray-500">—</span>
                                 <span th:if="${row.daysUntilDue() != null and row.daysUntilDue() < 0}"
                                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
                                       th:text="${-row.daysUntilDue()} + ' days overdue'">overdue</span>

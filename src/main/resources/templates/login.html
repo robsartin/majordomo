@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+    <main id="main-content" tabindex="-1" class="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <div class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-indigo-700 tracking-tight">Majordomo</h1>
             <p class="mt-1 text-sm text-gray-500">Sign in to your account</p>
@@ -52,7 +52,7 @@
                 <div class="absolute inset-0 flex items-center">
                     <div class="w-full border-t border-gray-200"></div>
                 </div>
-                <div class="relative flex justify-center text-xs text-gray-400">
+                <div class="relative flex justify-center text-xs text-gray-500">
                     <span class="bg-white px-2">or</span>
                 </div>
             </div>
@@ -66,6 +66,6 @@
                 </a>
             </div>
         </div>
-    </div>
+    </main>
 </body>
 </html>

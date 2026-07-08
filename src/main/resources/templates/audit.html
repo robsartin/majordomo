@@ -13,7 +13,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('audit')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Audit log</h1>
@@ -81,7 +81,7 @@
                                 th:text="${r.entry().getOccurredAt() != null ? r.entry().getOccurredAt().toString() : ''}">when</td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
                                 <span th:if="${r.actorUsername() != null}" th:text="${r.actorUsername()}"></span>
-                                <span th:unless="${r.actorUsername() != null}" class="text-gray-400">—</span>
+                                <span th:unless="${r.actorUsername() != null}" class="text-gray-500">—</span>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-900 font-medium"
                                 th:text="${r.entry().getAction()}">action</td>

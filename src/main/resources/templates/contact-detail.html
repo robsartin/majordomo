@@ -13,7 +13,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('contacts')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <nav class="text-sm text-gray-500 mb-4">
                 <a th:href="@{/contacts}" class="hover:text-indigo-600">Contacts</a>
@@ -56,7 +56,7 @@
                     <ul class="p-6 space-y-1 text-sm text-gray-700">
                         <li th:each="e : ${contact.emails}" th:text="${e}">email</li>
                         <li th:if="${contact.emails == null or #lists.isEmpty(contact.emails)}"
-                            class="text-gray-400">None</li>
+                            class="text-gray-500">None</li>
                     </ul>
                 </div>
 
@@ -68,7 +68,7 @@
                     <ul class="p-6 space-y-1 text-sm text-gray-700">
                         <li th:each="p : ${contact.telephones}" th:text="${p}">phone</li>
                         <li th:if="${contact.telephones == null or #lists.isEmpty(contact.telephones)}"
-                            class="text-gray-400">None</li>
+                            class="text-gray-500">None</li>
                     </ul>
                 </div>
 
@@ -83,7 +83,7 @@
                                class="text-indigo-600 hover:text-indigo-800">url</a>
                         </li>
                         <li th:if="${contact.urls == null or #lists.isEmpty(contact.urls)}"
-                            class="text-gray-400">None</li>
+                            class="text-gray-500">None</li>
                     </ul>
                 </div>
 
@@ -95,7 +95,7 @@
                     <ul class="p-6 space-y-1 text-sm text-gray-700">
                         <li th:each="n : ${contact.nicknames}" th:text="${n}">nick</li>
                         <li th:if="${contact.nicknames == null or #lists.isEmpty(contact.nicknames)}"
-                            class="text-gray-400">None</li>
+                            class="text-gray-500">None</li>
                     </ul>
                 </div>
 
@@ -116,7 +116,7 @@
                             <span th:text="${a.country()}">country</span>
                         </li>
                         <li th:if="${contact.addresses == null or #lists.isEmpty(contact.addresses)}"
-                            class="text-gray-400">None</li>
+                            class="text-gray-500">None</li>
                     </ul>
                 </div>
 
@@ -143,7 +143,7 @@
                                         class="text-red-600 hover:text-red-800 text-xs">Unlink</button>
                             </form>
                         </li>
-                        <li th:if="${#lists.isEmpty(linkedRows)}" class="text-gray-400">None</li>
+                        <li th:if="${#lists.isEmpty(linkedRows)}" class="text-gray-500">None</li>
                     </ul>
                     <div th:if="${propertyCandidates != null and !#lists.isEmpty(propertyCandidates)}"
                          class="px-6 pb-6 border-t border-gray-100 pt-4">

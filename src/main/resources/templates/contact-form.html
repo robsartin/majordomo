@@ -9,7 +9,7 @@
     <div th:replace="~{fragments/header :: header}"></div>
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('contacts')}"></div>
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h1 class="text-xl font-semibold text-gray-900"
@@ -119,22 +119,22 @@
                                 <div th:each="a, it : ${existing.getAddresses()}"
                                      class="grid grid-cols-1 sm:grid-cols-6 gap-2 address-row">
                                     <input type="text" th:name="|addresses[${it.index}].label|"
-                                           th:value="${a.label()}" placeholder="Label"
+                                           th:value="${a.label()}" placeholder="Label" aria-label="Address label"
                                            class="rounded border-gray-300 text-sm px-2 py-1.5">
                                     <input type="text" th:name="|addresses[${it.index}].street|"
-                                           th:value="${a.street()}" placeholder="Street"
+                                           th:value="${a.street()}" placeholder="Street" aria-label="Street"
                                            class="sm:col-span-2 rounded border-gray-300 text-sm px-2 py-1.5">
                                     <input type="text" th:name="|addresses[${it.index}].city|"
-                                           th:value="${a.city()}" placeholder="City"
+                                           th:value="${a.city()}" placeholder="City" aria-label="City"
                                            class="rounded border-gray-300 text-sm px-2 py-1.5">
                                     <input type="text" th:name="|addresses[${it.index}].state|"
-                                           th:value="${a.state()}" placeholder="State"
+                                           th:value="${a.state()}" placeholder="State" aria-label="State"
                                            class="rounded border-gray-300 text-sm px-2 py-1.5">
                                     <input type="text" th:name="|addresses[${it.index}].postalCode|"
-                                           th:value="${a.postalCode()}" placeholder="Postal"
+                                           th:value="${a.postalCode()}" placeholder="Postal" aria-label="Postal code"
                                            class="rounded border-gray-300 text-sm px-2 py-1.5">
                                     <input type="text" th:name="|addresses[${it.index}].country|"
-                                           th:value="${a.country()}" placeholder="Country"
+                                           th:value="${a.country()}" placeholder="Country" aria-label="Country"
                                            class="rounded border-gray-300 text-sm px-2 py-1.5">
                                 </div>
                                 </th:block>
@@ -171,12 +171,12 @@
                 var idx = rows.querySelectorAll('.address-row').length;
                 var html =
                     '<div class="grid grid-cols-1 sm:grid-cols-6 gap-2 address-row">' +
-                    '<input type="text" name="addresses[' + idx + '].label" placeholder="Label" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
-                    '<input type="text" name="addresses[' + idx + '].street" placeholder="Street" class="sm:col-span-2 rounded border-gray-300 text-sm px-2 py-1.5">' +
-                    '<input type="text" name="addresses[' + idx + '].city" placeholder="City" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
-                    '<input type="text" name="addresses[' + idx + '].state" placeholder="State" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
-                    '<input type="text" name="addresses[' + idx + '].postalCode" placeholder="Postal" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
-                    '<input type="text" name="addresses[' + idx + '].country" placeholder="Country" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].label" placeholder="Label" aria-label="Address label" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].street" placeholder="Street" aria-label="Street" class="sm:col-span-2 rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].city" placeholder="City" aria-label="City" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].state" placeholder="State" aria-label="State" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].postalCode" placeholder="Postal" aria-label="Postal code" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
+                    '<input type="text" name="addresses[' + idx + '].country" placeholder="Country" aria-label="Country" class="rounded border-gray-300 text-sm px-2 py-1.5">' +
                     '</div>';
                 rows.insertAdjacentHTML('beforeend', html);
             });

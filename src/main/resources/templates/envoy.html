@@ -15,7 +15,7 @@
     <div class="flex min-h-screen">
         <div th:replace="~{fragments/sidebar :: sidebar('envoy')}"></div>
 
-        <main class="flex-1 p-6">
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
             <div class="flex items-baseline justify-between mb-6">
                 <h1 class="text-2xl font-bold text-gray-900">Envoy</h1>
@@ -150,7 +150,7 @@
             <div th:if="${#lists.isEmpty(rows)}"
                  class="bg-white rounded-lg shadow p-8 text-center">
                 <p class="text-gray-500 mb-2">No score reports yet.</p>
-                <p class="text-sm text-gray-400">
+                <p class="text-sm text-gray-500">
                     Ingest a posting via
                     <code class="bg-gray-100 px-1 rounded">POST /api/envoy/postings</code>
                     and score it via
@@ -195,7 +195,7 @@
                                               + ' · '
                                               + (row.posting().getLocation() != null ? row.posting().getLocation() : '—')}">-</span>
                                 <span th:if="${row.posting() == null}"
-                                      class="font-mono text-xs text-gray-400"
+                                      class="font-mono text-xs text-gray-500"
                                       th:text="${#strings.abbreviate(row.report().postingId().toString(), 12) + ' (deleted)'}">-</span>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600"
