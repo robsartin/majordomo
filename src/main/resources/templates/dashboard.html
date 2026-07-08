@@ -69,9 +69,15 @@
                                 <span class="font-medium text-gray-800" th:text="${item.description}">Task</span>
                                 <span class="block text-sm text-yellow-700" th:text="'Due: ' + ${item.nextDue}">Due date</span>
                             </div>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                Upcoming
-                            </span>
+                            <form method="post"
+                                  th:action="@{|/dashboard/maintenance/${item.id}/complete|}"
+                                  th:onsubmit="|return confirm('Mark this task as serviced today? This logs a service record and reschedules the next occurrence.')|">
+                                <button type="submit"
+                                        th:aria-label="|Mark ${item.description} as serviced today|"
+                                        class="inline-flex items-center rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1">
+                                    Mark serviced
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </div>
