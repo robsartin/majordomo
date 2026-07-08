@@ -74,8 +74,13 @@ class EnvoyVerticalSliceIntegrationTest {
 
     @BeforeEach
     void seedDefaultRubric() {
+        // Org-scoped "default" rubric (not Optional.empty()): a system default now
+        // ships via migration V15, so seeding another system-level "default" v1
+        // violates the (name, version) WHERE organization_id IS NULL unique index.
+        // An org-scoped rubric uses the separate (organization_id, name, version)
+        // index and, being org-specific, is preferred by findActiveByName for ORG_ID.
         rubrics.save(new Rubric(
-                UuidFactory.newId(), Optional.empty(), 1, "default",
+                UuidFactory.newId(), Optional.of(ORG_ID), 1, "default",
                 List.of(),
                 List.of(
                         cat("compensation", 25, tier("Good", 18)),
