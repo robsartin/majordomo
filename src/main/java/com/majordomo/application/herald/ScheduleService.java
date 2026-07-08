@@ -94,6 +94,32 @@ public class ScheduleService implements ManageScheduleUseCase {
 
     @Override
     public ServiceRecord recordService(UUID scheduleId, ServiceRecord record) {
+        MaintenanceSchedule schedule = requireSchedule(scheduleId);
+        var saved = persistRecord(scheduleId, record);
+        advance(schedule, saved.getPerformedOn());
+        return saved;
+    }
+
+    @Override
+    public MaintenanceSchedule completeService(UUID scheduleId, LocalDate completedOn) {
+        MaintenanceSchedule schedule = requireSchedule(scheduleId);
+
+        ServiceRecord record = new ServiceRecord();
+        record.setPropertyId(schedule.getPropertyId());
+        record.setPerformedOn(completedOn);
+        record.setDescription(schedule.getDescription());
+        persistRecord(scheduleId, record);
+
+        return advance(schedule, completedOn);
+    }
+
+    private MaintenanceSchedule requireSchedule(UUID scheduleId) {
+        return scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        EntityType.MAINTENANCE_SCHEDULE.name(), scheduleId));
+    }
+
+    private ServiceRecord persistRecord(UUID scheduleId, ServiceRecord record) {
         record.setId(UuidFactory.newId());
         record.setScheduleId(scheduleId);
         var saved = serviceRecordRepository.save(record);
@@ -106,19 +132,8 @@ public class ScheduleService implements ManageScheduleUseCase {
         return saved;
     }
 
-    @Override
-    public MaintenanceSchedule completeService(UUID scheduleId, LocalDate completedOn) {
-        MaintenanceSchedule schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        EntityType.MAINTENANCE_SCHEDULE.name(), scheduleId));
-
-        ServiceRecord record = new ServiceRecord();
-        record.setPropertyId(schedule.getPropertyId());
-        record.setPerformedOn(completedOn);
-        record.setDescription(schedule.getDescription());
-        recordService(scheduleId, record);
-
-        schedule.setNextDue(schedule.nextDueAfter(completedOn));
+    private MaintenanceSchedule advance(MaintenanceSchedule schedule, LocalDate servicedOn) {
+        schedule.setNextDue(schedule.nextDueAfter(servicedOn));
         schedule.setUpdatedAt(Instant.now());
         return scheduleRepository.save(schedule);
     }

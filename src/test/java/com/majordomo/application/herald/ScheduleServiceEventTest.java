@@ -1,6 +1,8 @@
 package com.majordomo.application.herald;
 
 import com.majordomo.domain.model.event.ServiceRecordCreated;
+import com.majordomo.domain.model.herald.Frequency;
+import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.out.EventPublisher;
@@ -15,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -62,6 +65,13 @@ class ScheduleServiceEventTest {
         var record = new ServiceRecord();
         record.setDescription("Filter replaced");
         record.setPropertyId(propertyId);
+        record.setPerformedOn(LocalDate.of(2026, 7, 20));
+
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(scheduleId);
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
 
         Property property = new Property();
         property.setId(propertyId);
@@ -69,6 +79,8 @@ class ScheduleServiceEventTest {
         when(propertyRepository.findById(propertyId)).thenReturn(Optional.of(property));
 
         when(serviceRecordRepository.save(any(ServiceRecord.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
         scheduleService.recordService(scheduleId, record);
