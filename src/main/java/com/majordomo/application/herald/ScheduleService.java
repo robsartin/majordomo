@@ -95,7 +95,7 @@ public class ScheduleService implements ManageScheduleUseCase {
     @Override
     public ServiceRecord recordService(UUID scheduleId, ServiceRecord record) {
         MaintenanceSchedule schedule = requireSchedule(scheduleId);
-        var saved = persistRecord(scheduleId, record);
+        var saved = persistRecord(schedule, record);
         advance(schedule, saved.getPerformedOn());
         return saved;
     }
@@ -105,10 +105,9 @@ public class ScheduleService implements ManageScheduleUseCase {
         MaintenanceSchedule schedule = requireSchedule(scheduleId);
 
         ServiceRecord record = new ServiceRecord();
-        record.setPropertyId(schedule.getPropertyId());
         record.setPerformedOn(completedOn);
         record.setDescription(schedule.getDescription());
-        persistRecord(scheduleId, record);
+        persistRecord(schedule, record);
 
         return advance(schedule, completedOn);
     }
@@ -119,9 +118,15 @@ public class ScheduleService implements ManageScheduleUseCase {
                         EntityType.MAINTENANCE_SCHEDULE.name(), scheduleId));
     }
 
-    private ServiceRecord persistRecord(UUID scheduleId, ServiceRecord record) {
+    private ServiceRecord persistRecord(MaintenanceSchedule schedule, ServiceRecord record) {
         record.setId(UuidFactory.newId());
-        record.setScheduleId(scheduleId);
+        record.setScheduleId(schedule.getId());
+        if (record.getPropertyId() == null) {
+            // The detail-page form doesn't carry a propertyId; default it from the
+            // schedule so the NOT NULL column (and the ServiceRecordCreated event's
+            // org resolution) are satisfied. Explicit values are preserved.
+            record.setPropertyId(schedule.getPropertyId());
+        }
         var saved = serviceRecordRepository.save(record);
         UUID organizationId = propertyRepository.findById(saved.getPropertyId())
                 .map(Property::getOrganizationId)

@@ -64,4 +64,38 @@ class ScheduleCompleteServiceIntegrationTest {
                     assertThat(r.getPropertyId()).isEqualTo(furnace.getId());
                 });
     }
+
+    @Test
+    void recordServiceFromDetailFormWithoutPropertyIdPersists() {
+        // Reproduces #308: the detail-page form builds a ServiceRecord with no
+        // propertyId. Since service_record.property_id is NOT NULL, this would
+        // throw a constraint violation on Postgres before the fix.
+        UUID orgId = UuidFactory.newId();
+        organizations.save(new Organization(orgId, "org-" + orgId));
+
+        Property furnace = new Property();
+        furnace.setId(UuidFactory.newId());
+        furnace.setOrganizationId(orgId);
+        furnace.setName("Furnace");
+        furnace.setStatus(PropertyStatus.ACTIVE);
+        properties.save(furnace);
+
+        MaintenanceSchedule schedule = new MaintenanceSchedule();
+        schedule.setPropertyId(furnace.getId());
+        schedule.setDescription("Replace HVAC filter");
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+        MaintenanceSchedule created = schedules.create(schedule);
+
+        var record = new com.majordomo.domain.model.herald.ServiceRecord();
+        record.setDescription("Filter replaced");
+        record.setPerformedOn(LocalDate.of(2026, 7, 20));
+        // no propertyId set — exactly what SchedulePageController.addRecord sends
+
+        schedules.recordService(created.getId(), record);
+
+        assertThat(serviceRecords.findByScheduleId(created.getId()))
+                .singleElement()
+                .satisfies(r -> assertThat(r.getPropertyId()).isEqualTo(furnace.getId()));
+    }
 }
