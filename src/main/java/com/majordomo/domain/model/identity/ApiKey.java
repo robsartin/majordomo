@@ -13,10 +13,12 @@ public class ApiKey {
     private UUID organizationId;
     private String name;
     private String hashedKey;
+    private ApiKeyScope scope = ApiKeyScope.READ_WRITE;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant expiresAt;
     private Instant archivedAt;
+    private Instant lastUsedAt;
 
     public ApiKey() { }
 
@@ -38,6 +40,12 @@ public class ApiKey {
 
     public String getHashedKey() { return hashedKey; }
     public void setHashedKey(String hashedKey) { this.hashedKey = hashedKey; }
+
+    public ApiKeyScope getScope() { return scope; }
+    public void setScope(ApiKeyScope scope) { this.scope = scope; }
+
+    public Instant getLastUsedAt() { return lastUsedAt; }
+    public void setLastUsedAt(Instant lastUsedAt) { this.lastUsedAt = lastUsedAt; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
