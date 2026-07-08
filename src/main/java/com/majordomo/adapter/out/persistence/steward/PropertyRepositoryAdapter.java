@@ -82,6 +82,12 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
     }
 
     @Override
+    public List<Property> findWithWarrantyExpiringOnOrAfter(UUID organizationId, LocalDate from) {
+        return jpa.findWithWarrantyExpiringOnOrAfter(organizationId, from).stream()
+                .map(PropertyMapper::toDomain).toList();
+    }
+
+    @Override
     public List<Property> search(UUID organizationId, String query, String category,
                                  String status, UUID cursor, int limit) {
         // Validate status the same way the previous implementation did (throw on
