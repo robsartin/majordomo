@@ -6,6 +6,7 @@ import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.ApiKey;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -86,6 +88,48 @@ class ApiKeyControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.expiresAt").value("2026-12-31T00:00:00Z"));
+    }
+
+    /** POST with an explicit scope persists a read-only key and echoes it. */
+    @Test
+    @WithMockUser
+    void createWithReadOnlyScopePersistsIt() throws Exception {
+        ArgumentCaptor<ApiKey> captor = ArgumentCaptor.forClass(ApiKey.class);
+        when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        mvc.perform(post("/api/organizations/{orgId}/api-keys", ORG_ID)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"read-only key","scope":"READ_ONLY"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.scope").value("READ_ONLY"));
+
+        verify(apiKeyRepository).save(captor.capture());
+        assertThat(captor.getValue().getScope())
+                .isEqualTo(com.majordomo.domain.model.identity.ApiKeyScope.READ_ONLY);
+    }
+
+    /** POST without a scope defaults to READ_WRITE. */
+    @Test
+    @WithMockUser
+    void createDefaultsToReadWriteScope() throws Exception {
+        ArgumentCaptor<ApiKey> captor = ArgumentCaptor.forClass(ApiKey.class);
+        when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        mvc.perform(post("/api/organizations/{orgId}/api-keys", ORG_ID)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name":"default key"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.scope").value("READ_WRITE"));
+
+        verify(apiKeyRepository).save(captor.capture());
+        assertThat(captor.getValue().getScope())
+                .isEqualTo(com.majordomo.domain.model.identity.ApiKeyScope.READ_WRITE);
     }
 
     /** GET lists active keys (archived excluded), no plaintext. */

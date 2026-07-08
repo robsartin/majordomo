@@ -45,6 +45,14 @@
                                class="rounded border-gray-300 text-sm px-2 py-1.5"
                                placeholder="e.g. CI runner">
                     </div>
+                    <div class="flex flex-col">
+                        <label for="scope" class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Access</label>
+                        <select id="scope" name="scope"
+                                class="rounded border-gray-300 text-sm px-2 py-1.5">
+                            <option value="READ_WRITE">Read &amp; write</option>
+                            <option value="READ_ONLY">Read only</option>
+                        </select>
+                    </div>
                     <button type="submit"
                             class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
                         + Create key
@@ -61,19 +69,31 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Access</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Expires</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last used</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-100">
                         <tr th:each="k : ${keys}">
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-900 font-medium" th:text="${k.name}">Name</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm">
+                                <span th:if="${k.scope != null and k.scope.name() == 'READ_ONLY'}"
+                                      class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">Read only</span>
+                                <span th:unless="${k.scope != null and k.scope.name() == 'READ_ONLY'}"
+                                      class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">Read &amp; write</span>
+                            </td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
                                 th:text="${k.createdAt != null ? k.createdAt.toString() : ''}">created</td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
                                 <span th:if="${k.expiresAt != null}" th:text="${k.expiresAt}"></span>
                                 <span th:unless="${k.expiresAt != null}" class="text-gray-400">—</span>
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
+                                <span th:if="${k.lastUsedAt != null}" th:text="${k.lastUsedAt}"></span>
+                                <span th:unless="${k.lastUsedAt != null}" class="text-gray-400">Never</span>
                             </td>
                             <td class="px-6 py-3 whitespace-nowrap text-sm text-right">
                                 <form method="post" th:action="@{|/account/api-keys/${k.id}/revoke|}"
