@@ -102,4 +102,15 @@ public interface PropertyRepository {
      * @return list of matching properties, or an empty list if none exist
      */
     List<Property> findWithWarrantyExpiringBefore(LocalDate date);
+
+    /**
+     * Returns non-archived properties in an organization whose warranty expires on
+     * or after the given date, ordered by expiration date. Used to build the
+     * organization's warranty-expiration calendar feed.
+     *
+     * @param organizationId the organization scope
+     * @param from           inclusive lower bound for {@code warrantyExpiresOn}
+     * @return matching properties, soonest expiry first
+     */
+    List<Property> findWithWarrantyExpiringOnOrAfter(UUID organizationId, LocalDate from);
 }

@@ -59,6 +59,12 @@ public class MaintenanceScheduleRepositoryAdapter implements MaintenanceSchedule
     }
 
     @Override
+    public List<MaintenanceSchedule> findUpcomingByOrganizationId(UUID organizationId, LocalDate from) {
+        return jpa.findUpcomingByOrganizationId(organizationId, from).stream()
+                .map(MaintenanceScheduleMapper::toDomain).toList();
+    }
+
+    @Override
     public List<MaintenanceSchedule> search(UUID propertyId, String query, String frequency,
                                             UUID cursor, int limit) {
         var freqEnum = frequency != null ? Frequency.valueOf(frequency) : null;

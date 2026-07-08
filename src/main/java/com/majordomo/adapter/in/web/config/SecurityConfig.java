@@ -57,6 +57,7 @@ public class SecurityConfig {
                 .requestMatchers("/", "/login", "/css/**", "/js/**", "/favicon.ico").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
+                .requestMatchers("/herald/calendar/**").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

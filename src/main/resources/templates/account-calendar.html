@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar feed - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('account')}"></div>
+
+        <main class="flex-1 p-6">
+
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Calendar feed</h1>
+                <p class="text-sm text-gray-500">
+                    Subscribe to your upcoming maintenance and warranty dates in Apple
+                    Calendar, Google Calendar, or Outlook. The feed respects your
+                    notification preferences.
+                </p>
+            </div>
+
+            <!-- One-shot subscription URL banner -->
+            <div th:if="${feedUrl}"
+                 class="mb-6 bg-amber-50 border border-amber-300 rounded-md p-4">
+                <p class="text-sm font-semibold text-amber-900">
+                    New feed URL created. Copy it now — you won't see it again.
+                </p>
+                <pre class="mt-2 bg-white border border-amber-200 rounded p-3 text-xs font-mono text-gray-800 break-all"
+                     th:text="${feedUrl}">url</pre>
+                <p class="mt-2 text-xs text-amber-800">
+                    Add this as a <strong>subscription</strong> URL in your calendar app
+                    (e.g. Calendar → File → New Calendar Subscription).
+                </p>
+            </div>
+
+            <!-- Create feed form -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <form method="post" th:action="@{/account/calendar}" class="flex items-center gap-3">
+                    <p class="text-sm text-gray-600 flex-grow">
+                        Generate a private feed URL. Anyone with the URL can view your
+                        upcoming dates, so treat it like a password.
+                    </p>
+                    <button type="submit"
+                            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                        + Create feed URL
+                    </button>
+                </form>
+            </div>
+
+            <!-- Existing feed tokens -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div th:if="${#lists.isEmpty(tokens)}" class="px-6 py-12 text-center text-gray-500">
+                    No calendar feeds yet.
+                </div>
+                <table th:unless="${#lists.isEmpty(tokens)}" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        <tr th:each="t : ${tokens}">
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700"
+                                th:text="${t.createdAt != null ? t.createdAt.toString() : ''}">created</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-right">
+                                <form method="post" th:action="@{|/account/calendar/${t.id}/revoke|}"
+                                      onsubmit="return confirm('Revoke this feed? Calendars subscribed to it will stop updating.');">
+                                    <button type="submit"
+                                            class="text-red-600 hover:text-red-800 text-xs">Revoke</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>

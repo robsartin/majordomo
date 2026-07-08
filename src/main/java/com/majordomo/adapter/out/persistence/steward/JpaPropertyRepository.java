@@ -66,6 +66,22 @@ public interface JpaPropertyRepository extends JpaRepository<PropertyEntity, UUI
     List<PropertyEntity> findWithWarrantyExpiringBefore(@Param("date") LocalDate date);
 
     /**
+     * Non-archived properties in an organization whose warranty expires on or after
+     * {@code from}, soonest first. Backs the warranty-expiration calendar feed.
+     *
+     * @param organizationId the organization scope
+     * @param from           inclusive lower bound for {@code warrantyExpiresOn}
+     * @return matching property entities, ordered by expiry date
+     */
+    @Query("SELECT p FROM PropertyEntity p WHERE p.organizationId = :organizationId "
+            + "AND p.warrantyExpiresOn IS NOT NULL "
+            + "AND p.warrantyExpiresOn >= :from "
+            + "AND p.archivedAt IS NULL "
+            + "ORDER BY p.warrantyExpiresOn")
+    List<PropertyEntity> findWithWarrantyExpiringOnOrAfter(
+            @Param("organizationId") UUID organizationId, @Param("from") LocalDate from);
+
+    /**
      * Cursor-paginated full-text property search within an organization. When
      * {@code query} is null the text predicate is skipped (plain org listing with
      * optional filters); otherwise a match is any property whose generated

@@ -58,6 +58,18 @@ public interface MaintenanceScheduleRepository {
     List<MaintenanceSchedule> findDueBefore(LocalDate date);
 
     /**
+     * Returns non-archived maintenance schedules for all properties in an
+     * organization whose next due date is on or after the given date, ordered by
+     * due date. Used to build the organization's upcoming-maintenance calendar
+     * feed. Scoped by joining each schedule's property to the organization.
+     *
+     * @param organizationId the organization whose schedules are sought
+     * @param from           inclusive lower bound for {@code nextDue}
+     * @return matching schedules, soonest first
+     */
+    List<MaintenanceSchedule> findUpcomingByOrganizationId(UUID organizationId, LocalDate from);
+
+    /**
      * Searches maintenance schedules for a property by a case-insensitive query across
      * the description field, with an optional frequency filter and cursor-based pagination.
      *
