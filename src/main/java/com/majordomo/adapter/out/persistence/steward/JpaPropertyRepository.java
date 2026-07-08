@@ -64,4 +64,50 @@ public interface JpaPropertyRepository extends JpaRepository<PropertyEntity, UUI
             + "AND p.warrantyExpiresOn < :date "
             + "AND p.warrantyNotificationSentAt IS NULL")
     List<PropertyEntity> findWithWarrantyExpiringBefore(@Param("date") LocalDate date);
+
+    /**
+     * Cursor-paginated full-text property search within an organization. When
+     * {@code query} is null the text predicate is skipped (plain org listing with
+     * optional filters); otherwise a match is any property whose generated
+     * {@code search_vector} matches, or which has a non-archived attachment whose
+     * filename matches, the {@code plainto_tsquery}. Results are ordered by id so
+     * the {@code id > cursor} keyset pagination stays stable. Postgres-specific.
+     *
+     * @param organizationId required org scope
+     * @param query          search text (null = no text filter)
+     * @param category       optional exact category filter (null = any)
+     * @param status         optional exact status filter (null = any)
+     * @param cursor         exclusive keyset cursor (null = first page)
+     * @param limit          row cap
+     * @return matching property entities, ordered by id
+     */
+    @Query(value = """
+            SELECT p.* FROM properties p
+             WHERE p.organization_id = :organizationId
+               AND (CAST(:cursor AS uuid) IS NULL OR p.id > CAST(:cursor AS uuid))
+               AND (CAST(:category AS text) IS NULL OR p.category = CAST(:category AS text))
+               AND (CAST(:status AS text) IS NULL OR p.status = CAST(:status AS text))
+               AND (
+                    CAST(:query AS text) IS NULL
+                    OR p.search_vector @@ plainto_tsquery('english', CAST(:query AS text))
+                    OR EXISTS (
+                         SELECT 1 FROM attachments a
+                          WHERE a.entity_type = 'PROPERTY'
+                            AND a.entity_id = p.id
+                            AND a.archived_at IS NULL
+                            AND to_tsvector('english',
+                                    regexp_replace(a.filename, '[^A-Za-z0-9]+', ' ', 'g'))
+                                @@ plainto_tsquery('english', CAST(:query AS text))
+                    )
+               )
+             ORDER BY p.id
+             LIMIT :limit
+            """, nativeQuery = true)
+    List<PropertyEntity> searchFullText(
+            @Param("organizationId") UUID organizationId,
+            @Param("query") String query,
+            @Param("category") String category,
+            @Param("status") String status,
+            @Param("cursor") UUID cursor,
+            @Param("limit") int limit);
 }

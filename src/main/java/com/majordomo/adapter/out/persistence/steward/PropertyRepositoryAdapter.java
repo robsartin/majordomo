@@ -84,14 +84,12 @@ public class PropertyRepositoryAdapter implements PropertyRepository {
     @Override
     public List<Property> search(UUID organizationId, String query, String category,
                                  String status, UUID cursor, int limit) {
-        var statusEnum = status != null ? PropertyStatus.valueOf(status) : null;
-        var spec = Specification.where(
-                        CursorSpecifications.<PropertyEntity>fieldEquals("organizationId", organizationId))
-                .and(CursorSpecifications.afterCursor(cursor))
-                .and(CursorSpecifications.searchAcrossFields(query, "name", "description", "location"))
-                .and(CursorSpecifications.fieldEquals("category", category))
-                .and(CursorSpecifications.fieldEquals("status", statusEnum));
-        var page = jpa.findAll(spec, PageRequest.of(0, limit, Sort.by("id")));
-        return page.stream().map(PropertyMapper::toDomain).toList();
+        // Validate status the same way the previous implementation did (throw on
+        // an unknown value) while passing the raw string to the native query,
+        // which compares it against the stored status column.
+        var statusFilter = status != null ? PropertyStatus.valueOf(status).name() : null;
+        var textFilter = (query == null || query.isBlank()) ? null : query;
+        return jpa.searchFullText(organizationId, textFilter, category, statusFilter, cursor, limit)
+                .stream().map(PropertyMapper::toDomain).toList();
     }
 }

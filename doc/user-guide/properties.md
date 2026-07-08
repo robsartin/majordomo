@@ -8,8 +8,13 @@ service manages them.
 
 `/properties` shows every non-archived property in your organization.
 
-- **Filter strip**: free-text search (matches name + description) and
-  an exact-match category dropdown.
+- **Filter strip**: full-text search and an exact-match category dropdown.
+  Search covers the property's name, description, manufacturer, model and
+  serial numbers, category, and location, plus the **filenames of its
+  attachments** — so searching "manual" finds a property whose uploaded
+  `furnace-manual.pdf` matches. Matching is word-based and stemmed
+  (searching "heats" also finds "heating"). Searching the *contents* of
+  attachment documents is planned separately (#298).
 - **+ New property** button (top right): opens the create form.
 - Click a property's name to jump to its detail page.
 
