@@ -72,10 +72,19 @@ class ScheduleServiceTest {
     @Test
     void recordServiceLinksScheduleId() {
         UUID scheduleId = UUID.randomUUID();
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(scheduleId);
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+
         var record = new ServiceRecord();
         record.setDescription("Filter replaced");
+        record.setPerformedOn(LocalDate.of(2026, 7, 20));
 
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
         when(serviceRecordRepository.save(any(ServiceRecord.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
         var result = scheduleService.recordService(scheduleId, record);
@@ -86,6 +95,45 @@ class ScheduleServiceTest {
         ArgumentCaptor<ServiceRecord> captor = ArgumentCaptor.forClass(ServiceRecord.class);
         verify(serviceRecordRepository).save(captor.capture());
         assertEquals(scheduleId, captor.getValue().getScheduleId());
+    }
+
+    @Test
+    void recordServiceAdvancesNextDueFromPerformedOn() {
+        UUID scheduleId = UUID.randomUUID();
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(scheduleId);
+        schedule.setPropertyId(UUID.randomUUID());
+        schedule.setDescription("HVAC filter");
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+
+        var record = new ServiceRecord();
+        record.setDescription("Filter replaced");
+        record.setPerformedOn(LocalDate.of(2026, 7, 20));
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        when(serviceRecordRepository.save(any(ServiceRecord.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        scheduleService.recordService(scheduleId, record);
+
+        // Advances one interval past the performed-on date, matching the dashboard
+        // "mark serviced" flow and the documented detail-page behaviour.
+        ArgumentCaptor<MaintenanceSchedule> captor =
+                ArgumentCaptor.forClass(MaintenanceSchedule.class);
+        verify(scheduleRepository).save(captor.capture());
+        assertEquals(LocalDate.of(2026, 8, 20), captor.getValue().getNextDue());
+    }
+
+    @Test
+    void recordServiceThrowsWhenScheduleMissing() {
+        UUID scheduleId = UUID.randomUUID();
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> scheduleService.recordService(scheduleId, new ServiceRecord()));
     }
 
     @Test

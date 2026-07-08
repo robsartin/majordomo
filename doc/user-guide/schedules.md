@@ -47,10 +47,11 @@ On the schedule detail page, the **+ Record service** form takes:
 | **Cost** | Optional decimal. Feeds the Ledger. |
 | **Notes** | Optional. |
 
-On save, the schedule's `nextDue` rolls forward by its frequency and
-the new service record appears in the history. The
-`MAINTENANCE_DUE` notification (if you have it enabled) clears for
-this cycle.
+On save, the schedule's `nextDue` rolls forward by one interval of its
+frequency past the **performed on** date, and the new service record
+appears in the history. The `MAINTENANCE_DUE` notification (if you have
+it enabled) clears for this cycle. This matches the dashboard's
+**Mark serviced** shortcut below — both record the work and reschedule.
 
 ### Quick "mark serviced" from the dashboard
 
