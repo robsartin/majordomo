@@ -67,4 +67,31 @@ public class MaintenanceSchedule {
 
     public BigDecimal getEstimatedCost() { return estimatedCost; }
     public void setEstimatedCost(BigDecimal estimatedCost) { this.estimatedCost = estimatedCost; }
+
+    /**
+     * Computes the next due date after servicing on {@code base}, by advancing
+     * one interval of this schedule's {@link Frequency}. {@code CUSTOM} uses
+     * {@code customIntervalDays}.
+     *
+     * @param base the date the task was completed (advance from here)
+     * @return the next due date
+     * @throws IllegalStateException if the frequency is {@code CUSTOM} but
+     *                               {@code customIntervalDays} is unset
+     */
+    public LocalDate nextDueAfter(LocalDate base) {
+        return switch (frequency) {
+            case WEEKLY -> base.plusWeeks(1);
+            case MONTHLY -> base.plusMonths(1);
+            case QUARTERLY -> base.plusMonths(3);
+            case SEMI_ANNUAL -> base.plusMonths(6);
+            case ANNUAL -> base.plusYears(1);
+            case CUSTOM -> {
+                if (customIntervalDays == null) {
+                    throw new IllegalStateException(
+                            "CUSTOM frequency requires customIntervalDays");
+                }
+                yield base.plusDays(customIntervalDays);
+            }
+        };
+    }
 }
