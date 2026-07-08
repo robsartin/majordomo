@@ -1,6 +1,7 @@
 package com.majordomo.application;
 
 import com.majordomo.domain.model.DashboardSummary;
+import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.steward.Property;
 import com.majordomo.domain.port.in.DashboardUseCase;
 import com.majordomo.domain.port.out.concierge.ContactRepository;
@@ -13,6 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -71,7 +73,10 @@ public class DashboardService implements DashboardUseCase {
         LocalDate today = LocalDate.now();
 
         var allDueSoon = scheduleRepository.findDueBefore(today.plusDays(UPCOMING_DAYS))
-                .stream().filter(s -> propertyIds.contains(s.getPropertyId())).toList();
+                .stream()
+                .filter(s -> propertyIds.contains(s.getPropertyId()))
+                .sorted(Comparator.comparing(MaintenanceSchedule::getNextDue))
+                .toList();
         var overdueItems = allDueSoon.stream()
                 .filter(s -> s.getNextDue().isBefore(today)).toList();
         var upcomingMaintenance = allDueSoon.stream()

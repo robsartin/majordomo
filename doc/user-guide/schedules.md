@@ -52,6 +52,15 @@ the new service record appears in the history. The
 `MAINTENANCE_DUE` notification (if you have it enabled) clears for
 this cycle.
 
+### Quick "mark serviced" from the dashboard
+
+The dashboard's **Upcoming Maintenance** panel (items due in the next 30
+days, soonest first) has a **Mark serviced** button on each row. Clicking
+it — after a confirmation — records a service performed today and rolls the
+schedule's `nextDue` forward by its frequency, without leaving the
+dashboard. Use it for the common case of "did it, log it"; use the detail
+form when you need to set the date, cost, or notes.
+
 ## Notifications
 
 Maintenance reminders are emailed when a schedule's `nextDue` is

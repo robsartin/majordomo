@@ -107,6 +107,23 @@ public class ScheduleService implements ManageScheduleUseCase {
     }
 
     @Override
+    public MaintenanceSchedule completeService(UUID scheduleId, LocalDate completedOn) {
+        MaintenanceSchedule schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        EntityType.MAINTENANCE_SCHEDULE.name(), scheduleId));
+
+        ServiceRecord record = new ServiceRecord();
+        record.setPropertyId(schedule.getPropertyId());
+        record.setPerformedOn(completedOn);
+        record.setDescription(schedule.getDescription());
+        recordService(scheduleId, record);
+
+        schedule.setNextDue(schedule.nextDueAfter(completedOn));
+        schedule.setUpdatedAt(Instant.now());
+        return scheduleRepository.save(schedule);
+    }
+
+    @Override
     public List<ServiceRecord> findRecordsByScheduleId(UUID scheduleId) {
         return serviceRecordRepository.findByScheduleId(scheduleId);
     }

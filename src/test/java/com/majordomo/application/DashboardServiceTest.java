@@ -130,6 +130,35 @@ class DashboardServiceTest {
     }
 
     @Test
+    void getSummaryOrdersUpcomingMaintenanceSoonestFirst() {
+        Property property = new Property();
+        property.setId(propertyId);
+        when(propertyRepository.findByOrganizationId(orgId)).thenReturn(List.of(property));
+        when(contactRepository.findByOrganizationId(orgId)).thenReturn(List.of());
+
+        MaintenanceSchedule later = new MaintenanceSchedule();
+        later.setPropertyId(propertyId);
+        later.setNextDue(LocalDate.now().plusDays(20));
+
+        MaintenanceSchedule sooner = new MaintenanceSchedule();
+        sooner.setPropertyId(propertyId);
+        sooner.setNextDue(LocalDate.now().plusDays(3));
+
+        // Repository returns them out of order; the service must sort soonest-first.
+        when(scheduleRepository.findDueBefore(any(LocalDate.class)))
+                .thenReturn(List.of(later, sooner));
+        when(serviceRecordRepository.findRecentByPropertyIds(anyList(), anyInt()))
+                .thenReturn(List.of());
+        when(ledgerQueryRepository.totalMaintenanceCostByOrganization(orgId))
+                .thenReturn(BigDecimal.ZERO);
+
+        DashboardSummary summary = dashboardService.getSummary(orgId);
+
+        assertEquals(List.of(LocalDate.now().plusDays(3), LocalDate.now().plusDays(20)),
+                summary.upcomingMaintenance().stream().map(MaintenanceSchedule::getNextDue).toList());
+    }
+
+    @Test
     void getSummaryFiltersOverdueItemsByOrgProperties() {
         Property property = new Property();
         property.setId(propertyId);

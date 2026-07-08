@@ -1,6 +1,8 @@
 package com.majordomo.application.herald;
 
 import com.majordomo.domain.model.EntityNotFoundException;
+import com.majordomo.domain.model.event.ServiceRecordCreated;
+import com.majordomo.domain.model.herald.Frequency;
 import com.majordomo.domain.model.herald.MaintenanceSchedule;
 import com.majordomo.domain.model.herald.ServiceRecord;
 import com.majordomo.domain.port.out.EventPublisher;
@@ -18,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.Mockito.mock;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -83,6 +86,45 @@ class ScheduleServiceTest {
         ArgumentCaptor<ServiceRecord> captor = ArgumentCaptor.forClass(ServiceRecord.class);
         verify(serviceRecordRepository).save(captor.capture());
         assertEquals(scheduleId, captor.getValue().getScheduleId());
+    }
+
+    @Test
+    void completeServiceRecordsServiceAndAdvancesNextDue() {
+        UUID scheduleId = UUID.randomUUID();
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(scheduleId);
+        schedule.setPropertyId(UUID.randomUUID());
+        schedule.setDescription("HVAC filter");
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        when(serviceRecordRepository.save(any(ServiceRecord.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        var updated = scheduleService.completeService(scheduleId, LocalDate.of(2026, 7, 20));
+
+        // Reschedules one interval after the completion date, not the old due date.
+        assertEquals(LocalDate.of(2026, 8, 20), updated.getNextDue());
+
+        ArgumentCaptor<ServiceRecord> recCaptor = ArgumentCaptor.forClass(ServiceRecord.class);
+        verify(serviceRecordRepository).save(recCaptor.capture());
+        ServiceRecord rec = recCaptor.getValue();
+        assertEquals(LocalDate.of(2026, 7, 20), rec.getPerformedOn());
+        assertEquals(schedule.getPropertyId(), rec.getPropertyId());
+        assertEquals(scheduleId, rec.getScheduleId());
+        verify(eventPublisher).publish(any(ServiceRecordCreated.class));
+    }
+
+    @Test
+    void completeServiceThrowsWhenScheduleMissing() {
+        UUID id = UUID.randomUUID();
+        when(scheduleRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class,
+                () -> scheduleService.completeService(id, LocalDate.now()));
     }
 
     @Test

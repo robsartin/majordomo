@@ -29,11 +29,12 @@ public class CacheEvictionListener {
     private static final Logger LOG = LoggerFactory.getLogger(CacheEvictionListener.class);
 
     private static final String SPEND_CACHE = "spend";
+    private static final String DASHBOARD_CACHE = "dashboard";
     private static final String APPLY_NOW_CACHE = "envoy-apply-now";
     private static final String APPLY_NOW_STAT_CACHE = "envoy-apply-now-stat";
 
     private static final Map<Class<?>, Set<String>> EVICTIONS = Map.of(
-            ServiceRecordCreated.class, Set.of(SPEND_CACHE),
+            ServiceRecordCreated.class, Set.of(SPEND_CACHE, DASHBOARD_CACHE),
             JobPostingScored.class, Set.of(APPLY_NOW_CACHE, APPLY_NOW_STAT_CACHE),
             PostingMarkedApplied.class, Set.of(APPLY_NOW_STAT_CACHE),
             PostingDismissed.class, Set.of(APPLY_NOW_STAT_CACHE));
