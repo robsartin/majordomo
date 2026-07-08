@@ -59,6 +59,21 @@ within the configured lead window. Per-user preferences let you mute
 the `MAINTENANCE_DUE`, `WARRANTY_EXPIRING`, and `SITE_UPDATES`
 categories independently — see your account preferences.
 
+### Weekly digest
+
+Once a week (Mondays by default), Majordomo sends owners and admins a
+single **digest email** rolling up everything due in the next 30 days —
+upcoming maintenance *and* property warranty expirations — sorted by date,
+so you have one place to plan the month. It's separate from the dated
+reminders above: an item can show up in your Monday digest and still get
+its own reminder closer to the date.
+
+The digest honours the same preferences: mute `MAINTENANCE_DUE` or
+`WARRANTY_EXPIRING` and those items drop out of the rollup. If you've muted
+both categories (or turned notifications off entirely), or simply have
+nothing coming up, **no digest is sent** — the weekly email only arrives
+when there's something to plan for.
+
 ## Subscribe to a calendar feed
 
 Prefer to see due dates in your own calendar app? Open **Calendar feed**

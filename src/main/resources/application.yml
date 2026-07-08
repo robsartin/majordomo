@@ -108,6 +108,7 @@ majordomo:
   notifications:
     cron: "0 0 8 * * *"
     warranty-cron: "0 0 9 * * *"
+    digest-cron: "0 0 8 * * MON"
 
 envoy:
   llm:
