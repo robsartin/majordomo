@@ -24,18 +24,21 @@ import static org.mockito.Mockito.when;
  */
 class CacheEvictionListenerTest {
 
-    /** Spend cache should be cleared when a service record is created. */
+    /** Spend and dashboard caches should be cleared when a service record is created. */
     @Test
-    void serviceRecordCreatedEvictsSpendCache() {
+    void serviceRecordCreatedEvictsSpendAndDashboardCaches() {
         var cacheManager = mock(CacheManager.class);
-        var cache = mock(Cache.class);
-        when(cacheManager.getCache("spend")).thenReturn(cache);
+        var spendCache = mock(Cache.class);
+        var dashboardCache = mock(Cache.class);
+        when(cacheManager.getCache("spend")).thenReturn(spendCache);
+        when(cacheManager.getCache("dashboard")).thenReturn(dashboardCache);
 
         var listener = new CacheEvictionListener(cacheManager);
         listener.onDomainEvent(new ServiceRecordCreated(
                 UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null, Instant.now()));
 
-        verify(cache).clear();
+        verify(spendCache).clear();
+        verify(dashboardCache).clear();
     }
 
     /** APPLY_NOW dashboard caches (postings + stat) should both be cleared when a posting is scored. */
