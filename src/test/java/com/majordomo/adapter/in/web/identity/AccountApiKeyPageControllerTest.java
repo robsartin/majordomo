@@ -100,6 +100,41 @@ class AccountApiKeyPageControllerTest {
         assertThat(saved.getHashedKey()).isNotEqualTo(plaintext);
     }
 
+    /** POST with scope=READ_ONLY mints a read-only key. */
+    @Test
+    @WithMockUser
+    void createWithReadOnlyScopeMintsReadOnlyKey() throws Exception {
+        when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        mvc.perform(post("/account/api-keys")
+                        .with(csrf())
+                        .param("name", "readonly runner")
+                        .param("scope", "READ_ONLY"))
+                .andExpect(status().is3xxRedirection());
+
+        ArgumentCaptor<ApiKey> captor = ArgumentCaptor.forClass(ApiKey.class);
+        verify(apiKeyRepository).save(captor.capture());
+        assertThat(captor.getValue().getScope())
+                .isEqualTo(com.majordomo.domain.model.identity.ApiKeyScope.READ_ONLY);
+    }
+
+    /** POST without a scope param defaults to READ_WRITE. */
+    @Test
+    @WithMockUser
+    void createDefaultsToReadWriteWhenScopeOmitted() throws Exception {
+        when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        mvc.perform(post("/account/api-keys")
+                        .with(csrf())
+                        .param("name", "default scope"))
+                .andExpect(status().is3xxRedirection());
+
+        ArgumentCaptor<ApiKey> captor = ArgumentCaptor.forClass(ApiKey.class);
+        verify(apiKeyRepository).save(captor.capture());
+        assertThat(captor.getValue().getScope())
+                .isEqualTo(com.majordomo.domain.model.identity.ApiKeyScope.READ_WRITE);
+    }
+
     /** POST with blank name re-renders with error (flash) and does not save. */
     @Test
     @WithMockUser

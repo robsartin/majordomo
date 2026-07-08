@@ -2,6 +2,7 @@ package com.majordomo.adapter.in.web.identity;
 
 import com.majordomo.adapter.in.web.config.ApiKeyAuthenticationFilter;
 import com.majordomo.domain.model.identity.ApiKey;
+import com.majordomo.domain.model.identity.ApiKeyScope;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import com.majordomo.domain.model.UuidFactory;
@@ -68,6 +69,7 @@ public class ApiKeyController {
 
         var now = Instant.now();
         var apiKey = new ApiKey(UuidFactory.newId(), orgId, request.name(), hashedKey);
+        apiKey.setScope(request.scope() != null ? request.scope() : ApiKeyScope.READ_WRITE);
         apiKey.setCreatedAt(now);
         apiKey.setUpdatedAt(now);
         apiKey.setExpiresAt(request.expiresAt());
@@ -79,6 +81,7 @@ public class ApiKeyController {
                 "organizationId", saved.getOrganizationId(),
                 "name", saved.getName(),
                 "key", rawKey,
+                "scope", saved.getScope().name(),
                 "createdAt", saved.getCreatedAt(),
                 "expiresAt", saved.getExpiresAt() != null ? saved.getExpiresAt() : ""
         );
@@ -101,7 +104,8 @@ public class ApiKeyController {
         return apiKeyRepository.findByOrganizationId(orgId).stream()
                 .filter(k -> k.getArchivedAt() == null)
                 .map(k -> new ApiKeyResponse(
-                        k.getId(), k.getName(), k.getCreatedAt(), k.getExpiresAt()))
+                        k.getId(), k.getName(), k.getScope(),
+                        k.getCreatedAt(), k.getExpiresAt(), k.getLastUsedAt()))
                 .toList();
     }
 
@@ -139,17 +143,21 @@ public class ApiKeyController {
      * Request body for creating a new API key.
      *
      * @param name      display name for the key
+     * @param scope     optional permission scope (defaults to {@code READ_WRITE})
      * @param expiresAt optional expiration instant
      */
-    public record CreateApiKeyRequest(String name, Instant expiresAt) { }
+    public record CreateApiKeyRequest(String name, ApiKeyScope scope, Instant expiresAt) { }
 
     /**
      * Response record for listing API keys (no plaintext key included).
      *
-     * @param id        the key ID
-     * @param name      display name
-     * @param createdAt creation timestamp
-     * @param expiresAt optional expiration timestamp
+     * @param id         the key ID
+     * @param name       display name
+     * @param scope      permission scope
+     * @param createdAt  creation timestamp
+     * @param expiresAt  optional expiration timestamp
+     * @param lastUsedAt last time the key authenticated a request (null if never)
      */
-    public record ApiKeyResponse(UUID id, String name, Instant createdAt, Instant expiresAt) { }
+    public record ApiKeyResponse(UUID id, String name, ApiKeyScope scope,
+                                 Instant createdAt, Instant expiresAt, Instant lastUsedAt) { }
 }

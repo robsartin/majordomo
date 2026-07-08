@@ -2,6 +2,7 @@ package com.majordomo.domain.port.out.identity;
 
 import com.majordomo.domain.model.identity.ApiKey;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,4 +44,14 @@ public interface ApiKeyRepository {
      * @return a list of API keys for that organization (may be empty)
      */
     List<ApiKey> findByOrganizationId(UUID organizationId);
+
+    /**
+     * Records that a key was just used to authenticate a request, updating its
+     * {@code lastUsedAt}. Intended to be cheap (a single-column update) since it
+     * runs on every authenticated API request.
+     *
+     * @param id         the API key id
+     * @param lastUsedAt the moment the key authenticated a request
+     */
+    void touchLastUsed(UUID id, Instant lastUsedAt);
 }

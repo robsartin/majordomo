@@ -4,6 +4,7 @@ import com.majordomo.adapter.in.web.config.ApiKeyAuthenticationFilter;
 import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.ApiKey;
+import com.majordomo.domain.model.identity.ApiKeyScope;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import org.springframework.stereotype.Controller;
@@ -69,12 +70,15 @@ public class AccountApiKeyPageController {
      * never stored.
      *
      * @param name       the key label (required)
+     * @param scope      the key scope ({@code READ_ONLY}/{@code READ_WRITE};
+     *                   defaults to {@code READ_WRITE} when absent or unrecognised)
      * @param orgContext authenticated user + organization
      * @param redirect   redirect attributes (used as flash for one-shot plaintext)
      * @return redirect back to the list
      */
     @PostMapping
     public String create(@RequestParam(required = false) String name,
+                         @RequestParam(required = false) String scope,
                          OrgContext orgContext,
                          RedirectAttributes redirect) {
         if (name == null || name.isBlank()) {
@@ -85,12 +89,24 @@ public class AccountApiKeyPageController {
         String hashed = ApiKeyAuthenticationFilter.sha256(plaintext);
         Instant now = Instant.now();
         ApiKey key = new ApiKey(UuidFactory.newId(), orgContext.organizationId(), name.trim(), hashed);
+        key.setScope(parseScope(scope));
         key.setCreatedAt(now);
         key.setUpdatedAt(now);
         apiKeyRepository.save(key);
         redirect.addFlashAttribute("plaintextKey", plaintext);
         redirect.addFlashAttribute("plaintextKeyName", name.trim());
         return "redirect:/account/api-keys";
+    }
+
+    private static ApiKeyScope parseScope(String scope) {
+        if (scope == null) {
+            return ApiKeyScope.READ_WRITE;
+        }
+        try {
+            return ApiKeyScope.valueOf(scope.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return ApiKeyScope.READ_WRITE;
+        }
     }
 
     /**

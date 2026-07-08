@@ -1,6 +1,7 @@
 package com.majordomo.adapter.in.web.config;
 
 import com.majordomo.domain.model.identity.ApiKey;
+import com.majordomo.domain.model.identity.ApiKeyScope;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import jakarta.servlet.FilterChain;
@@ -20,7 +21,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -149,5 +153,95 @@ class ApiKeyAuthenticationFilterTest {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(auth);
         assertEquals("apikey:" + orgId, auth.getPrincipal());
+    }
+
+    @Test
+    void readOnlyKeyAuthenticatesReadRequest() throws Exception {
+        String rawKey = "mjd_ro_read";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        UUID orgId = UUID.randomUUID();
+        var apiKey = readOnlyKey(orgId, hashedKey);
+
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.of(apiKey));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void readOnlyKeyRejectsWriteRequestWithForbidden() throws Exception {
+        String rawKey = "mjd_ro_write";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        var apiKey = readOnlyKey(UUID.randomUUID(), hashedKey);
+
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.of(apiKey));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), org.mockito.ArgumentMatchers.anyString());
+        verify(filterChain, never()).doFilter(request, response);
+    }
+
+    @Test
+    void readWriteKeyAuthenticatesWriteRequest() throws Exception {
+        String rawKey = "mjd_rw_write";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        UUID orgId = UUID.randomUUID();
+        var apiKey = new ApiKey(UUID.randomUUID(), orgId, "rw-key", hashedKey);
+        apiKey.setCreatedAt(Instant.now());
+        apiKey.setUpdatedAt(Instant.now());
+        apiKey.setScope(ApiKeyScope.READ_WRITE);
+
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.of(apiKey));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void recordsLastUsedOnSuccessfulAuthentication() throws Exception {
+        String rawKey = "mjd_touch";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        var apiKey = new ApiKey(UUID.randomUUID(), UUID.randomUUID(), "k", hashedKey);
+        apiKey.setCreatedAt(Instant.now());
+        apiKey.setUpdatedAt(Instant.now());
+
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.of(apiKey));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(apiKeyRepository).touchLastUsed(eq(apiKey.getId()), any(Instant.class));
+    }
+
+    @Test
+    void doesNotRecordLastUsedForUnknownKey() throws Exception {
+        String rawKey = "mjd_nope";
+        String hashedKey = ApiKeyAuthenticationFilter.sha256(rawKey);
+        when(request.getHeader("X-API-Key")).thenReturn(rawKey);
+        when(apiKeyRepository.findByHashedKey(hashedKey)).thenReturn(Optional.empty());
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(apiKeyRepository, never()).touchLastUsed(any(), any());
+    }
+
+    private static ApiKey readOnlyKey(UUID orgId, String hashedKey) {
+        var apiKey = new ApiKey(UUID.randomUUID(), orgId, "ro-key", hashedKey);
+        apiKey.setCreatedAt(Instant.now());
+        apiKey.setUpdatedAt(Instant.now());
+        apiKey.setScope(ApiKeyScope.READ_ONLY);
+        return apiKey;
     }
 }
