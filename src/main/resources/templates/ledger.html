@@ -15,9 +15,14 @@
 
         <main id="main-content" tabindex="-1" class="flex-1 p-6">
 
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">Ledger</h1>
-                <p class="text-sm text-gray-500">Spend across your properties.</p>
+            <div class="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Ledger</h1>
+                    <p class="text-sm text-gray-500">Spend across your properties.</p>
+                </div>
+                <a th:href="@{/ledger/export.csv}"
+                   class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                   aria-label="Download spend as CSV">Download CSV</a>
             </div>
 
             <!-- Summary cards -->

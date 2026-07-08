@@ -21,6 +21,16 @@ Below the cards, a **Spend by property** table breaks down each
 property's purchase price, maintenance to date, and total — sorted by
 total spend descending. Click a property name to jump to its detail.
 
+## Export to CSV
+
+The **Download CSV** button (top right of the Ledger page, or
+`/ledger/export.csv`) downloads the same figures as a spreadsheet-ready
+file — one row per active property (highest total first) plus an
+**All properties** rollup row, with columns *Property, Purchase price,
+Maintenance cost, Total cost*. Handy for taxes or an insurance inventory.
+Figures are all-time totals; date-range filtering and an XLSX format are
+possible future additions.
+
 ## What's counted
 
 - **Purchase price** comes from the Properties form. If you haven't
