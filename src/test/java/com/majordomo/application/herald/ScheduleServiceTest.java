@@ -98,6 +98,64 @@ class ScheduleServiceTest {
     }
 
     @Test
+    void recordServiceDefaultsPropertyIdFromScheduleWhenAbsent() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID propertyId = UUID.randomUUID();
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(scheduleId);
+        schedule.setPropertyId(propertyId);
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+
+        // The detail-page form builds a record without a propertyId; the service
+        // must fill it from the schedule so the NOT NULL column is satisfied.
+        var record = new ServiceRecord();
+        record.setDescription("Filter replaced");
+        record.setPerformedOn(LocalDate.of(2026, 7, 20));
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        when(serviceRecordRepository.save(any(ServiceRecord.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        scheduleService.recordService(scheduleId, record);
+
+        ArgumentCaptor<ServiceRecord> captor = ArgumentCaptor.forClass(ServiceRecord.class);
+        verify(serviceRecordRepository).save(captor.capture());
+        assertEquals(propertyId, captor.getValue().getPropertyId());
+    }
+
+    @Test
+    void recordServicePreservesExplicitPropertyId() {
+        UUID scheduleId = UUID.randomUUID();
+        UUID schedulePropertyId = UUID.randomUUID();
+        UUID recordPropertyId = UUID.randomUUID();
+        var schedule = new MaintenanceSchedule();
+        schedule.setId(scheduleId);
+        schedule.setPropertyId(schedulePropertyId);
+        schedule.setFrequency(Frequency.MONTHLY);
+        schedule.setNextDue(LocalDate.of(2026, 7, 15));
+
+        var record = new ServiceRecord();
+        record.setPropertyId(recordPropertyId);
+        record.setDescription("Filter replaced");
+        record.setPerformedOn(LocalDate.of(2026, 7, 20));
+
+        when(scheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+        when(serviceRecordRepository.save(any(ServiceRecord.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(scheduleRepository.save(any(MaintenanceSchedule.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        scheduleService.recordService(scheduleId, record);
+
+        ArgumentCaptor<ServiceRecord> captor = ArgumentCaptor.forClass(ServiceRecord.class);
+        verify(serviceRecordRepository).save(captor.capture());
+        assertEquals(recordPropertyId, captor.getValue().getPropertyId());
+    }
+
+    @Test
     void recordServiceAdvancesNextDueFromPerformedOn() {
         UUID scheduleId = UUID.randomUUID();
         var schedule = new MaintenanceSchedule();
