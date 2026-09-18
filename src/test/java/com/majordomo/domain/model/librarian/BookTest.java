@@ -1,7 +1,6 @@
 package com.majordomo.domain.model.librarian;
 
 import com.majordomo.domain.model.UuidFactory;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -12,8 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BookTest {
 
     @Test
-    @DisplayName("Book carries catalog, enrichment and provenance fields together")
-    void shouldRetainEveryCatalogFieldWhenPopulated() {
+    void book_retainsAllCatalogFields() {
         var id = UuidFactory.newId();
         var orgId = UuidFactory.newId();
         var now = Instant.now();
@@ -45,8 +43,7 @@ class BookTest {
     }
 
     @Test
-    @DisplayName("An unrated book is valid — rating stays null until the owner sets one")
-    void shouldLeaveRatingNullWhenNeverSet() {
+    void book_ratingStaysNullUntilSet() {
         var book = new Book();
         book.setTitle("Refactoring");
 
