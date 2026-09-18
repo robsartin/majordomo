@@ -105,6 +105,7 @@ JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify
 - **Resilience4j**: Circuit breaker and retry on notification adapter. Config in `application.yml` under `resilience4j:`.
 - **Notification categories**: `MAINTENANCE_DUE`, `WARRANTY_EXPIRING`, `SITE_UPDATES`. Users can disable categories via `UserPreferences`.
 - **Redis caching**: Dashboard summaries and spend calculations cached in Redis with 5-minute TTL. Cache evicted on domain events.
+- **Test naming**: plain descriptive camelCase — no `should` prefix, no `@DisplayName`. Where a test names its subject use `<type>_<behaviour>` (`scoreReport_capturesAllAuditFields`, `book_rejectsBlankTitle`); otherwise a bare verb phrase (`throwsOnNon2xx`, `deserialisesFromCanonicalJson`).
 - **Audit logging** (ADR-0020): All state-changing domain events produce `AuditLogEntry` records via `AuditEventListener`.
 
 ## Running Locally

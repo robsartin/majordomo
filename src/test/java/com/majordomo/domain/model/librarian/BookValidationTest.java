@@ -5,7 +5,6 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +32,7 @@ class BookValidationTest {
     }
 
     @Test
-    @DisplayName("A rating above 5 is rejected — the scale is 1 to 5")
-    void shouldRejectRatingWhenAboveFive() {
+    void book_rejectsRatingAboveFive() {
         var book = validBook();
         book.setRating(9);
 
@@ -44,8 +42,7 @@ class BookValidationTest {
     }
 
     @Test
-    @DisplayName("A rating below 1 is rejected — zero is not a rating, absence is")
-    void shouldRejectRatingWhenBelowOne() {
+    void book_rejectsRatingBelowOne() {
         var book = validBook();
         book.setRating(0);
 
@@ -55,8 +52,7 @@ class BookValidationTest {
     }
 
     @Test
-    @DisplayName("Ratings 1 through 5 are all accepted")
-    void shouldAcceptRatingWhenWithinScale() {
+    void book_acceptsRatingsOneThroughFive() {
         for (int r = 1; r <= 5; r++) {
             var book = validBook();
             book.setRating(r);
@@ -68,8 +64,7 @@ class BookValidationTest {
     }
 
     @Test
-    @DisplayName("A blank title is rejected — a book with no title cannot be deduped or matched")
-    void shouldRejectTitleWhenBlank() {
+    void book_rejectsBlankTitle() {
         var book = new Book();
         book.setTitle("   ");
 

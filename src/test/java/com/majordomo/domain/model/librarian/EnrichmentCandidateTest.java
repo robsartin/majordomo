@@ -1,7 +1,6 @@
 package com.majordomo.domain.model.librarian;
 
 import com.majordomo.domain.model.UuidFactory;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -12,8 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EnrichmentCandidateTest {
 
     @Test
-    @DisplayName("EnrichmentCandidate pairs one external match with its score and raw payload")
-    void shouldCarryScoreAndPayloadWhenMatched() {
+    void enrichmentCandidate_carriesScoreAndPayload() {
         var id = UuidFactory.newId();
         var bookId = UuidFactory.newId();
         var now = Instant.now();

@@ -1,7 +1,6 @@
 package com.majordomo.domain.model.event;
 
 import com.majordomo.domain.model.UuidFactory;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -12,8 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LibrarianEventsTest {
 
     @Test
-    @DisplayName("BookCataloged records the new book and where the row came from")
-    void shouldRecordProvenanceWhenBookCataloged() {
+    void bookCataloged_recordsTitleAndSourcePhoto() {
         var bookId = UuidFactory.newId();
         var orgId = UuidFactory.newId();
         var now = Instant.now();
@@ -28,8 +26,7 @@ class LibrarianEventsTest {
     }
 
     @Test
-    @DisplayName("BookEnriched names the source and the identifier that was applied")
-    void shouldNameSourceAndIdentifierWhenBookEnriched() {
+    void bookEnriched_namesSourceAndExternalId() {
         var bookId = UuidFactory.newId();
         var orgId = UuidFactory.newId();
         var now = Instant.now();
@@ -44,8 +41,7 @@ class LibrarianEventsTest {
     }
 
     @Test
-    @DisplayName("BookSyncedToInterestGraph records which authors were pushed and under which QID")
-    void shouldRecordAuthorsAndQidWhenSyncedToInterestGraph() {
+    void bookSyncedToInterestGraph_recordsAuthorsQidAndRating() {
         var bookId = UuidFactory.newId();
         var orgId = UuidFactory.newId();
         var now = Instant.now();

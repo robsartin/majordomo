@@ -1,6 +1,5 @@
 package com.majordomo.domain.model.librarian;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,8 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class BookImportRowTest {
 
     @Test
-    @DisplayName("BookImportRow carries one raw CSV row exactly as transcribed")
-    void shouldCarryRawColumnsWhenBuiltFromCsv() {
+    void bookImportRow_carriesRawColumnsVerbatim() {
         var row = new BookImportRow(
                 "Digital Accessibility Ethics",
                 "Lainey Feingold, Regine Gilbert",
@@ -25,8 +23,7 @@ class BookImportRowTest {
     }
 
     @Test
-    @DisplayName("A row with no rating yet is representable — the column may be blank")
-    void shouldAllowNullRatingWhenColumnBlank() {
+    void bookImportRow_allowsNullRatingWhenColumnBlank() {
         var row = new BookImportRow("Refactoring", "Martin Fowler", "2", "", null);
 
         assertThat(row.rating()).isNull();
