@@ -46,6 +46,7 @@ adapter/out/event/       — Domain event publishers
 | The Herald | Scheduling & notifications | `herald` |
 | The Ledger | Finance & cost tracking | `ledger` |
 | The Envoy | Job-posting scoring & application support | `envoy` |
+| The Librarian | Book catalog & enrichment | `librarian` |
 | Identity | Users, auth, API keys | `identity` |
 | The Dashboard | Aggregated summary | (top-level controllers) |
 
@@ -147,3 +148,4 @@ See `doc/adr/` for all architecture decision records:
 | 0020 | Audit logging strategy |
 | 0021 | Prefer test slices over @SpringBootTest |
 | 0022 | Envoy: rubric-based job-posting scoring service |
+| 0023 | Librarian: book catalog service with external enrichment |
