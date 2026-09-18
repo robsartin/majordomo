@@ -22,7 +22,7 @@ say something about what they are interested in.
 
 The immediate prompt was concrete. Two shelf photographs were transcribed into
 `doc/librarian/bookshelf-2026-09-18.csv`, 57 rows of `Title, Author, Photo,
-Notes`. Roughly half the rows carry a caveat: 11 authors were filled in from
+Notes, Rating`. Roughly half the rows carry a caveat: 11 authors were filled in from
 model knowledge because no author was visible on the spine, 12 rows are marked
 partly visible or obscured, and 3 are explicitly uncertain. That distribution
 is the shape of the problem — transcription from spines is lossy, so any
@@ -118,12 +118,23 @@ ingest endpoint. That endpoint is a prerequisite tracked on the Segue side.
 
 **Rejected on scope: syncing only books rated 3 or higher.**
 
-Decided 2026-09-18. Gating on rating keeps Segue a strict taste graph, but the
-57 seed rows carry no ratings at all, so a 3+ gate would sync nothing on day
-one and nothing further until a full rating pass. Owning a book is itself a
-signal of interest. We sync every cataloged book's author and carry the rating
-as an attribute, letting Segue weight what it receives rather than having
-majordomo withhold it.
+Decided 2026-09-18, and reconsidered the same day once a `Rating` column was
+added to the import schema. That change matters to the record: the first
+version of this decision rested partly on ratings being unavailable, and that
+reason no longer holds. The decision stands, on better grounds.
+
+Gating on rating would keep Segue a strict taste graph. We reject it because
+Segue already models a 1–5 taste rating of its own. Filtering in majordomo
+would mean this service making a judgement Segue is better equipped to make,
+using a threshold baked into an outbound adapter rather than one the graph's
+owner can revisit. It would also let the catalog and the graph drift apart
+silently — a book left unrated would simply never appear in Segue, with
+nothing to indicate it had been withheld.
+
+So we sync every cataloged book's author and carry the rating as an attribute,
+letting Segue weight what it receives rather than having majordomo withhold
+it. Owning a book is itself a signal of interest; a book rated 2 is still
+information about its owner.
 
 The Wikidata QID is the join key, which is why QID resolution (#318) gates the
 sync.
@@ -150,6 +161,25 @@ it can only do that once those exist. When it lands, extracted rows enter at
 `MEDIUM`/`LOW` confidence and feed the review queue — an image extractor
 produces the same class of uncertainty as a human reading a spine, at higher
 volume.
+
+### The CSV is a re-importable source of truth, not a one-shot seed (#316)
+
+**Rejected: treating import as insert-only, skipping rows that already exist.**
+
+Skip-on-duplicate is the obvious reading of "make import idempotent", and it
+is a trap. Until the web UI ships (#320), the CSV is the *only* way to record
+a rating, a shelf location, or a status change. An importer that skips
+existing rows would silently discard every one of those edits — the failure
+mode where "already known" is indistinguishable from "unchanged", and the user
+gets no signal that their data went nowhere.
+
+Import therefore **upserts** on the dedupe key (normalised title + author).
+A re-import may overwrite the user-authored fields — rating, location, status,
+tags, notes — and must never clobber a human-reviewed enrichment result, which
+is owned by the review queue rather than the spreadsheet.
+
+This is what makes the `Rating` column viable as a data-entry path rather than
+a field that can only ever be set once.
 
 ## Consequences
 
@@ -187,10 +217,11 @@ volume.
   reference arrives. Accepted: shelf location is currently descriptive, not
   something we filter or report on.
 - **Syncing every author will put low-signal entries into Segue.** A book
-  bought and never read contributes an author edge identical in shape to a
-  favourite. The rating attribute lets Segue discount these, but majordomo is
-  deliberately not the component making that judgement, and the graph will be
-  noisier than a ratings-gated one.
+  bought and never read contributes an author edge, and an unrated one carries
+  no weight to discount it by. Rated books ride in with their rating attached,
+  so Segue can weigh those; unrated ones arrive indistinguishable from
+  favourites. majordomo is deliberately not the component making that
+  judgement, and the graph will be noisier than a ratings-gated one.
 - **Cross-repo coordination.** #319 cannot finish until Segue ships an ingest
   endpoint, which means a second repository and a second review cycle in the
   middle of the sequence. The alternative — writing Segue's SQLite directly —

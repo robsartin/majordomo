@@ -17,13 +17,19 @@ Verified against the repo; the brief above is left as written.
 - **`V22` is correct** — the last migration on `main` is `V21__calendar_tokens.sql`.
 - **The seed CSV has 57 data rows, not 58.** Composition: 28 with no notes,
   11 with the author filled from knowledge, 12 marked partly visible or
-  obscured, 3 marked uncertain. No duplicate titles, and no rating column.
+  obscured, 3 marked uncertain. No duplicate titles.
+- **A `Rating` column was added to the CSV on 2026-09-18**, after the brief was
+  written, so the schema is now `Title, Author, Photo, Notes, Rating`. Values
+  are being filled in by hand. This reopened the Segue scope question below —
+  the answer did not change, but its reasoning did. See ADR-0023.
 
 The three open decisions were answered and are recorded in ADR-0023:
 
 1. **Segue scope** — sync *every* cataloged book's author, carrying the rating
-   as an attribute. A 3+ gate would sync nothing on day one, since no seed row
-   has a rating.
+   as an attribute. Originally decided because no seed row had a rating;
+   re-decided once the `Rating` column existed, on the stronger ground that
+   Segue models its own 1–5 taste rating and is better placed to weight or
+   filter than majordomo is to withhold.
 2. **Location** — free-text `location` string on `Book`. A Steward `Property`
    reference is speculative structure; revisit when a bookcase needs
    warranties or maintenance.
