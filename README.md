@@ -19,6 +19,7 @@ Majordomo is built as a collection of independent services, each named after a r
 | **The Herald** | Calendar/Notification Service | Maintenance schedules, service-record history, due-date reminders, warranty expirations |
 | **The Ledger** | Finance Service | Tracks costs from purchase price to lifetime maintenance spend; per-property and org-level rollups |
 | **The Envoy** | Job-Posting Scoring (ADR-0022) | LLM-graded scoring of job postings against versioned rubrics; ingest from manual paste, URL, or Greenhouse |
+| **The Librarian** | Book Catalog (ADR-0023) | Catalogs the physical book library; enriches against Open Library and Wikidata behind a review gate, and syncs authors into the Segue interest graph |
 | **Identity** | User/Auth Service | Users, organizations, memberships, API keys, OAuth links |
 | **The Dashboard** | Summary Service | Aggregated overview — properties, contacts, upcoming maintenance, total/projected spend, recent apply-now postings |
 
