@@ -1,58 +1,58 @@
 Title,Author,Photo,Notes,Rating
-Networks (Second Edition),Mark Newman,1,,
-Graph Algorithms,Mark Needham & Amy Hodler,1,,
-Graph Theory with Applications to Engineering and Computer Science,Narsingh Deo,1,,
-Graph Databases (Second Edition),"Ian Robinson, Jim Webber & Emil Eifrem",1,,
-"Networks, Crowds, and Markets",David Easley & Jon Kleinberg,1,,
-A First Course in Network Science,"Filippo Menczer, Santo Fortunato & Clayton A. Davis",1,,
-Generating Random Networks and Graphs,"A.C.C. Coolen, Alessia Annibale & Ekaterina Roberts",1,,
-The Structure and Dynamics of Networks,"Mark Newman, Albert-László Barabási & Duncan J. Watts (eds.)",1,Editors not visible in photo; filled from knowledge of the Princeton title,
-The Elements of Graphing Data,William S. Cleveland,2,,
-Visualizing Data,William S. Cleveland,2,,
-Analysis Patterns: Reusable Object Models,Martin Fowler,2,,
-The Art of Systems Architecting,Mark W. Maier & Eberhardt Rechtin,2,Authors not visible in photo; filled from knowledge,
-Modern C++ Programming with Test-Driven Development,Jeff Langr,2,,
-Handbook of Requirements and Business Analysis,Bertrand Meyer,2,,
-Digital Accessibility Ethics,"Lainey Feingold, Regine Gilbert & Chancey Fleet (eds.)",2,,
-SNMP Application Developer's Guide,Robert L. Townsend,2,Author not visible in photo; filled from knowledge,
-Advanced UNIX Programming,Marc J. Rochkind,2,Author not visible in photo; filled from knowledge,
-SNMP++: An Object-Oriented Approach to Developing Network Management Applications,Peter Erik Mellquist,2,Author not visible in photo; filled from knowledge,
-Managing Internetworks with SNMP (Second Edition),Mark A. Miller,2,,
-Spring in Action (Fifth Edition),Craig Walls,2,Author not visible in photo; filled from knowledge,
-Svelte and Sapper in Action,Mark Volkmann,2,Author not visible in photo; filled from knowledge,
-Python Workout,Reuven M. Lerner,2,Author not visible in photo; filled from knowledge,
-Designing with the Mind in Mind,Jeff Johnson,2,Spine partly obscured; author filled from knowledge,
-Efficient C++,Dov Bulka & David Mayhew,2,,
-Managing & Using MySQL,"George Reese, Randy Jay Yarger, Tim King & Hugh E. Williams",2,,
-Information Architecture for the World Wide Web,Louis Rosenfeld & Peter Morville,2,,
-Clean Architecture,Robert C. Martin,2,Three copies on shelf,
-How to Manage Your Network Using SNMP,Marshall T. Rose & Keith McCloghrie,2,,
-The Art of the Metaobject Protocol,"Gregor Kiczales, Jim des Rivières & Daniel G. Bobrow",2,,
-Numerical Techniques in Finance,Simon Benninga,2,,
-Kafka Streams in Action (Second Edition),Bill Bejeck,2,Author not visible in photo; filled from knowledge,
-The Practice of Programming,Brian W. Kernighan & Rob Pike,2,,
-Leading Lean Software Development,Mary Poppendieck & Tom Poppendieck,2,,
-Blockchain in Action,Bina Ramamurthy,2,Author not visible in photo; filled from knowledge,
-Concurrent and Real-time Systems: The CSP Approach,Steve Schneider,2,,
-Extreme Programming Explained,Kent Beck,2,,
-Help Your Boss Help You,Ken Kousen,2,Spine small; author partly legible,
-Fundamentals of Software Architecture,Mark Richards & Neal Ford,2,,
-Your Code as a Crime Scene,Adam Tornhill,2,,
-Beyond Legacy Code,David Scott Bernstein,2,Two copies on shelf,
-Pragmatic Version Control Using Git,Travis Swicegood,2,,
-Seven Languages in Seven Weeks,Bruce A. Tate,2,,
-Enterprise Integration Patterns,Gregor Hohpe & Bobby Woolf,2,"Vertical stack, left side; partly obscured",
-Refactoring,Martin Fowler,2,"Vertical stack, left side; partly obscured",
-Joe Celko's Analytics and OLAP in SQL,Joe Celko,2,"Vertical stack, left side",
-More Exceptional C++,Herb Sutter,2,"Vertical stack, left side",
-Accelerated C++,Andrew Koenig & Barbara E. Moo,2,Only 'Koenig · Moo' legible; title inferred,
-C++ Primer,Stanley B. Lippman,2,Only 'Lippman' legible; title inferred,
-GNU Emacs Manual,Richard Stallman,2,"Vertical stack, left side",
-Programming with Types,Vlad Riscutia,2,Title partly cut off; uncertain,
-Agile Modeling,Scott W. Ambler,2,"Bottom shelf, partly visible",
-Small Worlds,Duncan J. Watts,2,"Bottom shelf, partly visible",
-Making Embedded Systems,Elecia White,2,"Bottom shelf, partly visible",
-AntiPatterns,"William J. Brown, Raphael C. Malveau, Hays W. McCormick & Thomas J. Mowbray",2,"Bottom shelf, partly visible",
-Implementing Lean Software Development,Mary Poppendieck & Tom Poppendieck,2,"Bottom shelf, partly visible",
-Pattern-Oriented Software Architecture,Buschmann et al.,2,"Bottom shelf, partly visible; uncertain",
-Component-Based Development for Enterprise Systems,Paul Allen & Stuart Frost,2,"Bottom shelf, partly visible; uncertain",
+Networks (Second Edition),Mark Newman,1,,4
+Graph Algorithms,Mark Needham & Amy Hodler,1,,5
+Graph Theory with Applications to Engineering and Computer Science,Narsingh Deo,1,,5
+Graph Databases (Second Edition),"Ian Robinson, Jim Webber & Emil Eifrem",1,,5
+"Networks, Crowds, and Markets",David Easley & Jon Kleinberg,1,,4
+A First Course in Network Science,"Filippo Menczer, Santo Fortunato & Clayton A. Davis",1,,5
+Generating Random Networks and Graphs,"A.C.C. Coolen, Alessia Annibale & Ekaterina Roberts",1,,4
+The Structure and Dynamics of Networks,"Mark Newman, Albert-László Barabási & Duncan J. Watts (eds.)",1,Editors not visible in photo; filled from knowledge of the Princeton title,5
+The Elements of Graphing Data,William S. Cleveland,2,,5
+Visualizing Data,William S. Cleveland,2,,5
+Analysis Patterns: Reusable Object Models,Martin Fowler,2,,5
+The Art of Systems Architecting,Mark W. Maier & Eberhardt Rechtin,2,Authors not visible in photo; filled from knowledge,5
+Modern C++ Programming with Test-Driven Development,Jeff Langr,2,,4
+Handbook of Requirements and Business Analysis,Bertrand Meyer,2,,5
+Digital Accessibility Ethics,"Lainey Feingold, Regine Gilbert & Chancey Fleet (eds.)",2,,3
+SNMP Application Developer's Guide,Robert L. Townsend,2,Author not visible in photo; filled from knowledge,3
+Advanced UNIX Programming,Marc J. Rochkind,2,Author not visible in photo; filled from knowledge,4
+SNMP++: An Object-Oriented Approach to Developing Network Management Applications,Peter Erik Mellquist,2,Author not visible in photo; filled from knowledge,4
+Managing Internetworks with SNMP (Second Edition),Mark A. Miller,2,,3
+Spring in Action (Fifth Edition),Craig Walls,2,Author not visible in photo; filled from knowledge,5
+Svelte and Sapper in Action,Mark Volkmann,2,Author not visible in photo; filled from knowledge,4
+Python Workout,Reuven M. Lerner,2,Author not visible in photo; filled from knowledge,4
+Designing with the Mind in Mind,Jeff Johnson,2,Spine partly obscured; author filled from knowledge,4
+Efficient C++,Dov Bulka & David Mayhew,2,,4
+Managing & Using MySQL,"George Reese, Randy Jay Yarger, Tim King & Hugh E. Williams",2,,4
+Information Architecture for the World Wide Web,Louis Rosenfeld & Peter Morville,2,,4
+Clean Architecture,Robert C. Martin,2,Three copies on shelf,5
+How to Manage Your Network Using SNMP,Marshall T. Rose & Keith McCloghrie,2,,4
+The Art of the Metaobject Protocol,"Gregor Kiczales, Jim des Rivières & Daniel G. Bobrow",2,,5
+Numerical Techniques in Finance,Simon Benninga,2,,4
+Kafka Streams in Action (Second Edition),Bill Bejeck,2,Author not visible in photo; filled from knowledge,5
+The Practice of Programming,Brian W. Kernighan & Rob Pike,2,,5
+Leading Lean Software Development,Mary Poppendieck & Tom Poppendieck,2,,5
+Blockchain in Action,Bina Ramamurthy,2,Author not visible in photo; filled from knowledge,4
+Concurrent and Real-time Systems: The CSP Approach,Steve Schneider,2,,5
+Extreme Programming Explained,Kent Beck,2,,5
+Help Your Boss Help You,Ken Kousen,2,Spine small; author partly legible,4
+Fundamentals of Software Architecture,Mark Richards & Neal Ford,2,,5
+Your Code as a Crime Scene,Adam Tornhill,2,,5
+Beyond Legacy Code,David Scott Bernstein,2,Two copies on shelf,5
+Pragmatic Version Control Using Git,Travis Swicegood,2,,5
+Seven Languages in Seven Weeks,Bruce A. Tate,2,,5
+Enterprise Integration Patterns,Gregor Hohpe & Bobby Woolf,2,"Vertical stack, left side; partly obscured",5
+Refactoring,Martin Fowler,2,"Vertical stack, left side; partly obscured",5
+Joe Celko's Analytics and OLAP in SQL,Joe Celko,2,"Vertical stack, left side",5
+More Exceptional C++,Herb Sutter,2,"Vertical stack, left side",5
+Accelerated C++,Andrew Koenig & Barbara E. Moo,2,Only 'Koenig · Moo' legible; title inferred,5
+C++ Primer,Stanley B. Lippman,2,Only 'Lippman' legible; title inferred,5
+GNU Emacs Manual,Richard Stallman,2,"Vertical stack, left side",4
+Programming with Types,Vlad Riscutia,2,Title partly cut off; uncertain,5
+Agile Modeling,Scott W. Ambler,2,"Bottom shelf, partly visible",5
+Small Worlds,Duncan J. Watts,2,"Bottom shelf, partly visible",5
+Making Embedded Systems,Elecia White,2,"Bottom shelf, partly visible",5
+AntiPatterns,"William J. Brown, Raphael C. Malveau, Hays W. McCormick & Thomas J. Mowbray",2,"Bottom shelf, partly visible",4
+Implementing Lean Software Development,Mary Poppendieck & Tom Poppendieck,2,"Bottom shelf, partly visible",5
+Pattern-Oriented Software Architecture,Buschmann et al.,2,"Bottom shelf, partly visible; uncertain",5
+Component-Based Development for Enterprise Systems,Paul Allen & Stuart Frost,2,"Bottom shelf, partly visible; uncertain",5
