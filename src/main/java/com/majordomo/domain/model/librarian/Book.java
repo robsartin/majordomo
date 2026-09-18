@@ -18,6 +18,11 @@ import java.util.UUID;
  * Keeping provenance on the aggregate is what lets the review queue tell a
  * cleanly-read spine from an author filled in from memory.
  *
+ * <p>{@code normalizedKey} is the dedupe key import matches on — title and
+ * authors, normalised. It is computed in Java and stored, rather than derived
+ * by the database, so there is exactly one implementation of the normalisation
+ * for the importer and the lookup to share.
+ *
  * <p>Mutable POJO with getters and setters, following the {@code Property} and
  * {@code Contact} convention rather than the record style used by Envoy's
  * value objects.
@@ -35,6 +40,7 @@ public class Book {
     private String publisher;
     private Integer year;
     private String location;
+    private String normalizedKey;
     private Integer copies;
     private BookStatus status;
     @Min(1)
@@ -81,6 +87,9 @@ public class Book {
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+
+    public String getNormalizedKey() { return normalizedKey; }
+    public void setNormalizedKey(String normalizedKey) { this.normalizedKey = normalizedKey; }
 
     public Integer getCopies() { return copies; }
     public void setCopies(Integer copies) { this.copies = copies; }

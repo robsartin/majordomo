@@ -43,6 +43,15 @@ class BookTest {
     }
 
     @Test
+    void book_carriesNormalizedKeyForDedupe() {
+        var book = new Book();
+        book.setTitle("Refactoring");
+        book.setNormalizedKey("refactoring|martin fowler");
+
+        assertThat(book.getNormalizedKey()).isEqualTo("refactoring|martin fowler");
+    }
+
+    @Test
     void book_ratingStaysNullUntilSet() {
         var book = new Book();
         book.setTitle("Refactoring");
