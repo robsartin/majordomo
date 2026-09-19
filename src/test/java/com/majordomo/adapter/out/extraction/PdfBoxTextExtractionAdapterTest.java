@@ -89,13 +89,13 @@ class PdfBoxTextExtractionAdapterTest {
     @Test
     void veryLongText_isCappedSoTheGeneratedSearchVectorStaysLegal() {
         String huge = "furnace ".repeat(300_000);
-        assertThat(huge.length()).isGreaterThan(PdfBoxTextExtractionAdapter.MAX_TEXT_CHARS);
+        assertThat(huge.length()).isGreaterThan(ExtractedText.MAX_TEXT_CHARS);
 
         ExtractedText result = adapter.extract("text/plain",
                 new ByteArrayInputStream(huge.getBytes(StandardCharsets.UTF_8)));
 
         assertThat(result.status()).isEqualTo(ExtractionStatus.EXTRACTED);
-        assertThat(result.text()).hasSize(PdfBoxTextExtractionAdapter.MAX_TEXT_CHARS);
+        assertThat(result.text()).hasSize(ExtractedText.MAX_TEXT_CHARS);
     }
 
     /** Builds a one-page PDF, with the given text or with no text layer at all. */

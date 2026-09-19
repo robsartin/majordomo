@@ -1,7 +1,7 @@
 package com.majordomo.adapter.out.persistence.steward;
 
 import com.majordomo.IntegrationTest;
-import com.majordomo.adapter.out.extraction.PdfBoxTextExtractionAdapter;
+import com.majordomo.domain.model.attachment.ExtractedText;
 import com.majordomo.adapter.out.persistence.attachment.AttachmentEntity;
 import com.majordomo.adapter.out.persistence.attachment.JpaAttachmentRepository;
 import com.majordomo.domain.model.EntityType;
@@ -99,7 +99,7 @@ class AttachmentContentSearchIntegrationTest {
         String text = IntStream.range(0, 40_000)
                 .mapToObj(i -> "lexeme" + (424242 + i))
                 .collect(Collectors.joining(" "));
-        return text.substring(0, Math.min(text.length(), PdfBoxTextExtractionAdapter.MAX_TEXT_CHARS));
+        return text.substring(0, Math.min(text.length(), ExtractedText.MAX_TEXT_CHARS));
     }
 
     private UUID newOrg() {
