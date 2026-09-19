@@ -2,6 +2,8 @@ package com.majordomo.domain.port.out.librarian;
 
 import com.majordomo.domain.model.librarian.Book;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -21,4 +23,22 @@ public interface WikidataLookupPort {
      * @return the QID, or empty when unresolved or ambiguous
      */
     Optional<String> findQid(Book book);
+
+    /**
+     * Resolves author names to their Wikidata QIDs.
+     *
+     * <p>The QID is what the interest graph joins on — Segue's {@code add_entity}
+     * takes a QID, and what Librarian syncs is authors rather than works — so
+     * this is the lookup that gates the sync in #319.
+     *
+     * <p>An author who cannot be resolved, or whose name is ambiguous across
+     * several people, is simply absent from the result. A wrong person is worse
+     * than a missing one: it attributes someone else's work in a graph that
+     * outlives this catalog.
+     *
+     * @param authorNames the names to resolve
+     * @return name to QID for those resolved unambiguously, in the order the
+     *         names were given; never null
+     */
+    Map<String, String> findAuthorQids(List<String> authorNames);
 }
