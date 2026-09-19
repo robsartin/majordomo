@@ -56,6 +56,7 @@ is rebuilt.
 | Attachments | `majordomo-attachments` | Mounted at `/var/lib/majordomo/attachments` |
 | Prometheus | `prometheus-data` | Metrics history; dashboards live in `config/` |
 | Grafana | `grafana-data` | As above |
+| Backup archives | `majordomo-backups` | Encrypted; also copied off the machine |
 | Redis | *(none, deliberately)* | Cache only — 5-minute TTL, evicted on domain events |
 
 Attachments needed that mount and did not have it until #338: the app wrote
@@ -68,17 +69,14 @@ to check the mount and the write path still agree.
 Note that `docker compose down -v` removes named volumes. `down` on its own does
 not.
 
-## Backups — not yet solved
+## Backups
 
-Self-hosting moved the database from someone else's managed service to a disk in
-the house. Nothing currently backs it up. ADR-0024 records this as an accepted
-cost of the decision, not as something the decision handled.
-
-Two volumes need it — `majordomo-data` and `majordomo-attachments`. Until it is
-addressed, the catalog, contacts, ledger and every uploaded manual exist in
-exactly one place. Tracked in #337, which still needs decisions on off-host
-versus off-site, `pg_dump` versus snapshot, encryption, and how a restore gets
-verified.
+A sidecar takes an encrypted archive of the database and the attachments
+nightly, copies it off the machine, and restores it into a scratch database
+every seventh run to check the data actually comes back. ADR-0025 records why
+it is shaped that way; `doc/backup.md` is the runbook, including the one thing
+most likely to go wrong — the decryption key has to live somewhere that is not
+this house.
 
 ## Upgrading
 
@@ -89,4 +87,6 @@ git pull && docker compose up -d --build
 ```
 
 Flyway migrates on startup. Migrations are forward-only, so a rollback means
-restoring a backup — which is the other reason the gap above matters.
+restoring the archive taken before the upgrade — see `doc/backup.md`. Worth
+confirming last night's backup exists before starting, rather than after
+discovering the migration was a mistake.

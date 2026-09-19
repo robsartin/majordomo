@@ -63,6 +63,45 @@ services:
       timeout: 5s
       retries: 5
 
+  # Backup sidecar (ADR-0025). Shares postgres:18 with db so pg_dump and the
+  # server upgrade together — pg_dump refuses to dump a server newer than
+  # itself.
+  backup:
+    build:
+      context: .
+      dockerfile: docker/backup/Dockerfile
+    container_name: majordomo-backup
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER:-majordomo}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-majordomo}
+      PGDATABASE: majordomo
+      ATTACHMENTS_DIR: /var/lib/majordomo/attachments
+      BACKUP_DIR: /backups
+      # Public key: encrypts. Safe in .env, safe in a log.
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
+      # Private key: decrypts, and so is what restore and verification need. It
+      # lives on this host, which adds no exposure the host does not already
+      # have — the plaintext data is here too. What it must ALSO do is live
+      # somewhere else, or a fire leaves only ciphertext. See doc/backup.md.
+      BACKUP_AGE_IDENTITY: /config/identity.age
+      BACKUP_REMOTES: ${BACKUP_REMOTES:-}
+      BACKUP_AT: ${BACKUP_AT:-03:30}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_VERIFY_EVERY: ${BACKUP_VERIFY_EVERY:-7}
+      RCLONE_CONFIG: /config/rclone.conf
+    volumes:
+      # Read-write, not :ro. The backup only reads, but a restore has to put the
+      # files back, and a restore you cannot run is the failure this whole
+      # service exists to prevent.
+      - majordomo-attachments:/var/lib/majordomo/attachments
+      - majordomo-backups:/backups
+      - ./config/backup:/config:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:latest
     container_name: majordomo-prometheus
@@ -93,5 +132,6 @@ services:
 volumes:
   majordomo-data:
   majordomo-attachments:
+  majordomo-backups:
   prometheus-data:
   grafana-data:
