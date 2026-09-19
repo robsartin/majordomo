@@ -1,6 +1,6 @@
 package com.majordomo.adapter.in.web.envoy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.adapter.in.web.envoy.dto.IngestPostingRequest;

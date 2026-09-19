@@ -1,9 +1,8 @@
 package com.majordomo.adapter.out.persistence;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Codec for JSONB persistence columns. Centralises the Jackson setup and the
@@ -12,14 +11,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  *
  * <p>This is a static-only utility because the {@link ObjectMapper} is thread-safe
  * after configuration and there is exactly one canonical configuration for the
- * codebase: {@link JavaTimeModule} for {@code Instant}/{@code LocalDate} round-trip
- * and {@link Jdk8Module} for {@code Optional}.</p>
+ * codebase. On Jackson 3 that configuration is empty: {@code java.time} and
+ * {@code Optional} are handled natively, so the {@code JavaTimeModule} and
+ * {@code Jdk8Module} registrations Jackson 2 required are gone.</p>
  */
 public final class JsonColumnCodec {
 
-    private static final ObjectMapper MAPPER = JsonMapper.builder()
-            .addModule(new JavaTimeModule())
-            .build();
+    private static final ObjectMapper MAPPER = JsonMapper.builder().build();
 
     private JsonColumnCodec() { }
 

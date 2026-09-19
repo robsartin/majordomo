@@ -1,8 +1,8 @@
 package com.majordomo.adapter.out.interestgraph.librarian;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +32,9 @@ public class SegueMcpClient {
     private static final String PROTOCOL_VERSION = "2025-06-18";
     private static final String SESSION_HEADER = "Mcp-Session-Id";
 
-    private static final ObjectMapper MAPPER = new ObjectMapper()
-            .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    private static final ObjectMapper MAPPER = tools.jackson.databind.json.JsonMapper.builder()
+            .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .build();
 
     private final RestClient http;
     private final String endpoint;

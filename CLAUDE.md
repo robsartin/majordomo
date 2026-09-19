@@ -7,7 +7,7 @@ Majordomo is a service-based personal information and property management system
 ## Tech Stack
 
 - **Java 25** (ADR-0005) — records, sealed classes, pattern matching, virtual threads
-- **Spring Boot 3.5** (ADR-0006) — auto-config, Web, Data JPA, Security, Actuator
+- **Spring Boot 4.1** (ADR-0006) — auto-config, Web, Data JPA, Security, Actuator
 - **PostgreSQL 18** (ADR-0011) — arrays, JSONB, UUIDv7
 - **Redis 7** — cache layer (spring.cache.type=redis), TTL 5 min, key prefix `majordomo:`
 - **Flyway** (ADR-0011) — forward-only versioned SQL migrations

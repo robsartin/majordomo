@@ -116,6 +116,9 @@ class SecurityConfigTest {
     void dashboardRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("http://localhost/login"));
+                // Spring Security 7 issues a relative redirect here; 6.x sent an
+                // absolute "http://localhost/login". The behaviour improved and the
+                // old assertion was pinning a version detail, not a requirement.
+                .andExpect(redirectedUrl("/login"));
     }
 }
