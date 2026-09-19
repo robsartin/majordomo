@@ -4,6 +4,7 @@ import com.majordomo.IntegrationTest;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.Organization;
 import com.majordomo.domain.model.librarian.Book;
+import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.Confidence;
 import com.majordomo.domain.port.out.identity.OrganizationRepository;
@@ -113,7 +114,7 @@ class BookRepositoryIntegrationTest {
         books.save(book(mine, "Refactoring", "Martin Fowler"));
         books.save(book(theirs, "Small Worlds", "Duncan J. Watts"));
 
-        var page = books.findByOrganization(mine, null, 10);
+        var page = books.findByOrganization(mine, BookFilter.none(), null, 10);
 
         assertThat(page.items()).hasSize(1);
         assertThat(page.items().getFirst().getTitle()).isEqualTo("Refactoring");
@@ -126,11 +127,11 @@ class BookRepositoryIntegrationTest {
         books.save(book(orgId, "Second", "B Author"));
         books.save(book(orgId, "Third", "C Author"));
 
-        var first = books.findByOrganization(orgId, null, 2);
+        var first = books.findByOrganization(orgId, BookFilter.none(), null, 2);
         assertThat(first.items()).hasSize(2);
         assertThat(first.hasMore()).isTrue();
 
-        var second = books.findByOrganization(orgId, first.nextCursor(), 2);
+        var second = books.findByOrganization(orgId, BookFilter.none(), first.nextCursor(), 2);
         assertThat(second.items()).hasSize(1);
         assertThat(second.hasMore()).isFalse();
 
@@ -146,7 +147,7 @@ class BookRepositoryIntegrationTest {
         books.save(archived);
         books.save(book(orgId, "Kept", "Someone Else"));
 
-        var page = books.findByOrganization(orgId, null, 10);
+        var page = books.findByOrganization(orgId, BookFilter.none(), null, 10);
 
         assertThat(page.items()).extracting(Book::getTitle).containsExactly("Kept");
     }
@@ -170,5 +171,43 @@ class BookRepositoryIntegrationTest {
         Book replacement = books.save(book(orgId, "Refactoring", "Martin Fowler"));
 
         assertThat(replacement.getId()).isNotEqualTo(first.getId());
+    }
+
+    @Test
+    void findByOrganization_filtersByConfidenceSoDoubtfulRowsCanBeFound() {
+        UUID orgId = newOrg();
+        books.save(book(orgId, "Clean Read", "Someone"));
+        Book doubtful = book(orgId, "Half Legible", "Someone Else");
+        doubtful.setConfidence(Confidence.LOW);
+        books.save(doubtful);
+
+        var page = books.findByOrganization(
+                orgId, new com.majordomo.domain.model.librarian.BookFilter(null, Confidence.LOW, null), null, 10);
+
+        assertThat(page.items()).extracting(Book::getTitle).containsExactly("Half Legible");
+    }
+
+    @Test
+    void findByOrganization_filtersByTitleSubstringCaseInsensitively() {
+        UUID orgId = newOrg();
+        books.save(book(orgId, "Networks (Second Edition)", "Mark Newman"));
+        books.save(book(orgId, "Refactoring", "Martin Fowler"));
+
+        var page = books.findByOrganization(
+                orgId, new com.majordomo.domain.model.librarian.BookFilter(null, null, "NETWORKS"), null, 10);
+
+        assertThat(page.items()).extracting(Book::getTitle).containsExactly("Networks (Second Edition)");
+    }
+
+    @Test
+    void findByOrganization_filtersByAuthorThroughTheNormalisedKey() {
+        UUID orgId = newOrg();
+        books.save(book(orgId, "Networks (Second Edition)", "Mark Newman"));
+        books.save(book(orgId, "Refactoring", "Martin Fowler"));
+
+        var page = books.findByOrganization(
+                orgId, new com.majordomo.domain.model.librarian.BookFilter(null, null, "fowler"), null, 10);
+
+        assertThat(page.items()).extracting(Book::getTitle).containsExactly("Refactoring");
     }
 }

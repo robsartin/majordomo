@@ -4,6 +4,7 @@ import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.event.BookCataloged;
 import com.majordomo.domain.model.librarian.Book;
+import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookImportRow;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.Confidence;
@@ -48,7 +49,7 @@ class BookCatalogServiceTest {
         }
 
         @Override
-        public Page<Book> findByOrganization(UUID organizationId, UUID cursor, int limit) {
+        public Page<Book> findByOrganization(UUID organizationId, BookFilter filter, UUID cursor, int limit) {
             return new Page<>(List.copyOf(byId.values()), null, false);
         }
 

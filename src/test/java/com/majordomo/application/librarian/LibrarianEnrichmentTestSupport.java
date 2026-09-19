@@ -3,6 +3,7 @@ package com.majordomo.application.librarian;
 import com.majordomo.domain.model.Page;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.librarian.Book;
+import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.EnrichmentCandidate;
 import com.majordomo.domain.port.out.librarian.BookRepository;
@@ -50,7 +51,7 @@ final class LibrarianEnrichmentTestSupport {
         }
 
         @Override
-        public Page<Book> findByOrganization(UUID orgId, UUID cursor, int limit) {
+        public Page<Book> findByOrganization(UUID orgId, BookFilter filter, UUID cursor, int limit) {
             return new Page<>(List.copyOf(byId.values()), null, false);
         }
     }

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${book.title} + ' - Librarian - Majordomo'">Book - Librarian - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('librarian')}"></div>
+
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
+
+            <a th:href="@{/librarian}"
+               class="text-sm text-indigo-700 underline hover:text-indigo-900
+                      focus:outline-none focus:ring-2 focus:ring-indigo-600 rounded px-1">
+                Back to the catalog
+            </a>
+
+            <h1 class="text-2xl font-bold text-gray-900 mt-4 mb-1" th:text="${book.title}">Title</h1>
+            <p class="text-gray-700 mb-6"
+               th:text="${book.authors != null} ? ${#strings.listJoin(book.authors, ', ')} : 'Author unknown'">Authors</p>
+
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Catalog record</h2>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    <div><dt class="font-medium text-gray-900">Status</dt>
+                         <dd class="text-gray-700" th:text="${book.status}">OWNED</dd></div>
+                    <div><dt class="font-medium text-gray-900">Rating</dt>
+                         <dd class="text-gray-700"
+                             th:text="${book.rating != null} ? ${book.rating} + ' of 5' : 'Unrated'">5 of 5</dd></div>
+                    <div><dt class="font-medium text-gray-900">Shelf location</dt>
+                         <dd class="text-gray-700" th:text="${book.location} ?: 'Not recorded'">bookcase 1</dd></div>
+                    <div><dt class="font-medium text-gray-900">Metadata confidence</dt>
+                         <dd class="text-gray-700" th:text="${book.confidence}">HIGH</dd></div>
+                    <div><dt class="font-medium text-gray-900">Publisher</dt>
+                         <dd class="text-gray-700" th:text="${book.publisher} ?: 'Not resolved'">Publisher</dd></div>
+                    <div><dt class="font-medium text-gray-900">Year</dt>
+                         <dd class="text-gray-700" th:text="${book.year} ?: 'Not resolved'">2018</dd></div>
+                    <div><dt class="font-medium text-gray-900">ISBN-13</dt>
+                         <dd class="text-gray-700" th:text="${book.isbn13} ?: 'Not resolved'">978…</dd></div>
+                    <div><dt class="font-medium text-gray-900">Wikidata</dt>
+                         <dd class="text-gray-700" th:text="${book.wikidataQid} ?: 'Not resolved'">Q…</dd></div>
+                </dl>
+                <p class="mt-4 text-sm text-gray-700" th:if="${book.notes != null and !book.notes.isEmpty()}">
+                    <span class="font-medium text-gray-900">Transcription note:</span>
+                    <span th:text="${book.notes}">note</span>
+                </p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-4">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Proposed matches</h2>
+                <p th:if="${#lists.isEmpty(candidates)}" class="text-sm text-gray-700">
+                    No external matches have been proposed for this book.
+                </p>
+                <table th:unless="${#lists.isEmpty(candidates)}" class="min-w-full text-sm">
+                    <caption class="sr-only">External matches proposed for this book</caption>
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="text-left px-3 py-2 text-gray-900 font-semibold">Source</th>
+                            <th scope="col" class="text-left px-3 py-2 text-gray-900 font-semibold">Identifier</th>
+                            <th scope="col" class="text-left px-3 py-2 text-gray-900 font-semibold">Score</th>
+                            <th scope="col" class="text-left px-3 py-2 text-gray-900 font-semibold">Decision</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="c : ${candidates}" class="border-t border-gray-200">
+                            <td class="px-3 py-2 text-gray-700" th:text="${c.source()}">OPEN_LIBRARY</td>
+                            <td class="px-3 py-2 text-gray-700" th:text="${c.externalId()}">/works/OL1W</td>
+                            <td class="px-3 py-2 text-gray-700"
+                                th:text="${#numbers.formatDecimal(c.score(), 1, 2)}">0.92</td>
+                            <td class="px-3 py-2 text-gray-700">
+                                <span th:if="${c.isPending()}">Awaiting review</span>
+                                <span th:if="${!c.isPending() and c.accepted()}">Accepted</span>
+                                <span th:if="${!c.isPending() and !c.accepted()}">Rejected</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>
