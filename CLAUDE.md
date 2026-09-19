@@ -19,6 +19,7 @@ Majordomo is a service-based personal information and property management system
 - **Checkstyle** (ADR-0014) — Google-based style, enforced at build time
 - **ArchUnit** (ADR-0017) — architecture fitness functions enforced at test time
 - **Apache PDFBox** (ADR-0026) — attachment text extraction for full-text search
+- **Tesseract** (ADR-0027) — OCR for images and scanned PDFs, run as a subprocess
 
 ## Architecture (ADR-0002, ADR-0004)
 
@@ -98,7 +99,7 @@ JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify
 - **Javadoc** (ADR-0015): Required on all public classes and methods. Getters/setters/entities exempt.
 - **Mermaid diagrams** (ADR-0015): Use in docs and package-info.java where they aid understanding.
 - **Soft delete**: Set `archived_at` timestamp, never hard delete.
-- **Attachment search** (ADR-0026): a scheduled sweep extracts PDF/plain-text content into `attachments.extracted_text`; a generated `content_vector` joins property search. Images are `UNSUPPORTED` until OCR; scanned PDFs land as `EMPTY`, which is the queue for it.
+- **Attachment search** (ADR-0026, ADR-0027): a scheduled sweep extracts PDF/plain-text content into `attachments.extracted_text`, falling back to Tesseract OCR for images and scanned PDFs; a generated `content_vector` joins property search. Rows left at `EMPTY`/`FAILED` after OCR are the evidence for whether a vision model is worth it.
 - **UUIDv7** (ADR-0018): All entity IDs via `UuidFactory.newId()`. Time-sortable, used for cursor-based pagination. No `UUID.randomUUID()` in production code.
 - **API versioning** (ADR-0012): `X-API-Version` request header, defaults to latest.
 - **Password hashing**: Argon2id only, no BCrypt.
@@ -162,3 +163,4 @@ See `doc/adr/` for all architecture decision records:
 | 0024 | Self-host majordomo on a home server, reached over Tailscale |
 | 0025 | Encrypted, verified backups to a tailnet host and an object store |
 | 0026 | Extract attachment text with PDFBox, on a scheduled sweep |
+| 0027 | OCR scanned documents with Tesseract, in the container |

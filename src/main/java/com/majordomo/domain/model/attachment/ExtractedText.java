@@ -12,13 +12,30 @@ package com.majordomo.domain.model.attachment;
 public record ExtractedText(ExtractionStatus status, String text) {
 
     /**
-     * Records text that was found.
+     * Characters of extracted text kept per attachment.
+     *
+     * <p>Postgres refuses a tsvector over 1MB, and {@code attachments
+     * .content_vector} is generated from this text — so an oversized document
+     * would not merely search poorly, it would make the row impossible to
+     * write. The cap leaves room for the worst case, where every word is
+     * distinct, and is verified against a real database at that worst case.
+     *
+     * <p>It lives here rather than in one extractor so no extractor can bypass
+     * it: every result goes through {@link #extracted(String)}.
+     */
+    public static final int MAX_TEXT_CHARS = 500_000;
+
+    /**
+     * Records text that was found, capped at {@link #MAX_TEXT_CHARS}.
      *
      * @param text the extracted text
      * @return an EXTRACTED result carrying it
      */
     public static ExtractedText extracted(String text) {
-        return new ExtractedText(ExtractionStatus.EXTRACTED, text);
+        return new ExtractedText(ExtractionStatus.EXTRACTED,
+                text != null && text.length() > MAX_TEXT_CHARS
+                        ? text.substring(0, MAX_TEXT_CHARS)
+                        : text);
     }
 
     /**

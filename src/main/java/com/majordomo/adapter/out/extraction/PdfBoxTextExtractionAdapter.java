@@ -27,16 +27,6 @@ public class PdfBoxTextExtractionAdapter implements TextExtractionPort {
 
     private static final Logger LOG = LoggerFactory.getLogger(PdfBoxTextExtractionAdapter.class);
 
-    /**
-     * Characters of extracted text kept per attachment.
-     *
-     * <p>Postgres refuses a tsvector over 1MB, and the search column is
-     * generated from this text — so an oversized document would not merely
-     * search poorly, it would make the row impossible to write. The cap leaves
-     * room for the worst case, where every word is distinct.
-     */
-    public static final int MAX_TEXT_CHARS = 500_000;
-
     @Override
     public ExtractedText extract(String contentType, InputStream content) {
         if (contentType == null) {
@@ -74,7 +64,6 @@ public class PdfBoxTextExtractionAdapter implements TextExtractionPort {
         if (text == null || text.isBlank()) {
             return ExtractedText.empty();
         }
-        return ExtractedText.extracted(
-                text.length() > MAX_TEXT_CHARS ? text.substring(0, MAX_TEXT_CHARS) : text);
+        return ExtractedText.extracted(text);
     }
 }
