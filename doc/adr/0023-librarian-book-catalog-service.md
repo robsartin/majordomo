@@ -232,6 +232,46 @@ a field that can only ever be set once.
   and `openLibraryKey` are nullable for that reason. A book that never
   enriches is still a catalogued book.
 
+## Amendment, 2026-09-19: Segue is reached through its existing MCP transport
+
+This amends the decision recorded above under *"Segue integration is an outbound
+port, and every cataloged book syncs"*. That section said Segue would **gain an
+ingest endpoint**, tracked as a prerequisite on the Segue side. It will not, and
+the original text is left standing rather than edited.
+
+Inspecting `~/code/segue` showed the prerequisite was already met by a different
+route. Segue ships **both** transports as of its own ADR-28 — stdio and
+Streamable HTTP over `spring-ai-starter-mcp-server-webmvc` — so an HTTP server is
+already there. It also already exposes the two operations Librarian needs:
+
+- `add_entity(qid)` — fetches an entity's canonical identity from Wikidata and
+  adds or refreshes it. Declared `idempotentHint = true`, and its own
+  documentation says calling it twice with the same QID is safe. That satisfies
+  the idempotency requirement this ADR places on `InterestGraphPort` without
+  majordomo having to implement it.
+- `note_affinity(qid, rating, note?)` — records a first-person 1–5 rating,
+  stored in Segue's taste layer separately from sourced world facts.
+
+So majordomo becomes an **MCP client** of Segue rather than Segue growing a
+second, purpose-built API. The rejection of writing `~/.segue/segue.db` directly
+stands unchanged and for the same reasons; what changes is only that the
+alternative already exists.
+
+The trade-off being accepted: MCP is designed for LLM clients, so using it as
+app-to-app RPC means carrying session initialisation and tool-call framing for
+what a REST call would express more plainly. That is cheaper than asking Segue to
+maintain two public surfaces for one capability.
+
+Two further notes for whoever implements #319:
+
+- **`note_affinity` requires the entity to already be in the graph**, so the call
+  order is `add_entity` then `note_affinity`, not the reverse.
+- Segue's own tool documentation states that *"low ratings are as useful as high
+  ones: 1 and 2 are how 'not for me' gets recorded."* That independently supports
+  this ADR's decision to sync every book with its rating attached rather than
+  gating on a threshold — Segue actively wants the low ratings majordomo would
+  otherwise withhold.
+
 ## References
 
 - Design brief: `docs/superpowers/plans/2026-09-18-librarian-handoff.md`
