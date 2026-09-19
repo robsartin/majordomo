@@ -3,7 +3,6 @@ package com.majordomo.adapter.out.persistence;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
@@ -20,7 +19,6 @@ public final class JsonColumnCodec {
 
     private static final ObjectMapper MAPPER = JsonMapper.builder()
             .addModule(new JavaTimeModule())
-            .addModule(new Jdk8Module())
             .build();
 
     private JsonColumnCodec() { }

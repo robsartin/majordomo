@@ -2,10 +2,10 @@ package com.majordomo.adapter.in.web.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -23,6 +23,7 @@ import java.time.Duration;
  * <p>Defaults pulled from {@code spring.cache.redis.*} properties (TTL, key prefix).</p>
  */
 @Configuration
+@EnableCaching
 public class CacheConfig {
 
     /**
@@ -42,7 +43,6 @@ public class CacheConfig {
             @Value("${spring.cache.redis.key-prefix:}") String keyPrefix) {
         ObjectMapper mapper = JsonMapper.builder()
                 .addModule(new JavaTimeModule())
-                .addModule(new Jdk8Module())
                 .build();
         mapper.activateDefaultTyping(
                 mapper.getPolymorphicTypeValidator(),
