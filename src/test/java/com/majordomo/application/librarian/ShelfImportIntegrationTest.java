@@ -5,6 +5,7 @@ import com.majordomo.adapter.in.ingest.librarian.BookCsvReader;
 import com.majordomo.domain.model.UuidFactory;
 import com.majordomo.domain.model.identity.Organization;
 import com.majordomo.domain.model.librarian.Book;
+import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookImportRow;
 import com.majordomo.domain.model.librarian.Confidence;
 import com.majordomo.domain.port.in.librarian.CatalogBooksUseCase;
@@ -57,7 +58,7 @@ class ShelfImportIntegrationTest {
     }
 
     private List<Book> allBooks(UUID orgId) {
-        return books.findByOrganization(orgId, null, 100).items();
+        return books.findByOrganization(orgId, BookFilter.none(), null, 100).items();
     }
 
     @Test

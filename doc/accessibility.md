@@ -46,6 +46,13 @@ Colour & content
   renders representative pages through the real controllers and asserts the
   structural invariants (lang, single `<main id="main-content">`, `<h1>`, skip
   link, labelled primary nav). Add a case when you add a new top-level page.
+- **Computed contrast:** `LibrarianContrastTest`
+  (`src/test/java/com/majordomo/adapter/in/web/LibrarianContrastTest.java`)
+  resolves every Tailwind text colour used by the Librarian pages to its hex
+  value and computes the WCAG ratio against the lightest surface those pages
+  put text on. An unrecognised colour token fails rather than being skipped, so
+  a new utility class cannot slip through unverified. Extend it, or add a
+  sibling, when a new page introduces colours.
 - **Manual pass:** before merging a UI change, tab through the page start to
   finish, confirm visible focus and that the skip link works, and spot-check
   contrast (browser devtools / a contrast checker).

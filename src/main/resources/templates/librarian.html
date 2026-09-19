@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Librarian - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('librarian')}"></div>
+
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
+
+            <div class="flex items-baseline justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-900">Librarian</h1>
+                <a th:href="@{/librarian/review}"
+                   class="text-sm font-medium text-indigo-700 underline hover:text-indigo-900
+                          focus:outline-none focus:ring-2 focus:ring-indigo-600 rounded px-1"
+                   th:text="${pendingReviewCount} + ' match(es) awaiting review'">
+                    0 match(es) awaiting review
+                </a>
+            </div>
+
+            <form method="get" th:action="@{/librarian}"
+                  class="bg-white rounded-lg shadow p-4 mb-6 flex flex-wrap gap-4 items-end">
+                <div>
+                    <label for="q" class="block text-sm font-medium text-gray-900 mb-1">Search title or author</label>
+                    <input type="search" id="q" name="q" th:value="${filter.query()}"
+                           class="border border-gray-400 rounded px-3 py-2 text-gray-900
+                                  focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                </div>
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-900 mb-1">Status</label>
+                    <select id="status" name="status"
+                            class="border border-gray-400 rounded px-3 py-2 text-gray-900
+                                   focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        <option value="">Any</option>
+                        <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}"
+                                th:selected="${filter.status() != null and filter.status().name() == s.name()}">OWNED</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="confidence" class="block text-sm font-medium text-gray-900 mb-1">Confidence</label>
+                    <select id="confidence" name="confidence"
+                            class="border border-gray-400 rounded px-3 py-2 text-gray-900
+                                   focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        <option value="">Any</option>
+                        <option th:each="c : ${confidences}" th:value="${c}" th:text="${c}"
+                                th:selected="${filter.confidence() != null and filter.confidence().name() == c.name()}">HIGH</option>
+                    </select>
+                </div>
+                <button type="submit"
+                        class="bg-indigo-700 text-white rounded px-4 py-2 font-medium hover:bg-indigo-800
+                               focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+                    Apply filters
+                </button>
+            </form>
+
+            <div class="bg-white rounded-lg shadow overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <caption class="sr-only">Books in your library</caption>
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="text-left px-4 py-3 text-gray-900 font-semibold">Title</th>
+                            <th scope="col" class="text-left px-4 py-3 text-gray-900 font-semibold">Authors</th>
+                            <th scope="col" class="text-left px-4 py-3 text-gray-900 font-semibold">Status</th>
+                            <th scope="col" class="text-left px-4 py-3 text-gray-900 font-semibold">Rating</th>
+                            <th scope="col" class="text-left px-4 py-3 text-gray-900 font-semibold">Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="b : ${books}" class="border-t border-gray-200">
+                            <td class="px-4 py-3">
+                                <a th:href="@{/librarian/books/{id}(id=${b.id})}" th:text="${b.title}"
+                                   class="text-indigo-700 underline hover:text-indigo-900
+                                          focus:outline-none focus:ring-2 focus:ring-indigo-600 rounded">Title</a>
+                            </td>
+                            <td class="px-4 py-3 text-gray-700"
+                                th:text="${b.authors != null} ? ${#strings.listJoin(b.authors, ', ')} : ''">Author</td>
+                            <td class="px-4 py-3 text-gray-700" th:text="${b.status}">OWNED</td>
+                            <td class="px-4 py-3 text-gray-700">
+                                <span th:if="${b.rating != null}" th:text="${b.rating} + ' of 5'">5 of 5</span>
+                                <span th:unless="${b.rating != null}" class="text-gray-700">Unrated</span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-700" th:text="${b.confidence}">HIGH</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(books)}">
+                            <td colspan="5" class="px-4 py-6 text-center text-gray-700">
+                                No books match these filters.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p th:if="${hasMore}" class="mt-4 text-sm text-gray-700">
+                More books exist than are shown here.
+            </p>
+
+        </main>
+    </div>
+</body>
+</html>

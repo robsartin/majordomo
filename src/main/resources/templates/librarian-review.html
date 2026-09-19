@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review queue - Librarian - Majordomo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div th:replace="~{fragments/header :: header}"></div>
+
+    <div class="flex min-h-screen">
+        <div th:replace="~{fragments/sidebar :: sidebar('librarian')}"></div>
+
+        <main id="main-content" tabindex="-1" class="flex-1 p-6">
+
+            <a th:href="@{/librarian}"
+               class="text-sm text-indigo-700 underline hover:text-indigo-900
+                      focus:outline-none focus:ring-2 focus:ring-indigo-600 rounded px-1">
+                Back to the catalog
+            </a>
+
+            <h1 class="text-2xl font-bold text-gray-900 mt-4 mb-2">Review queue</h1>
+            <p class="text-gray-700 mb-6 max-w-2xl">
+                Matches below scored too low to apply automatically. Accepting one writes its
+                identifiers onto the book; rejecting leaves the book untouched and keeps the
+                decision on record so the same match is not offered again.
+            </p>
+
+            <p th:if="${#lists.isEmpty(rows)}" class="bg-white rounded-lg shadow p-6 text-gray-700">
+                Nothing is waiting for review.
+            </p>
+
+            <ul th:unless="${#lists.isEmpty(rows)}" class="space-y-4">
+                <li th:each="row : ${rows}" class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-base font-semibold text-gray-900">
+                        <a th:if="${row.book() != null}"
+                           th:href="@{/librarian/books/{id}(id=${row.book().id})}"
+                           th:text="${row.book().title}"
+                           class="text-indigo-700 underline hover:text-indigo-900
+                                  focus:outline-none focus:ring-2 focus:ring-indigo-600 rounded">Book title</a>
+                        <span th:if="${row.book() == null}" class="text-gray-900">Book no longer in the catalog</span>
+                    </h2>
+
+                    <dl class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                        <div><dt class="font-medium text-gray-900">Proposed by</dt>
+                             <dd class="text-gray-700" th:text="${row.candidate().source()}">OPEN_LIBRARY</dd></div>
+                        <div><dt class="font-medium text-gray-900">Identifier</dt>
+                             <dd class="text-gray-700" th:text="${row.candidate().externalId()}">/works/OL1W</dd></div>
+                        <div><dt class="font-medium text-gray-900">Match score</dt>
+                             <dd class="text-gray-700"
+                                 th:text="${#numbers.formatDecimal(row.candidate().score(), 1, 2)} + ' ('
+                                          + ${row.candidate().confidence()} + ')'">0.72 (MEDIUM)</dd></div>
+                    </dl>
+
+                    <div class="mt-3 flex gap-3">
+                        <form method="post"
+                              th:action="@{/librarian/review/{id}/accept(id=${row.candidate().id()})}">
+                            <button type="submit"
+                                    class="bg-indigo-700 text-white rounded px-4 py-2 text-sm font-medium
+                                           hover:bg-indigo-800 focus:outline-none focus:ring-2
+                                           focus:ring-indigo-600 focus:ring-offset-2"
+                                    th:attr="aria-label='Accept the ' + ${row.candidate().source()}
+                                             + ' match for ' + (${row.book() != null} ? ${row.book().title} : 'this book')">
+                                Accept match
+                            </button>
+                        </form>
+                        <form method="post"
+                              th:action="@{/librarian/review/{id}/reject(id=${row.candidate().id()})}">
+                            <button type="submit"
+                                    class="bg-white text-gray-900 border border-gray-400 rounded px-4 py-2
+                                           text-sm font-medium hover:bg-gray-50 focus:outline-none
+                                           focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2"
+                                    th:attr="aria-label='Reject the ' + ${row.candidate().source()}
+                                             + ' match for ' + (${row.book() != null} ? ${row.book().title} : 'this book')">
+                                Reject match
+                            </button>
+                        </form>
+                    </div>
+                </li>
+            </ul>
+
+        </main>
+    </div>
+</body>
+</html>
