@@ -20,6 +20,26 @@ A row that cannot be read fails the whole import, naming the line. That is
 deliberate: silently skipping a malformed row would leave you unable to tell a
 shelf of 57 from a shelf of 57 minus the ones that quietly failed.
 
+## Importing from a photograph
+
+`/librarian` also takes a shelf photograph directly. A vision model transcribes
+what it can see and the rows go through **the same importer as the CSV** — same
+dedupe, same upsert — so photographing a shelf you have already catalogued
+updates it rather than duplicating it.
+
+Two things are deliberately true of photo imports:
+
+- **They never arrive trusted.** However clean a spine looks, a row nobody has
+  checked is capped below `HIGH` confidence and lands in the review queue. The
+  distinction is not that the model reads worse than a person; it is that the
+  CSV passed through you and the photograph did not.
+- **The model never sets a rating.** A rating is your judgement, and one it
+  volunteers is discarded before it reaches the catalog.
+
+If the photograph cannot be read, you are told so. A failed read is never
+reported as "no books found" — you could not tell that apart from a picture of
+an empty shelf.
+
 ## Confidence, and why it exists
 
 Transcribing a spine is lossy. Each row is graded from its notes:

@@ -106,7 +106,7 @@ class ShelfImportIntegrationTest {
         int changed = first.rating() == 5 ? 3 : 5;
         var edited = rows.stream()
                 .map(r -> r.equals(first)
-                        ? new BookImportRow(r.title(), r.author(), r.photo(), r.notes(), changed)
+                        ? new BookImportRow(r.title(), r.author(), r.photo(), r.notes(), changed, r.source())
                         : r)
                 .toList();
         catalog.catalog(edited, orgId);

@@ -13,11 +13,13 @@ package com.majordomo.domain.model.librarian;
  * @param photo  which shelf photograph the row came from
  * @param notes  transcription caveats, empty when the spine read cleanly
  * @param rating the owner's 1-5 rating, or {@code null} when the column is blank
+ * @param source where the row came from, which caps how far it is trusted
  */
 public record BookImportRow(
     String title,
     String author,
     String photo,
     String notes,
-    Integer rating
+    Integer rating,
+    ImportSource source
 ) { }

@@ -47,7 +47,13 @@ class LibrarianContrastTest {
             Map.entry("indigo-600", "#4f46e5"),
             Map.entry("indigo-700", "#4338ca"),
             Map.entry("indigo-800", "#3730a3"),
-            Map.entry("indigo-900", "#312e81"));
+            Map.entry("indigo-900", "#312e81"),
+            Map.entry("green-50", "#f0fdf4"),
+            Map.entry("green-700", "#15803d"),
+            Map.entry("green-900", "#14532d"),
+            Map.entry("red-50", "#fef2f2"),
+            Map.entry("red-700", "#b91c1c"),
+            Map.entry("red-900", "#7f1d1d"));
 
     private static final String LIGHTEST_SURFACE = PALETTE.get("gray-50");
 
