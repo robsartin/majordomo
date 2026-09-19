@@ -183,6 +183,27 @@ class BackupRestoreIntegrationTest {
                 + " /usr/local/bin/verify-restore.sh '" + archive + "'";
     }
 
+    /**
+     * The scheduler sleeps until the next run rather than polling, so the
+     * arithmetic is the whole mechanism. Midnight wrap and the exact-match case
+     * are where it goes wrong, and both fail quietly: a wrap error runs at the
+     * wrong hour, and returning zero at the target time spins the loop instead
+     * of waiting a day.
+     */
+    @Test
+    void secondsUntil_waitsForTheNextOccurrenceOfTheTime() throws Exception {
+        assertThat(secondsUntil("23:30", "2026-01-01T10:00:00Z")).isEqualTo(48_600);
+        assertThat(secondsUntil("23:30", "2026-01-01T23:45:00Z")).isEqualTo(85_500);
+        assertThat(secondsUntil("23:30", "2026-01-01T23:30:00Z")).isEqualTo(86_400);
+    }
+
+    private static long secondsUntil(String target, String now) throws Exception {
+        String epoch = run(TOOLS, "date", "-u", "-d", now, "+%s").trim();
+        // bash, not sh: lib.sh is bash and the image's /bin/sh is dash.
+        return Long.parseLong(run(TOOLS, "bash", "-c",
+                ". /usr/local/bin/lib.sh && seconds_until " + target + " " + epoch).trim());
+    }
+
     private static void backup() throws Exception {
         backupKeeping(14);
     }
