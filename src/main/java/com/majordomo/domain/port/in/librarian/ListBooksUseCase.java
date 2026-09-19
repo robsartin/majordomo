@@ -11,7 +11,8 @@ import java.util.UUID;
 public interface ListBooksUseCase {
 
     /**
-     * Lists non-archived books for an organization, newest first.
+     * Lists non-archived books for an organization, oldest first by UUIDv7 id,
+     * consistent with every other cursor-paginated query in the codebase.
      *
      * @param organizationId owning org
      * @param cursor         the id to resume after, or null to start

@@ -1,62 +1,90 @@
-package com.majordomo.domain.model.librarian;
+package com.majordomo.adapter.out.persistence.librarian;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
+import com.majordomo.adapter.out.persistence.AuditTimestampListener;
+import com.majordomo.domain.model.librarian.BookStatus;
+import com.majordomo.domain.model.librarian.Confidence;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * A book in the physical library.
- *
- * <p>Carries three kinds of field side by side: what the owner recorded
- * (title, location, rating, status), what enrichment resolved against external
- * catalogs (ISBN, publisher, Wikidata QID, Open Library key), and the
- * provenance of the first two ({@code sourcePhoto}, {@code confidence}).
- * Keeping provenance on the aggregate is what lets the review queue tell a
- * cleanly-read spine from an author filled in from memory.
- *
- * <p>{@code normalizedKey} is the dedupe key import matches on — title and
- * authors, normalised. It is computed in Java and stored, rather than derived
- * by the database, so there is exactly one implementation of the normalisation
- * for the importer and the lookup to share.
- *
- * <p>Mutable POJO with getters and setters, following the {@code Property} and
- * {@code Contact} convention rather than the record style used by Envoy's
- * value objects.
- */
-public class Book {
+@EntityListeners(AuditTimestampListener.class)
+@Entity
+@Table(name = "books")
+public class BookEntity {
 
+    @Id
     private UUID id;
+
+    @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
-    @NotBlank
+
+    @Column(nullable = false)
     private String title;
+
     private String subtitle;
     private String edition;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(columnDefinition = "text[]")
     private List<String> authors;
+
     private String isbn13;
     private String publisher;
-    private Integer year;
-    private String location;
-    private String normalizedKey;
-    private Integer copies;
-    private BookStatus status;
-    @Min(1)
-    @Max(5)
-    private Integer rating;
-    private List<String> tags;
-    private String wikidataQid;
-    private String openLibraryKey;
-    private String sourcePhoto;
-    private Confidence confidence;
-    private String notes;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private Instant archivedAt;
 
-    public Book() {}
+    @Column(name = "year")
+    private Integer year;
+
+    private String location;
+
+    @Column(name = "normalized_key")
+    private String normalizedKey;
+
+    private Integer copies;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BookStatus status;
+
+    private Integer rating;
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(columnDefinition = "text[]")
+    private List<String> tags;
+
+    @Column(name = "wikidata_qid")
+    private String wikidataQid;
+
+    @Column(name = "open_library_key")
+    private String openLibraryKey;
+
+    @Column(name = "source_photo")
+    private String sourcePhoto;
+
+    @Enumerated(EnumType.STRING)
+    private Confidence confidence;
+
+    private String notes;
+
+    @Column(name = "created_at")
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+
+    @Column(name = "archived_at")
+    private Instant archivedAt;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
