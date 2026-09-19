@@ -20,8 +20,15 @@ services:
       # loopback (its ADR-28). Inside a container 127.0.0.1 is the container
       # itself, so the default would silently never reach it.
       LIBRARIAN_SEGUE_ENDPOINT: ${LIBRARIAN_SEGUE_ENDPOINT:-http://host.docker.internal:8080/mcp}
+      # Attachments are the only durable state the app writes outside Postgres.
+      # Stated absolutely because the default (./data/attachments) resolves
+      # against the image's WORKDIR — the container's writable layer, which
+      # `up -d --build` replaces, taking every manual and receipt with it (#338).
+      MAJORDOMO_STORAGE_BASE_DIR: /var/lib/majordomo/attachments
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - majordomo-attachments:/var/lib/majordomo/attachments
     depends_on:
       db:
         condition: service_healthy
@@ -85,5 +92,6 @@ services:
 
 volumes:
   majordomo-data:
+  majordomo-attachments:
   prometheus-data:
   grafana-data:
