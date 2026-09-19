@@ -86,7 +86,7 @@ public interface JpaPropertyRepository extends JpaRepository<PropertyEntity, UUI
      * {@code query} is null the text predicate is skipped (plain org listing with
      * optional filters); otherwise a match is any property whose generated
      * {@code search_vector} matches, or which has a non-archived attachment whose
-     * filename matches, the {@code plainto_tsquery}. Results are ordered by id so
+     * filename or extracted document text matches, the {@code plainto_tsquery}. Results are ordered by id so
      * the {@code id > cursor} keyset pagination stays stable. Postgres-specific.
      *
      * @param organizationId required org scope
@@ -111,9 +111,13 @@ public interface JpaPropertyRepository extends JpaRepository<PropertyEntity, UUI
                           WHERE a.entity_type = 'PROPERTY'
                             AND a.entity_id = p.id
                             AND a.archived_at IS NULL
-                            AND to_tsvector('english',
-                                    regexp_replace(a.filename, '[^A-Za-z0-9]+', ' ', 'g'))
-                                @@ plainto_tsquery('english', CAST(:query AS text))
+                            AND (
+                                 to_tsvector('english',
+                                        regexp_replace(a.filename, '[^A-Za-z0-9]+', ' ', 'g'))
+                                     @@ plainto_tsquery('english', CAST(:query AS text))
+                                 OR a.content_vector
+                                     @@ plainto_tsquery('english', CAST(:query AS text))
+                            )
                     )
                )
              ORDER BY p.id

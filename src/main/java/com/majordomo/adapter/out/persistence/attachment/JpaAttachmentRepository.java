@@ -1,5 +1,6 @@
 package com.majordomo.adapter.out.persistence.attachment;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -44,4 +45,16 @@ public interface JpaAttachmentRepository extends JpaRepository<AttachmentEntity,
         + "AND a.contentType LIKE 'image/%' AND a.archivedAt IS NULL ORDER BY a.sortOrder")
     List<AttachmentEntity> findImagesByEntityTypeAndEntityId(
             @Param("type") String type, @Param("id") UUID id);
+
+    /**
+     * Returns non-archived attachments still awaiting text extraction, oldest
+     * first so the queue drains in upload order (#298).
+     *
+     * @param pageable caps the batch size
+     * @return pending attachment entities, oldest first
+     */
+    @Query("SELECT a FROM AttachmentEntity a WHERE a.extractionStatus = "
+        + "com.majordomo.domain.model.attachment.ExtractionStatus.PENDING "
+        + "AND a.archivedAt IS NULL ORDER BY a.createdAt")
+    List<AttachmentEntity> findPendingExtraction(Pageable pageable);
 }

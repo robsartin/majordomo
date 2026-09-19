@@ -57,4 +57,13 @@ public interface AttachmentRepository {
      */
     List<Attachment> findByEntityTypeAndEntityIdAndArchivedAtIsNull(
             String entityType, UUID entityId);
+
+    /**
+     * Returns non-archived attachments whose text has not been extracted yet,
+     * oldest first, for the extraction sweep (#298).
+     *
+     * @param limit maximum number to return
+     * @return pending attachments, oldest first
+     */
+    List<Attachment> findPendingExtraction(int limit);
 }

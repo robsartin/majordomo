@@ -4,7 +4,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 
 import com.majordomo.adapter.out.persistence.AuditTimestampListener;
+import com.majordomo.domain.model.attachment.ExtractionStatus;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -53,6 +56,16 @@ public class AttachmentEntity {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "extraction_status", nullable = false)
+    private ExtractionStatus extractionStatus = ExtractionStatus.PENDING;
+
+    @Column(name = "extracted_text")
+    private String extractedText;
+
+    @Column(name = "text_extracted_at")
+    private Instant textExtractedAt;
+
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -88,4 +101,17 @@ public class AttachmentEntity {
 
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+
+    public ExtractionStatus getExtractionStatus() { return extractionStatus; }
+    public void setExtractionStatus(ExtractionStatus extractionStatus) {
+        this.extractionStatus = extractionStatus;
+    }
+
+    public String getExtractedText() { return extractedText; }
+    public void setExtractedText(String extractedText) { this.extractedText = extractedText; }
+
+    public Instant getTextExtractedAt() { return textExtractedAt; }
+    public void setTextExtractedAt(Instant textExtractedAt) {
+        this.textExtractedAt = textExtractedAt;
+    }
 }
