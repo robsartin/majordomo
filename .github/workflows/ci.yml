@@ -30,3 +30,41 @@ jobs:
           name: test-reports
           path: target/surefire-reports/
           retention-days: 7
+
+  # Separate job, not extra steps on `build`, so the fast unit feedback still
+  # arrives in well under a minute while this runs alongside it. Making the
+  # integration tests part of `build` would have put Docker image pulls on the
+  # critical path of every result.
+  #
+  # These tests need Docker for Testcontainers, which ubuntu-latest provides.
+  # They were not running anywhere before #344 — `mvn verify` without the
+  # profile skips them and reports success, so their absence looked exactly
+  # like their passing.
+  integration-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      # Runs the unit tests a second time, which the `build` job has already
+      # done. Splitting them apart costs more configuration than the seconds it
+      # would save, and the two jobs run in parallel anyway.
+      - name: Build and test, with integration tests
+        run: ./mvnw -Pintegration-tests verify --batch-mode --no-transfer-progress
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+          retention-days: 7
