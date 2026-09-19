@@ -108,6 +108,12 @@ JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify
 - **Test naming**: plain descriptive camelCase — no `should` prefix, no `@DisplayName`. Where a test names its subject use `<type>_<behaviour>` (`scoreReport_capturesAllAuditFields`, `book_rejectsBlankTitle`); otherwise a bare verb phrase (`throwsOnNon2xx`, `deserialisesFromCanonicalJson`).
 - **Audit logging** (ADR-0020): All state-changing domain events produce `AuditLogEntry` records via `AuditEventListener`.
 
+## Deployment
+
+Self-hosted on a home server, reached over Tailscale (ADR-0024). See
+`doc/deployment.md`. Segue must run on the same host — it is loopback-only, so
+the Librarian's interest-graph sync cannot cross a machine boundary.
+
 ## Running Locally
 
 Requires PostgreSQL and Redis:
@@ -150,3 +156,4 @@ See `doc/adr/` for all architecture decision records:
 | 0021 | Prefer test slices over @SpringBootTest |
 | 0022 | Envoy: rubric-based job-posting scoring service |
 | 0023 | Librarian: book catalog service with external enrichment |
+| 0024 | Self-host majordomo on a home server, reached over Tailscale |
