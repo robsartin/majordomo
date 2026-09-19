@@ -59,7 +59,7 @@ class EnrichmentCandidateRepositoryIntegrationTest {
     private EnrichmentCandidate candidate(UUID bookId, double score, Confidence confidence) {
         return new EnrichmentCandidate(
                 UuidFactory.newId(), bookId, "OPEN_LIBRARY", "OL" + score,
-                score, confidence, Map.of("publisher", "OUP"), Instant.now());
+                score, confidence, Map.of("publisher", "OUP"), Instant.now(), null, null);
     }
 
     @Test
