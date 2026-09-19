@@ -13,7 +13,7 @@ class BookImportRowTest {
                 "Lainey Feingold, Regine Gilbert",
                 "2",
                 "Author not visible in photo; filled from knowledge",
-                3);
+                3, ImportSource.CSV);
 
         assertThat(row.title()).isEqualTo("Digital Accessibility Ethics");
         assertThat(row.author()).isEqualTo("Lainey Feingold, Regine Gilbert");
@@ -24,7 +24,7 @@ class BookImportRowTest {
 
     @Test
     void bookImportRow_allowsNullRatingWhenColumnBlank() {
-        var row = new BookImportRow("Refactoring", "Martin Fowler", "2", "", null);
+        var row = new BookImportRow("Refactoring", "Martin Fowler", "2", "", null, ImportSource.CSV);
 
         assertThat(row.rating()).isNull();
     }

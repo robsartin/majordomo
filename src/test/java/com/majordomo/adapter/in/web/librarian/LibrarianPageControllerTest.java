@@ -12,11 +12,13 @@ import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.Confidence;
 import com.majordomo.domain.model.librarian.EnrichmentCandidate;
+import com.majordomo.domain.port.in.librarian.CatalogBooksUseCase;
 import com.majordomo.domain.port.in.librarian.ListBooksUseCase;
 import com.majordomo.domain.port.in.librarian.ReviewEnrichmentUseCase;
 import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 import com.majordomo.domain.port.out.librarian.BookRepository;
 import com.majordomo.domain.port.out.librarian.EnrichmentCandidateRepository;
+import com.majordomo.domain.port.out.librarian.ShelfPhotoExtractionPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +41,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -55,6 +59,8 @@ class LibrarianPageControllerTest {
     @Autowired MockMvc mvc;
 
     @MockitoBean ListBooksUseCase listBooks;
+    @MockitoBean CatalogBooksUseCase catalog;
+    @MockitoBean ShelfPhotoExtractionPort shelfPhotos;
     @MockitoBean ReviewEnrichmentUseCase review;
     @MockitoBean BookRepository books;
     @MockitoBean EnrichmentCandidateRepository candidates;
@@ -192,5 +198,73 @@ class LibrarianPageControllerTest {
                 .andExpect(status().is4xxClientError());
 
         verify(review, never()).accept(any(), any());
+    }
+
+    private org.springframework.mock.web.MockMultipartFile jpeg(byte[] bytes) {
+        return new org.springframework.mock.web.MockMultipartFile(
+                "photo", "shelf-1.jpg", "image/jpeg", bytes);
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void importPhoto_extractsThenImportsThroughTheSameCatalogPath() throws Exception {
+        var extracted = List.of(new com.majordomo.domain.model.librarian.BookImportRow(
+                "Refactoring", "Martin Fowler", "shelf-1.jpg", "",
+                null, com.majordomo.domain.model.librarian.ImportSource.PHOTO_EXTRACTION));
+        when(shelfPhotos.extract(any(), eq("image/jpeg"), anyString())).thenReturn(extracted);
+        when(catalog.catalog(eq(extracted), eq(ORG_ID))).thenReturn(List.of(book(ORG_ID, "Refactoring")));
+
+        mvc.perform(multipart("/librarian/import/photo").file(jpeg(new byte[]{1, 2, 3})).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/librarian"));
+
+        verify(catalog).catalog(extracted, ORG_ID);
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void importPhoto_reportsAFailedReadRatherThanAnEmptyShelf() throws Exception {
+        when(shelfPhotos.extract(any(), anyString(), anyString()))
+                .thenThrow(new RuntimeException("model unavailable"));
+
+        mvc.perform(multipart("/librarian/import/photo").file(jpeg(new byte[]{1})).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeExists("importError"));
+
+        verify(catalog, never()).catalog(any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void importPhoto_saysSoWhenNothingWasLegible() throws Exception {
+        when(shelfPhotos.extract(any(), anyString(), anyString())).thenReturn(List.of());
+
+        mvc.perform(multipart("/librarian/import/photo").file(jpeg(new byte[]{1})).with(csrf()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeExists("importMessage"));
+
+        verify(catalog, never()).catalog(any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "robsartin")
+    void importPhoto_refusesAFileThatIsNotAnImage() throws Exception {
+        var pdf = new org.springframework.mock.web.MockMultipartFile(
+                "photo", "shelf.pdf", "application/pdf", new byte[]{1});
+
+        mvc.perform(multipart("/librarian/import/photo").file(pdf).with(csrf()))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeExists("importError"));
+
+        verify(shelfPhotos, never()).extract(any(), any(), any());
+    }
+
+    @Test
+    void importPhoto_withoutCsrfIsRejectedAndReadsNothing() throws Exception {
+        mvc.perform(multipart("/librarian/import/photo").file(jpeg(new byte[]{1})))
+                .andExpect(status().is4xxClientError());
+
+        verify(shelfPhotos, never()).extract(any(), any(), any());
     }
 }

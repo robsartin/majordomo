@@ -7,6 +7,7 @@ import com.majordomo.domain.model.librarian.BookImportRow;
 import com.majordomo.domain.model.librarian.BookKeys;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.Confidence;
+import com.majordomo.domain.model.librarian.ImportSource;
 import com.majordomo.domain.port.in.librarian.CatalogBooksUseCase;
 import com.majordomo.domain.port.out.EventPublisher;
 import com.majordomo.domain.port.out.librarian.BookRepository;
@@ -97,7 +98,7 @@ public class BookCatalogService implements CatalogBooksUseCase {
         book.setAuthors(authors);
         book.setSourcePhoto(row.photo());
         book.setNotes(row.notes());
-        book.setConfidence(confidenceFrom(row.notes()));
+        book.setConfidence(cap(confidenceFrom(row.notes()), row.source()));
         if (row.rating() != null) {
             book.setRating(row.rating());
         }
@@ -114,6 +115,19 @@ public class BookCatalogService implements CatalogBooksUseCase {
      * on shelf"). Only the first two say anything about whether the metadata can
      * be trusted, and the difference is what the review queue works from.
      */
+    /**
+     * Caps what an unreviewed source may claim. A row a model read off a
+     * photograph never grades HIGH however clean it looks, because nobody has
+     * checked it — that is the whole reason the review queue exists (ADR-0023).
+     * A row the model itself flagged as doubtful keeps its lower grade.
+     */
+    private Confidence cap(Confidence graded, ImportSource source) {
+        if (source == ImportSource.PHOTO_EXTRACTION && graded == Confidence.HIGH) {
+            return Confidence.MEDIUM;
+        }
+        return graded;
+    }
+
     private Confidence confidenceFrom(String notes) {
         if (notes == null || notes.isBlank()) {
             return Confidence.HIGH;

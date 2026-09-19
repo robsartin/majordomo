@@ -6,6 +6,7 @@ import com.majordomo.domain.model.event.BookCataloged;
 import com.majordomo.domain.model.librarian.Book;
 import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookImportRow;
+import com.majordomo.domain.model.librarian.ImportSource;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.Confidence;
 import com.majordomo.domain.port.out.EventPublisher;
@@ -73,7 +74,11 @@ class BookCatalogServiceTest {
     }
 
     private BookImportRow row(String title, String author, String notes, Integer rating) {
-        return new BookImportRow(title, author, "2", notes, rating);
+        return new BookImportRow(title, author, "2", notes, rating, ImportSource.CSV);
+    }
+
+    private BookImportRow extractedRow(String title, String author, String notes) {
+        return new BookImportRow(title, author, "2", notes, null, ImportSource.PHOTO_EXTRACTION);
     }
 
     @Test
@@ -228,5 +233,30 @@ class BookCatalogServiceTest {
         service.catalog(List.of(row("Refactoring", "Martin Fowler", "", 4)), otherOrg);
 
         assertThat(repository.count()).isEqualTo(2);
+    }
+
+    @Test
+    void catalog_neverGradesAPhotoExtractedRowAsHighConfidence() {
+        service.catalog(List.of(extractedRow("Refactoring", "Martin Fowler", "")), orgId);
+
+        assertThat(repository.byId.values().iterator().next().getConfidence())
+                .isNotEqualTo(Confidence.HIGH)
+                .isEqualTo(Confidence.MEDIUM);
+    }
+
+    @Test
+    void catalog_keepsAPhotoExtractedRowLowWhenTheModelFlaggedDoubt() {
+        service.catalog(List.of(extractedRow("C++ Primer", "Stanley Lippman", "title inferred")), orgId);
+
+        assertThat(repository.byId.values().iterator().next().getConfidence())
+                .isEqualTo(Confidence.LOW);
+    }
+
+    @Test
+    void catalog_stillGradesACleanCsvRowAsHighConfidence() {
+        service.catalog(List.of(row("Refactoring", "Martin Fowler", "", 5)), orgId);
+
+        assertThat(repository.byId.values().iterator().next().getConfidence())
+                .isEqualTo(Confidence.HIGH);
     }
 }

@@ -75,6 +75,8 @@ resilience4j:
         base-config: default
       librarian-metadata:
         base-config: default
+      librarian-llm:
+        base-config: default
   retry:
     configs:
       default:
@@ -97,6 +99,9 @@ resilience4j:
         base-config: default
         retry-exceptions:
           - com.majordomo.adapter.out.metadata.librarian.MetadataSourceException
+      librarian-llm:
+        base-config: default
+        max-attempts: 2
   timelimiter:
     instances:
       notification:

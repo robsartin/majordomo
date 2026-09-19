@@ -1,6 +1,7 @@
 package com.majordomo.adapter.in.ingest.librarian;
 
 import com.majordomo.domain.model.librarian.BookImportRow;
+import com.majordomo.domain.model.librarian.ImportSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -64,7 +65,8 @@ public class BookCsvReader {
                 fields.get(1).trim(),
                 fields.get(2).trim(),
                 fields.get(3).trim(),
-                parseRating(fields.get(4).trim(), lineNumber));
+                parseRating(fields.get(4).trim(), lineNumber),
+                ImportSource.CSV);
     }
 
     private Integer parseRating(String raw, int lineNumber) {

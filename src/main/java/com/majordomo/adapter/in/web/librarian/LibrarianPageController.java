@@ -7,18 +7,25 @@ import com.majordomo.domain.model.librarian.BookFilter;
 import com.majordomo.domain.model.librarian.BookStatus;
 import com.majordomo.domain.model.librarian.Confidence;
 import com.majordomo.domain.model.librarian.EnrichmentCandidate;
+import com.majordomo.domain.port.in.librarian.CatalogBooksUseCase;
 import com.majordomo.domain.port.in.librarian.ListBooksUseCase;
 import com.majordomo.domain.port.in.librarian.ReviewEnrichmentUseCase;
 import com.majordomo.domain.port.out.librarian.BookRepository;
 import com.majordomo.domain.port.out.librarian.EnrichmentCandidateRepository;
+import com.majordomo.domain.port.out.librarian.ShelfPhotoExtractionPort;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -34,10 +41,14 @@ import java.util.UUID;
 @Controller
 public class LibrarianPageController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(LibrarianPageController.class);
+
     private static final int DEFAULT_LIMIT = 100;
     private static final int REVIEW_LIMIT = 50;
 
     private final ListBooksUseCase listBooks;
+    private final CatalogBooksUseCase catalog;
+    private final ShelfPhotoExtractionPort shelfPhotos;
     private final ReviewEnrichmentUseCase review;
     private final BookRepository books;
     private final EnrichmentCandidateRepository candidates;
@@ -54,16 +65,22 @@ public class LibrarianPageController {
     /**
      * Constructs the controller.
      *
-     * @param listBooks  inbound port for catalog listing
-     * @param review     inbound port for the review queue
-     * @param books      book repository, for detail lookups
-     * @param candidates candidate repository, for a book's proposed matches
+     * @param listBooks   inbound port for catalog listing
+     * @param catalog     inbound port for importing rows
+     * @param shelfPhotos outbound port for reading a shelf photograph
+     * @param review      inbound port for the review queue
+     * @param books       book repository, for detail lookups
+     * @param candidates  candidate repository, for a book's proposed matches
      */
     public LibrarianPageController(ListBooksUseCase listBooks,
+                                   CatalogBooksUseCase catalog,
+                                   ShelfPhotoExtractionPort shelfPhotos,
                                    ReviewEnrichmentUseCase review,
                                    BookRepository books,
                                    EnrichmentCandidateRepository candidates) {
         this.listBooks = listBooks;
+        this.catalog = catalog;
+        this.shelfPhotos = shelfPhotos;
         this.review = review;
         this.books = books;
         this.candidates = candidates;
@@ -160,5 +177,58 @@ public class LibrarianPageController {
     public String reject(@PathVariable UUID candidateId, OrgContext orgContext) {
         review.reject(candidateId, orgContext.organizationId());
         return "redirect:/librarian/review";
+    }
+
+    /**
+     * Reads an uploaded shelf photograph and imports what it finds.
+     *
+     * <p>Extracted rows go through the same importer as the CSV, so they dedupe
+     * and upsert identically. They arrive marked {@code PHOTO_EXTRACTION}, which
+     * caps them below HIGH confidence — nobody has checked them, so they belong
+     * in the review queue rather than the catalog's trusted tier (ADR-0023).
+     *
+     * <p>A failed read is reported as a failed read. Degrading it to "no books
+     * found" would be indistinguishable from a photograph of an empty shelf.
+     *
+     * @param photo      the uploaded image
+     * @param orgContext the authenticated context
+     * @param flash      redirect attributes carrying the outcome message
+     * @return a redirect to the catalog
+     */
+    @PostMapping("/librarian/import/photo")
+    public String importPhoto(@RequestParam("photo") MultipartFile photo,
+                              OrgContext orgContext,
+                              RedirectAttributes flash) {
+        if (photo == null || photo.isEmpty()) {
+            flash.addFlashAttribute("importError", "Choose a photograph to import.");
+            return "redirect:/librarian";
+        }
+        String mediaType = photo.getContentType();
+        if (mediaType == null || !mediaType.startsWith("image/")) {
+            flash.addFlashAttribute("importError",
+                    "That file is not an image (" + mediaType + ").");
+            return "redirect:/librarian";
+        }
+        try {
+            var rows = shelfPhotos.extract(
+                    photo.getBytes(), mediaType, photo.getOriginalFilename());
+            if (rows.isEmpty()) {
+                flash.addFlashAttribute("importMessage",
+                        "No books were legible in that photograph.");
+                return "redirect:/librarian";
+            }
+            var imported = catalog.catalog(rows, orgContext.organizationId());
+            flash.addFlashAttribute("importMessage",
+                    imported.size() + " book(s) imported from the photograph. "
+                            + "They are marked for review until you confirm them.");
+        } catch (IOException e) {
+            LOG.warn("Could not read uploaded shelf photo: {}", e.toString());
+            flash.addFlashAttribute("importError", "That upload could not be read.");
+        } catch (RuntimeException e) {
+            LOG.warn("Shelf photo extraction failed: {}", e.toString());
+            flash.addFlashAttribute("importError",
+                    "The photograph could not be read. The catalog is unchanged.");
+        }
+        return "redirect:/librarian";
     }
 }

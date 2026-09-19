@@ -48,4 +48,21 @@ public class LlmConfiguration {
             @Value("${envoy.llm.max-tokens:4096}") int maxTokens) {
         return new AnthropicMessageClient(client, model, maxTokens);
     }
+
+    /**
+     * Wraps the SDK client for Librarian's shelf-photo reads. Separate from the
+     * Envoy client so the two do not share a circuit breaker.
+     *
+     * @param client    the SDK client
+     * @param model     model id ({@code librarian.llm.model})
+     * @param maxTokens response length cap ({@code librarian.llm.max-tokens})
+     * @return the vision client
+     */
+    @Bean
+    public AnthropicVisionClient anthropicVisionClient(
+            AnthropicClient client,
+            @Value("${librarian.llm.model:claude-opus-5}") String model,
+            @Value("${librarian.llm.max-tokens:8192}") int maxTokens) {
+        return new AnthropicVisionClient(client, model, maxTokens);
+    }
 }
