@@ -60,3 +60,7 @@ data/
 
 ### Docker ###
 docker-compose.override.yml
+
+# Backup secrets — the age identity and rclone credentials (see config/backup/README.md)
+config/backup/identity.age
+config/backup/rclone.conf

@@ -110,15 +110,16 @@ JaCoCo writes a coverage report to `target/site/jacoco/index.html` after `verify
 
 ## Deployment
 
-Self-hosted on a home server, reached over Tailscale (ADR-0024). See
-`doc/deployment.md`. Segue must run on the same host — it is loopback-only, so
+Self-hosted on a home server, reached over Tailscale (ADR-0024), with nightly
+encrypted backups that verify their own restores (ADR-0025). See
+`doc/deployment.md` and `doc/backup.md`. Segue must run on the same host — it is loopback-only, so
 the Librarian's interest-graph sync cannot cross a machine boundary.
 
 ## Running Locally
 
 Requires PostgreSQL and Redis:
 ```bash
-docker-compose up -d    # PostgreSQL 18 + Redis 7
+docker compose up -d db redis    # PostgreSQL 18 + Redis 7
 ./mvnw spring-boot:run
 
 # Access:
@@ -157,3 +158,4 @@ See `doc/adr/` for all architecture decision records:
 | 0022 | Envoy: rubric-based job-posting scoring service |
 | 0023 | Librarian: book catalog service with external enrichment |
 | 0024 | Self-host majordomo on a home server, reached over Tailscale |
+| 0025 | Encrypted, verified backups to a tailnet host and an object store |
