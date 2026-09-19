@@ -6,10 +6,22 @@ services:
       - "9090:9090"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/majordomo
-      SPRING_DATASOURCE_USERNAME: majordomo
-      SPRING_DATASOURCE_PASSWORD: majordomo
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-majordomo}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-majordomo}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      # Secrets. Absent, the app still starts: OAuth falls back to form login
+      # and Envoy/Librarian LLM calls fail at the point of use rather than at
+      # boot. Set them in .env for anything beyond a smoke test.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-placeholder}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-placeholder}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Segue runs on the host, not in this compose file, and it binds to
+      # loopback (its ADR-28). Inside a container 127.0.0.1 is the container
+      # itself, so the default would silently never reach it.
+      LIBRARIAN_SEGUE_ENDPOINT: ${LIBRARIAN_SEGUE_ENDPOINT:-http://host.docker.internal:8080/mcp}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
@@ -21,8 +33,8 @@ services:
     container_name: majordomo-db
     environment:
       POSTGRES_DB: majordomo
-      POSTGRES_USER: majordomo
-      POSTGRES_PASSWORD: majordomo
+      POSTGRES_USER: ${POSTGRES_USER:-majordomo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-majordomo}
     ports:
       - "3946:5432"
     volumes:
