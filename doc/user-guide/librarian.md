@@ -65,6 +65,29 @@ you. The gate exists because a catalog will return something plausible for every
 half-read spine, and a wrong identifier spreads: into the Wikidata lookup, and
 from there into the interest graph, where it is much harder to notice.
 
+## Sending authors to Segue
+
+Books feed your interest graph. For each book, the Librarian resolves its
+authors to Wikidata identifiers and pushes them into Segue, carrying your rating
+alongside.
+
+Three rules keep it honest:
+
+- **An author who cannot be resolved unambiguously is skipped**, never pushed
+  under a guess. A wrong identifier attributes someone else's work in a graph
+  that outlives this catalog.
+- **Every catalogued book syncs** — there is no rating threshold. Segue models
+  its own taste scale and is better placed to weight what it receives than the
+  Librarian is to withhold it. Segue's own guidance is that low ratings are as
+  useful as high ones.
+- **An unrated book contributes its author but no opinion.** Segue requires a
+  rating to record a preference, and the Librarian has none to give, so it adds
+  the author and stops there rather than inventing one.
+
+Segue listens only on your own machine and has no password, so this works when
+both are running locally. If Segue is not reachable, the sync fails and says so
+— the catalog is unaffected.
+
 ## Finding things
 
 `/librarian` lists the catalog and filters by status, by confidence, and by a

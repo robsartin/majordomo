@@ -2,6 +2,8 @@ package com.majordomo.domain.port.out.librarian;
 
 import com.majordomo.domain.model.librarian.Book;
 
+import java.util.Map;
+
 /**
  * Outbound port for the personal interest graph that books feed into.
  *
@@ -17,7 +19,10 @@ public interface InterestGraphPort {
      * Pushes a book's authors into the graph, carrying its rating as an
      * attribute for the graph to weight.
      *
-     * @param book the book to push; must have a resolved Wikidata QID
+     * @param book       the book to push
+     * @param authorQids  author name to Wikidata QID, resolved by the caller;
+     *                    the graph joins on the QID, so an author without one
+     *                    cannot be pushed
      */
-    void syncBook(Book book);
+    void syncBook(Book book, Map<String, String> authorQids);
 }
