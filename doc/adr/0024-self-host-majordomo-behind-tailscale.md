@@ -87,9 +87,31 @@ loopback by default and is configurable for the container case, where
 - **The home server becomes infrastructure.** Rebooting it for unrelated reasons
   takes the catalog offline.
 
+## Amendment — 2026-09-19
+
+The consequence above, "we own uptime and backups", scoped the obligation to
+Postgres. That was too narrow, and the gap it hid was not a backup gap.
+
+Attachments were written to `./data/attachments` — relative to the image's
+`WORKDIR`, so inside the container's writable layer, with no volume mounted.
+The manual upgrade this ADR accepted as a trade-off, `git pull && docker
+compose up -d --build`, therefore destroyed every uploaded manual, receipt and
+photo on each deploy, silently: the database rows survived and went on pointing
+at files that were no longer there.
+
+This corrects the scope, not the decision. Self-hosting is still the right call
+for the reason given — Segue's loopback binding — and the amendment does not
+change it. But the decision's real cost was durability, of which backups are
+only the second half; the first half was that one class of data had no durable
+home at all.
+
+Fixed in #338: the attachment directory is stated absolutely via
+`MAJORDOMO_STORAGE_BASE_DIR` and mounted at `majordomo-attachments`. Backups
+remain unsolved and are tracked in #337.
+
 ## References
 
 - ADR-0023 (Librarian), amended 2026-09-19 for the Segue MCP transport
 - Segue ADR-28 (loopback binding, no authentication, host allowlist)
 - ADR-0008 (Grafana), ADR-0009 (Prometheus) — preserved by this choice
-- Issue #326
+- Issue #326; #338 (attachment durability), #337 (backups)

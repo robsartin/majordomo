@@ -44,14 +44,41 @@ The pattern worth noticing: **none of these fail at boot.** A missing value
 shows up later as a broken feature, so a smoke test of the actual feature is
 how you confirm configuration, not a clean startup log.
 
+## What survives an upgrade
+
+Every piece of durable state is on a named volume. Anything not on this list
+lives in a container's writable layer and is gone the next time that container
+is rebuilt.
+
+| Data | Volume | Notes |
+|---|---|---|
+| PostgreSQL | `majordomo-data` | The whole application state |
+| Attachments | `majordomo-attachments` | Mounted at `/var/lib/majordomo/attachments` |
+| Prometheus | `prometheus-data` | Metrics history; dashboards live in `config/` |
+| Grafana | `grafana-data` | As above |
+| Redis | *(none, deliberately)* | Cache only — 5-minute TTL, evicted on domain events |
+
+Attachments needed that mount and did not have it until #338: the app wrote
+them to `./data/attachments`, relative to the image's `WORKDIR`, so every
+`--build` destroyed them while the database rows went on pointing at files that
+were no longer there. The container is told its directory absolutely, via
+`MAJORDOMO_STORAGE_BASE_DIR`, and a test parses this repo's `docker-compose.yml`
+to check the mount and the write path still agree.
+
+Note that `docker compose down -v` removes named volumes. `down` on its own does
+not.
+
 ## Backups — not yet solved
 
 Self-hosting moved the database from someone else's managed service to a disk in
 the house. Nothing currently backs it up. ADR-0024 records this as an accepted
 cost of the decision, not as something the decision handled.
 
-Until it is addressed, the catalog, contacts and ledger exist in exactly one
-place.
+Two volumes need it — `majordomo-data` and `majordomo-attachments`. Until it is
+addressed, the catalog, contacts, ledger and every uploaded manual exist in
+exactly one place. Tracked in #337, which still needs decisions on off-host
+versus off-site, `pg_dump` versus snapshot, encryption, and how a restore gets
+verified.
 
 ## Upgrading
 
