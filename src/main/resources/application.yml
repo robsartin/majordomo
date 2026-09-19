@@ -73,6 +73,8 @@ resilience4j:
         base-config: default
       envoy-llm:
         base-config: default
+      librarian-metadata:
+        base-config: default
   retry:
     configs:
       default:
@@ -91,6 +93,10 @@ resilience4j:
         max-attempts: 3
         retry-exceptions:
           - com.majordomo.application.envoy.LlmScoringException
+      librarian-metadata:
+        base-config: default
+        retry-exceptions:
+          - com.majordomo.adapter.out.metadata.librarian.MetadataSourceException
   timelimiter:
     instances:
       notification:

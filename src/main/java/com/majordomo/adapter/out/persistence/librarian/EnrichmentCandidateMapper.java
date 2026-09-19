@@ -34,6 +34,8 @@ public final class EnrichmentCandidateMapper {
         e.setConfidence(candidate.confidence());
         e.setPayload(writePayload(candidate.payload()));
         e.setRetrievedAt(candidate.retrievedAt());
+        e.setReviewedAt(candidate.reviewedAt());
+        e.setAccepted(candidate.accepted());
         return e;
     }
 
@@ -52,7 +54,9 @@ public final class EnrichmentCandidateMapper {
                 e.getScore(),
                 e.getConfidence(),
                 readPayload(e.getPayload()),
-                e.getRetrievedAt());
+                e.getRetrievedAt(),
+                e.getReviewedAt(),
+                e.getAccepted());
     }
 
     private static String writePayload(Map<String, String> payload) {

@@ -3,7 +3,9 @@ package com.majordomo.domain.model.librarian;
 import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Pure functions for turning a transcribed title and author string into the
@@ -66,6 +68,22 @@ public final class BookKeys {
                 .reduce((a, b) -> a + "&" + b)
                 .orElse("");
         return normalizedTitle + "|" + normalizedAuthors;
+    }
+
+    /**
+     * Splits a value into folded comparison tokens — lowercased, accent-stripped
+     * and punctuation-free. Shared with match scoring so comparison and dedupe
+     * agree on what counts as the same word.
+     *
+     * @param value the text to tokenise, may be null
+     * @return the tokens, empty when there are none
+     */
+    public static Set<String> tokens(String value) {
+        String folded = fold(value);
+        if (folded.isEmpty()) {
+            return Set.of();
+        }
+        return new LinkedHashSet<>(Arrays.asList(folded.split(" ")));
     }
 
     private static String fold(String value) {

@@ -24,7 +24,7 @@ class EnrichmentCandidateTest {
                 0.92,
                 Confidence.HIGH,
                 Map.of("publisher", "Oxford University Press", "year", "2018"),
-                now);
+                now, null, null);
 
         assertThat(candidate.id()).isEqualTo(id);
         assertThat(candidate.bookId()).isEqualTo(bookId);
@@ -34,5 +34,40 @@ class EnrichmentCandidateTest {
         assertThat(candidate.confidence()).isEqualTo(Confidence.HIGH);
         assertThat(candidate.payload()).containsEntry("publisher", "Oxford University Press");
         assertThat(candidate.retrievedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void enrichmentCandidate_isPendingUntilItIsDecided() {
+        var c = new EnrichmentCandidate(
+                UuidFactory.newId(), UuidFactory.newId(), "OPEN_LIBRARY", "OL1M",
+                0.9, Confidence.HIGH, Map.of(), Instant.now(), null, null);
+
+        assertThat(c.isPending()).isTrue();
+    }
+
+    @Test
+    void enrichmentCandidate_recordsAnAcceptedDecision() {
+        var now = Instant.now();
+        var decided = new EnrichmentCandidate(
+                UuidFactory.newId(), UuidFactory.newId(), "OPEN_LIBRARY", "OL1M",
+                0.9, Confidence.HIGH, Map.of(), now, null, null)
+                .withDecision(true, now);
+
+        assertThat(decided.isPending()).isFalse();
+        assertThat(decided.accepted()).isTrue();
+        assertThat(decided.reviewedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void enrichmentCandidate_recordsARejectionWithoutLosingThePayload() {
+        var now = Instant.now();
+        var rejected = new EnrichmentCandidate(
+                UuidFactory.newId(), UuidFactory.newId(), "OPEN_LIBRARY", "OL1M",
+                0.4, Confidence.LOW, Map.of("publisher", "OUP"), now, null, null)
+                .withDecision(false, now);
+
+        assertThat(rejected.isPending()).isFalse();
+        assertThat(rejected.accepted()).isFalse();
+        assertThat(rejected.payload()).containsEntry("publisher", "OUP");
     }
 }

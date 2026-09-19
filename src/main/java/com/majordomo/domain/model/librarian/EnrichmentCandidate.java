@@ -8,11 +8,15 @@ import java.util.UUID;
  * One proposed external match for a {@link Book}, held for review rather than
  * applied directly.
  *
- * <p>Candidates exist because transcription from spines is lossy: roughly half
- * the seed shelf carried some caveat, and those rows are exactly the ones an
- * external catalog will match confidently and wrongly. Persisting the match
+ * <p>Candidates exist because transcription from spines is lossy: 24 of the 57
+ * seed rows were read imperfectly or not at all, and those are exactly the rows
+ * an external catalog will match confidently and wrongly. Persisting the match
  * with its {@code score} and the raw {@code payload} means a reviewer can see
- * what was proposed and why, and a rejected match leaves a trail.
+ * what was proposed and why.
+ *
+ * <p>A decided candidate is kept rather than deleted — including a rejected one
+ * — so a later reviewer can see what was already turned down instead of being
+ * offered it again.
  *
  * @param id          this candidate's identifier
  * @param bookId      the book the match was proposed for
@@ -22,6 +26,8 @@ import java.util.UUID;
  * @param confidence  the bucket that score falls into, which drives auto-apply
  * @param payload     the raw fields returned by the source, persisted as JSONB
  * @param retrievedAt when the source was queried
+ * @param reviewedAt  when a human decided, or {@code null} while pending
+ * @param accepted    the decision, or {@code null} while pending
  */
 public record EnrichmentCandidate(
     UUID id,
@@ -31,5 +37,30 @@ public record EnrichmentCandidate(
     double score,
     Confidence confidence,
     Map<String, String> payload,
-    Instant retrievedAt
-) { }
+    Instant retrievedAt,
+    Instant reviewedAt,
+    Boolean accepted
+) {
+
+    /**
+     * Whether this candidate is still awaiting a decision.
+     *
+     * @return true while no one has accepted or rejected it
+     */
+    public boolean isPending() {
+        return reviewedAt == null;
+    }
+
+    /**
+     * Records a reviewer's decision, leaving everything else intact.
+     *
+     * @param wasAccepted true to accept the match, false to reject it
+     * @param at          when the decision was made
+     * @return a decided copy of this candidate
+     */
+    public EnrichmentCandidate withDecision(boolean wasAccepted, Instant at) {
+        return new EnrichmentCandidate(
+                id, bookId, source, externalId, score, confidence, payload, retrievedAt,
+                at, wasAccepted);
+    }
+}
