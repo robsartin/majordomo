@@ -1,6 +1,8 @@
 package com.majordomo.adapter.out.persistence.attachment;
 
 import com.majordomo.domain.model.Attachment;
+
+import org.springframework.data.domain.PageRequest;
 import com.majordomo.domain.port.out.AttachmentRepository;
 
 import org.springframework.stereotype.Repository;
@@ -58,6 +60,14 @@ public class AttachmentRepositoryAdapter implements AttachmentRepository {
     public List<Attachment> findByEntityTypeAndEntityIdAndArchivedAtIsNull(
             String entityType, UUID entityId) {
         return jpa.findByEntityTypeAndEntityIdAndArchivedAtIsNull(entityType, entityId)
+                .stream()
+                .map(AttachmentMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Attachment> findPendingExtraction(int limit) {
+        return jpa.findPendingExtraction(PageRequest.of(0, limit))
                 .stream()
                 .map(AttachmentMapper::toDomain)
                 .toList();

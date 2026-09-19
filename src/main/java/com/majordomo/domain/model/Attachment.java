@@ -1,5 +1,7 @@
 package com.majordomo.domain.model;
 
+import com.majordomo.domain.model.attachment.ExtractionStatus;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -21,6 +23,9 @@ public class Attachment {
     private Instant archivedAt;
     private boolean isPrimary;
     private int sortOrder;
+    private ExtractionStatus extractionStatus = ExtractionStatus.PENDING;
+    private String extractedText;
+    private Instant textExtractedAt;
 
     public Attachment() { }
 
@@ -81,4 +86,50 @@ public class Attachment {
      * @param sortOrder the zero-based sort order
      */
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+
+    /**
+     * Returns how far text extraction has got for this attachment (#298).
+     *
+     * @return the extraction status, never {@code null}
+     */
+    public ExtractionStatus getExtractionStatus() { return extractionStatus; }
+
+    /**
+     * Sets the extraction status.
+     *
+     * @param extractionStatus the new status
+     */
+    public void setExtractionStatus(ExtractionStatus extractionStatus) {
+        this.extractionStatus = extractionStatus;
+    }
+
+    /**
+     * Returns the document text found in this attachment, if any.
+     *
+     * @return the extracted text, or {@code null} when there is none
+     */
+    public String getExtractedText() { return extractedText; }
+
+    /**
+     * Sets the extracted document text.
+     *
+     * @param extractedText the text, or {@code null}
+     */
+    public void setExtractedText(String extractedText) { this.extractedText = extractedText; }
+
+    /**
+     * Returns when extraction was last attempted.
+     *
+     * @return the timestamp, or {@code null} while still pending
+     */
+    public Instant getTextExtractedAt() { return textExtractedAt; }
+
+    /**
+     * Sets when extraction was attempted.
+     *
+     * @param textExtractedAt the timestamp
+     */
+    public void setTextExtractedAt(Instant textExtractedAt) {
+        this.textExtractedAt = textExtractedAt;
+    }
 }

@@ -20,6 +20,9 @@ final class AttachmentMapper {
         entity.setArchivedAt(attachment.getArchivedAt());
         entity.setPrimary(attachment.isPrimary());
         entity.setSortOrder(attachment.getSortOrder());
+        entity.setExtractionStatus(attachment.getExtractionStatus());
+        entity.setExtractedText(attachment.getExtractedText());
+        entity.setTextExtractedAt(attachment.getTextExtractedAt());
         return entity;
     }
 
@@ -37,6 +40,9 @@ final class AttachmentMapper {
         attachment.setArchivedAt(entity.getArchivedAt());
         attachment.setPrimary(entity.isPrimary());
         attachment.setSortOrder(entity.getSortOrder());
+        attachment.setExtractionStatus(entity.getExtractionStatus());
+        attachment.setExtractedText(entity.getExtractedText());
+        attachment.setTextExtractedAt(entity.getTextExtractedAt());
         return attachment;
     }
 }
