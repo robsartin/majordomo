@@ -27,3 +27,22 @@ die() {
     echo "ERROR: $*" >&2
     exit 1
 }
+
+# Exact row counts for every user table, as `schema.table=count` lines.
+#
+# Shared by backup.sh and verify-restore.sh so the two sides of the comparison
+# are the same question asked twice, not two queries that can drift apart.
+# pg_stat_user_tables.n_live_tup would be cheaper and is an estimate, which is
+# no use for deciding whether rows went missing.
+table_rows() {
+    psql --no-align --tuples-only --quiet "$@" --command "
+        SELECT table_schema || '.' || table_name || '=' ||
+               (xpath('/row/cnt/text()',
+                      query_to_xml(format('SELECT count(*) AS cnt FROM %I.%I',
+                                          table_schema, table_name),
+                                   false, true, '')))[1]::text
+        FROM information_schema.tables
+        WHERE table_type = 'BASE TABLE'
+          AND table_schema NOT IN ('pg_catalog', 'information_schema')
+        ORDER BY 1"
+}

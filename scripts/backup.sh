@@ -42,6 +42,10 @@ tar -cf "${work}/attachments.tar" -C "$ATTACHMENTS_DIR" .
     echo "source-host=${PGHOST}"
     echo "pg-dump-version=$(pg_dump --version | awk '{print $3}')"
     echo "attachment-files=$(find "$ATTACHMENTS_DIR" -type f | wc -l | tr -d ' ')"
+    # Row counts taken from the live server, so the archive carries the answer a
+    # restore has to reproduce. Without them verification can only say the dump
+    # loaded, not that it loaded everything.
+    table_rows
 } > "${work}/manifest.txt"
 
 log "encrypting to ${archive}"
@@ -54,7 +58,8 @@ for remote in $BACKUP_REMOTES; do
 done
 
 # Prune last: an archive is only allowed to age out once its replacement exists
-# and has reached every destination.
+# and has reached every destination. `head -n -K` drops all but the final K in
+# sorted order, and the timestamped names sort oldest-first.
 surplus=$(find "$BACKUP_DIR" -maxdepth 1 -name 'majordomo-*.tar.age' \
     | sort | head -n "-${BACKUP_KEEP}")
 if [ -n "$surplus" ]; then

@@ -10,6 +10,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -102,12 +104,96 @@ class BackupRestoreIntegrationTest {
                 .contains("boiler manual");
     }
 
+    /**
+     * Retention keeps the newest and discards the oldest. Getting this backwards
+     * is survivable until the day it is not, and it fails silently either way —
+     * the directory has the expected number of files whichever end is deleted.
+     */
+    @Test
+    void backup_retainsTheMostRecentArchivesAndDiscardsTheOldest() throws Exception {
+        run(TOOLS, "sh", "-c", "rm -f /backups/*.tar.age");
+
+        List<String> taken = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            backupKeeping(2);
+            taken.add(latestArchive());
+            run(TOOLS, "sleep", "1");
+        }
+        // Archive names carry a whole-second timestamp. Two landing in the same
+        // second would share a name, and the count would come out right while
+        // measuring nothing.
+        assertThat(taken).doesNotHaveDuplicates();
+
+        List<String> kept = run(TOOLS, "sh", "-c", "ls -1 /backups/*.tar.age")
+                .lines().sorted().toList();
+        assertThat(kept).containsExactlyElementsOf(taken.subList(2, 4));
+    }
+
+    /**
+     * The scheduled check. It restores into a scratch database and compares what
+     * came back against the counts the manifest recorded when the backup was
+     * taken — the archive carries its own expected answer, so verification needs
+     * nothing but the file.
+     */
+    @Test
+    void verifyRestore_passesOnAGoodBackup() throws Exception {
+        backup();
+
+        String output = verify(latestArchive());
+
+        assertThat(output).contains("public.books");
+        assertThat(output).contains("OK");
+    }
+
+    /**
+     * The control, and the reason the check is worth running at all. A dump that
+     * silently lost rows still decrypts, still restores, and still exits zero;
+     * only the comparison against the manifest catches it.
+     *
+     * <p>Simulated from the other side — the manifest is edited to claim a row
+     * count the dump does not have — because tampering with the ciphertext
+     * itself would fail at decryption and prove only that age works.
+     */
+    @Test
+    void verifyRestore_failsWhenTheRestoreIsShortOfWhatWasTaken() throws Exception {
+        backup();
+        String tampered = "/backups/tampered.tar.age";
+        run(TOOLS, "sh", "-c", "rm -rf /tamper && mkdir -p /tamper"
+                + " && age -d -i /identity.age '" + latestArchive() + "' | tar -x -C /tamper"
+                + " && sed -i 's/^public.books=.*/public.books=99/' /tamper/manifest.txt"
+                + " && tar -cf - -C /tamper database.dump attachments.tar manifest.txt"
+                + " | age -r " + recipient + " -o " + tampered);
+
+        var result = TOOLS.execInContainer("sh", "-c", verifyCommand(tampered));
+
+        assertThat(result.getExitCode())
+                .as("verify-restore.sh must fail when the restore is short%nstdout: %s%nstderr: %s",
+                        result.getStdout(), result.getStderr())
+                .isNotZero();
+        assertThat(result.getStdout() + result.getStderr()).contains("public.books");
+    }
+
+    private static String verify(String archive) throws Exception {
+        return run(TOOLS, "sh", "-c", verifyCommand(archive));
+    }
+
+    private static String verifyCommand(String archive) {
+        return "PGHOST=target-db PGUSER=majordomo PGPASSWORD=" + PASSWORD
+                + " BACKUP_AGE_IDENTITY=/identity.age"
+                + " /usr/local/bin/verify-restore.sh '" + archive + "'";
+    }
+
     private static void backup() throws Exception {
+        backupKeeping(14);
+    }
+
+    private static void backupKeeping(int keep) throws Exception {
         run(TOOLS, "sh", "-c",
                 "PGHOST=source-db PGUSER=majordomo PGPASSWORD=" + PASSWORD
                         + " PGDATABASE=majordomo"
                         + " BACKUP_AGE_RECIPIENT=" + recipient
                         + " BACKUP_DIR=/backups ATTACHMENTS_DIR=/attachments"
+                        + " BACKUP_KEEP=" + keep
                         + " /usr/local/bin/backup.sh");
     }
 
