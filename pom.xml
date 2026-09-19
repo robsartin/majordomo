@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.0</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -19,16 +19,9 @@
 
     <properties>
         <java.version>25</java.version>
-        <springdoc.version>2.8.6</springdoc.version>
+        <springdoc.version>3.1.0</springdoc.version>
         <checkstyle.version>10.21.4</checkstyle.version>
         <jacoco.version>0.8.13</jacoco.version>
-        <!--
-            JUnit 6 (#118). Spring Boot 3.5's BOM still manages JUnit 5.12.x;
-            overriding junit-jupiter.version re-imports org.junit:junit-bom at
-            6.x, which aligns Jupiter and Platform on the same version (JUnit 6
-            unified them — Platform is no longer versioned 1.x).
-        -->
-        <junit-jupiter.version>6.1.3</junit-jupiter.version>
         <archunit.version>1.5.0</archunit.version>
     </properties>
 
@@ -61,9 +54,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!--
+            Boot 4 moved Flyway auto-configuration into its own module: a raw
+            flyway-core dependency compiles and then silently never migrates,
+            which surfaces as Hibernate reporting the first table alphabetically
+            as missing.
+        -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -106,6 +105,21 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
@@ -137,17 +151,17 @@
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-spring-boot3</artifactId>
-            <version>2.2.0</version>
+            <artifactId>resilience4j-spring-boot4</artifactId>
+            <version>2.4.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-micrometer</artifactId>
-            <version>2.2.0</version>
+            <version>2.4.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <artifactId>spring-boot-starter-aspectj</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

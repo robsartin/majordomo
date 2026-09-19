@@ -1,6 +1,6 @@
 package com.majordomo.adapter.out.persistence.envoy;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 import com.majordomo.adapter.out.persistence.JsonColumnCodec;
 import com.majordomo.domain.model.envoy.JobPosting;
 

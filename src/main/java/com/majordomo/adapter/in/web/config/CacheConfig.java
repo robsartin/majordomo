@@ -1,14 +1,13 @@
 package com.majordomo.adapter.in.web.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
@@ -23,6 +22,7 @@ import java.time.Duration;
  * <p>Defaults pulled from {@code spring.cache.redis.*} properties (TTL, key prefix).</p>
  */
 @Configuration
+@EnableCaching
 public class CacheConfig {
 
     /**
@@ -40,14 +40,19 @@ public class CacheConfig {
     public RedisCacheConfiguration redisCacheConfiguration(
             @Value("${spring.cache.redis.time-to-live:300000}") long ttlMillis,
             @Value("${spring.cache.redis.key-prefix:}") String keyPrefix) {
+        // Jackson 3: java.time and Optional are handled natively, so the
+        // JavaTimeModule and Jdk8Module registrations Jackson 2 needed are gone.
+        // Default typing moves onto the builder, and the Redis serializer is the
+        // Jackson 3 one — GenericJackson2JsonRedisSerializer is Jackson 2 by name
+        // and by binding.
         ObjectMapper mapper = JsonMapper.builder()
-                .addModule(new JavaTimeModule())
-                .addModule(new Jdk8Module())
+                .activateDefaultTyping(
+                        tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator.builder()
+                                .allowIfSubType(Object.class)
+                                .build(),
+                        tools.jackson.databind.DefaultTyping.NON_FINAL)
                 .build();
-        mapper.activateDefaultTyping(
-                mapper.getPolymorphicTypeValidator(),
-                ObjectMapper.DefaultTyping.NON_FINAL);
-        var jsonSerializer = new GenericJackson2JsonRedisSerializer(mapper);
+        var jsonSerializer = new GenericJacksonJsonRedisSerializer(mapper);
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMillis(ttlMillis))

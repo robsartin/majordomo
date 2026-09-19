@@ -9,7 +9,7 @@ import com.majordomo.domain.port.out.identity.ApiKeyRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -116,6 +116,9 @@ class SecurityConfigTest {
     void dashboardRequiresAuthentication() throws Exception {
         mockMvc.perform(get("/dashboard"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("http://localhost/login"));
+                // Spring Security 7 issues a relative redirect here; 6.x sent an
+                // absolute "http://localhost/login". The behaviour improved and the
+                // old assertion was pinning a version detail, not a requirement.
+                .andExpect(redirectedUrl("/login"));
     }
 }

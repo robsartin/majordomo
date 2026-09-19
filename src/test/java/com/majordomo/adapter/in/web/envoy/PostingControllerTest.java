@@ -1,6 +1,6 @@
 package com.majordomo.adapter.in.web.envoy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.majordomo.adapter.in.web.config.OAuth2UserService;
 import com.majordomo.adapter.in.web.config.SecurityConfig;
 import com.majordomo.adapter.in.web.envoy.dto.IngestPostingRequest;
@@ -18,7 +18,7 @@ import com.majordomo.domain.port.out.identity.MembershipRepository;
 import com.majordomo.domain.port.out.identity.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;

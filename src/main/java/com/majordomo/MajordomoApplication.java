@@ -2,7 +2,6 @@ package com.majordomo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -14,7 +13,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * accessing persistence or external services directly.</p>
  */
 @SpringBootApplication
-@EnableCaching
 @EnableScheduling
 public class MajordomoApplication {
 

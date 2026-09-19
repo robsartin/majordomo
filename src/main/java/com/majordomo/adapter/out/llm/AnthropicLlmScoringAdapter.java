@@ -1,6 +1,6 @@
 package com.majordomo.adapter.out.llm;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.majordomo.application.envoy.LlmScoringException;
 import com.majordomo.application.envoy.PromptBuilder;
 import com.majordomo.application.envoy.ScoringPrompt;

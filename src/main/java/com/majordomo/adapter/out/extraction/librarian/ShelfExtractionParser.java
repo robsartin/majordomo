@@ -1,8 +1,8 @@
 package com.majordomo.adapter.out.extraction.librarian;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.majordomo.domain.model.librarian.BookImportRow;
 import com.majordomo.domain.model.librarian.ImportSource;
 
@@ -33,7 +33,7 @@ public class ShelfExtractionParser {
         Extraction extraction;
         try {
             extraction = MAPPER.readValue(unfence(modelOutput), Extraction.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new ShelfExtractionException("Could not read the extraction response", e);
         }
         if (extraction == null || extraction.books() == null) {

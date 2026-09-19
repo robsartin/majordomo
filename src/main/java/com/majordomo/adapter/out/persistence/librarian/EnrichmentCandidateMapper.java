@@ -1,7 +1,7 @@
 package com.majordomo.adapter.out.persistence.librarian;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.majordomo.domain.model.librarian.EnrichmentCandidate;
 
 import java.util.Map;
@@ -65,7 +65,7 @@ public final class EnrichmentCandidateMapper {
         }
         try {
             return MAPPER.writeValueAsString(payload);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+        } catch (tools.jackson.core.JacksonException ex) {
             throw new IllegalArgumentException("Could not serialise enrichment payload", ex);
         }
     }
@@ -76,7 +76,7 @@ public final class EnrichmentCandidateMapper {
         }
         try {
             return MAPPER.readValue(json, PAYLOAD_TYPE);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+        } catch (tools.jackson.core.JacksonException ex) {
             // A payload we cannot read is a real fault, not an empty payload:
             // silently returning Map.of() would turn "unreadable" into "nothing
             // was proposed" and hide it from the reviewer.
