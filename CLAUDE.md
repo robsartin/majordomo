@@ -164,3 +164,4 @@ See `doc/adr/` for all architecture decision records:
 | 0025 | Encrypted, verified backups to a tailnet host and an object store |
 | 0026 | Extract attachment text with PDFBox, on a scheduled sweep |
 | 0027 | OCR scanned documents with Tesseract, in the container |
+| 0028 | Envoy: application materials grounded in an uploaded résumé |
