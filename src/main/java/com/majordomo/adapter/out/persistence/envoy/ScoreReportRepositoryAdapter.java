@@ -60,4 +60,12 @@ public class ScoreReportRepositoryAdapter implements ScoreReportRepository {
         List<ScoreReport> items = rows.stream().map(ScoreReportMapper::toDomain).toList();
         return Page.fromOverfetch(items, limit, ScoreReport::id);
     }
+
+    @Override
+    public Optional<ScoreReport> findLatestForPosting(UUID postingId, UUID organizationId) {
+        return jpa.findByPostingIdAndOrganizationIdOrderByScoredAtDesc(postingId, organizationId)
+                .stream()
+                .findFirst()
+                .map(ScoreReportMapper::toDomain);
+    }
 }

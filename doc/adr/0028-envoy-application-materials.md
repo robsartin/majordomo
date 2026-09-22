@@ -126,6 +126,30 @@ Revisiting that belongs with scoring, not with this feature.
   claims about history rather than framing them.
 - **Per-generation cost**, on a feature used in bursts during a job hunt.
 
+## Amendment — 2026-09-22
+
+Implementing the guard (#350) closed part of the hole this ADR described.
+
+The decision above says the check "does not catch a true span,
+mischaracterised", and gives the example of a résumé saying "led a team of 4"
+against a draft saying 40 while citing that span. That example is now caught,
+by a second check: **every run of digits in the draft must occur in the résumé
+or the posting.** "40" does not appear in a résumé that says 4, so the draft
+fails — and the same check catches an invented salary, percentage or duration.
+
+This does not make the guard total, and the original statement of its limits
+stands for everything not expressible as a number. "Rebuilt the payments
+platform" against a résumé saying "contributed to the payments platform" cites
+a real span, states no number, and passes.
+
+It also introduces a false positive the decision above did not anticipate: a
+number correctly *derived* rather than quoted. A résumé carrying only dates
+supports "over a decade" but not "11 years", because 11 appears nowhere. The
+prompt therefore tells the model the rule it is judged against and to prefer
+the unquantified phrasing. That is the right way round — the prompt guides so
+that honest drafts pass, and the check decides. A guard that fires on honest
+work is one that gets switched off.
+
 ## References
 
 - ADR-0022 — Envoy scoring, which this completes

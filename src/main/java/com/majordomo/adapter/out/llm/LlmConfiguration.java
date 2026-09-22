@@ -65,4 +65,21 @@ public class LlmConfiguration {
             @Value("${librarian.llm.max-tokens:8192}") int maxTokens) {
         return new AnthropicVisionClient(client, model, maxTokens);
     }
+
+    /**
+     * Wraps the SDK client for drafting application materials. Separate from
+     * the scoring client so the two do not share a circuit breaker (ADR-0028).
+     *
+     * @param client    the SDK client
+     * @param model     model id ({@code envoy.materials.model})
+     * @param maxTokens response length cap ({@code envoy.materials.max-tokens})
+     * @return the material client
+     */
+    @Bean
+    public AnthropicMaterialClient anthropicMaterialClient(
+            AnthropicClient client,
+            @Value("${envoy.materials.model:claude-opus-5}") String model,
+            @Value("${envoy.materials.max-tokens:8192}") int maxTokens) {
+        return new AnthropicMaterialClient(client, model, maxTokens);
+    }
 }

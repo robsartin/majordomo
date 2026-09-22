@@ -1,20 +1,11 @@
 package com.majordomo.adapter.out.llm;
 
 import com.anthropic.client.AnthropicClient;
-import com.anthropic.models.messages.CacheControlEphemeral;
-import com.anthropic.models.messages.ContentBlock;
-import com.anthropic.models.messages.Message;
-import com.anthropic.models.messages.MessageCreateParams;
-import com.anthropic.models.messages.TextBlockParam;
-import com.anthropic.models.messages.Usage;
-import com.majordomo.application.envoy.LlmScoringException;
 import com.majordomo.domain.model.envoy.LlmScoreResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Thin wrapper over {@link AnthropicClient}. Applies a Resilience4j circuit breaker
@@ -78,49 +69,7 @@ public class AnthropicMessageClient {
     @CircuitBreaker(name = "envoy-llm")
     @Retry(name = "envoy-llm")
     public MessageResult sendWithUsage(String systemPrompt, String userPrompt) {
-        long startNs = System.nanoTime();
-        try {
-            MessageCreateParams params = MessageCreateParams.builder()
-                    .model(model)
-                    .maxTokens(maxTokens)
-                    .systemOfTextBlockParams(List.of(
-                            TextBlockParam.builder()
-                                    .text(systemPrompt)
-                                    .cacheControl(CacheControlEphemeral.builder().build())
-                                    .build()))
-                    .addUserMessage(userPrompt)
-                    .build();
-            Message message = client.messages().create(params);
-            List<ContentBlock> blocks = message.content();
-            if (blocks == null || blocks.isEmpty()) {
-                throw new LlmScoringException("Anthropic API returned no content");
-            }
-            String text = blocks.get(0).text()
-                    .map(tb -> tb.text())
-                    .orElseThrow(() -> new LlmScoringException(
-                            "First content block was not text"));
-            long latencyMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
-            return new MessageResult(text, extractUsage(message, latencyMs));
-        } catch (LlmScoringException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new LlmScoringException("Anthropic API call failed", e);
-        }
-    }
-
-    private static Optional<LlmScoreResponse.Usage> extractUsage(Message message, long latencyMs) {
-        try {
-            Usage usage = message.usage();
-            if (usage == null) {
-                return Optional.empty();
-            }
-            return Optional.of(new LlmScoreResponse.Usage(
-                    usage.inputTokens(), usage.outputTokens(), latencyMs));
-        } catch (RuntimeException ignored) {
-            // SDK may surface usage as a JSON-backed lazy struct; on parse failure
-            // we silently drop the usage rather than failing the scoring call.
-            return Optional.empty();
-        }
+        return AnthropicTextCall.execute(client, model, maxTokens, systemPrompt, userPrompt);
     }
 
     /**
