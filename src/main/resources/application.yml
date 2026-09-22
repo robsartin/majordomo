@@ -77,6 +77,8 @@ resilience4j:
         base-config: default
       librarian-llm:
         base-config: default
+      envoy-materials:
+        base-config: default
   retry:
     configs:
       default:
@@ -100,6 +102,9 @@ resilience4j:
         retry-exceptions:
           - com.majordomo.adapter.out.metadata.librarian.MetadataSourceException
       librarian-llm:
+        base-config: default
+        max-attempts: 2
+      envoy-materials:
         base-config: default
         max-attempts: 2
   timelimiter:
@@ -127,6 +132,11 @@ envoy:
     base-url: https://api.anthropic.com
     model: claude-sonnet-4-6
     max-tokens: 4096
+  materials:
+    # Drafting prose, on its own circuit breaker so a run of failures here
+    # cannot open the one scoring depends on (ADR-0028).
+    model: claude-opus-5
+    max-tokens: 8192
 
 springdoc:
   api-docs:

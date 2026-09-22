@@ -44,6 +44,19 @@ public interface ScoreReportRepository {
     Optional<ScoreReport> findLatestScored(UUID postingId, UUID rubricId, UUID organizationId);
 
     /**
+     * Returns the most recent report for a posting under any rubric (#350).
+     *
+     * <p>Distinct from {@link #findLatestScored}: a draft wants whatever the
+     * latest assessment of this posting was, not the one produced by a
+     * particular rubric version.
+     *
+     * @param postingId      the posting
+     * @param organizationId the owning org
+     * @return the newest report, or empty if the posting was never scored
+     */
+    Optional<ScoreReport> findLatestForPosting(UUID postingId, UUID organizationId);
+
+    /**
      * Cursor-paginated query over reports within an organization. Optional
      * filters are bundled into {@link ScoreReportFilter}; pass
      * {@link ScoreReportFilter#none()} for an unfiltered query.

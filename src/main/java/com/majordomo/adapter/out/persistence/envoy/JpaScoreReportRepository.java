@@ -60,4 +60,14 @@ public interface JpaScoreReportRepository extends JpaRepository<ScoreReportEntit
             @Param("cursor") UUID cursor,
             Sort sort,
             Limit limit);
+
+    /**
+     * Newest report for a posting under any rubric, for drafting (#350).
+     *
+     * @param postingId      the posting
+     * @param organizationId the owning org
+     * @return the reports, newest first
+     */
+    java.util.List<ScoreReportEntity> findByPostingIdAndOrganizationIdOrderByScoredAtDesc(
+            java.util.UUID postingId, java.util.UUID organizationId);
 }
