@@ -58,6 +58,7 @@ class EnvoyPageIngestFormTest {
     @Autowired MockMvc mvc;
 
     @MockitoBean QueryScoreReportsUseCase reports;
+    @MockitoBean com.majordomo.domain.port.out.envoy.ApplicationMaterialRepository materials;
     @MockitoBean IngestJobPostingUseCase ingestUseCase;
     @MockitoBean ScoreJobPostingUseCase scoreUseCase;
     @MockitoBean MarkPostingConversionUseCase conversionUseCase;
