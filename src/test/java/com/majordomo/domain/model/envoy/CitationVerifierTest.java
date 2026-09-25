@@ -20,6 +20,7 @@ class CitationVerifierTest {
             Robert Sartin — Staff Software Engineer
             Acme Corp, 2019-2026. Java, Spring Boot, PostgreSQL.
             Led a team of 4 engineers on the payments platform.
+            Delivered 12 projects across three business units.
             """;
 
     private static final String POSTING = """
@@ -84,6 +85,37 @@ class CitationVerifierTest {
         assertThat(check.problems()).singleElement().asString().contains("40");
     }
 
+    /**
+     * The defect #351 names for résumé bullets, and it is not specific to them.
+     * A rewrite that swaps one of the résumé's numbers for another of the
+     * résumé's numbers passes every check so far: the cited span is real, and
+     * 12 does appear in the résumé — just not in the bullet being rewritten.
+     * Checking each claim's numbers against its own cited span closes it.
+     */
+    @Test
+    void fails_whenAClaimSwapsInANumberFromElsewhereInTheResume() {
+        GroundingCheck check = CitationVerifier.check(
+                "I led a team of 12 engineers.",
+                List.of(new ClaimCitation(
+                        "Led a team of 12 engineers", "Led a team of 4 engineers")),
+                RESUME, POSTING);
+
+        assertThat(check.passed()).isFalse();
+        assertThat(check.problems()).singleElement().asString()
+                .contains("12")
+                .contains("Led a team of 4 engineers");
+    }
+
+    /** A claim restating its source's own numbers is exactly what should pass. */
+    @Test
+    void allowsAClaimThatKeepsTheNumbersInItsCitedSpan() {
+        assertThat(CitationVerifier.check(
+                "I led a team of 4 engineers.",
+                List.of(new ClaimCitation(
+                        "Led a team of 4 engineers", "Led a team of 4 engineers")),
+                RESUME, POSTING).passed()).isTrue();
+    }
+
     @Test
     void allowsNumbersThatAppearInTheResume() {
         assertThat(CitationVerifier.check(
@@ -102,7 +134,7 @@ class CitationVerifierTest {
     @Test
     void reportsEveryProblemAtOnceRatherThanTheFirst() {
         GroundingCheck check = CitationVerifier.check(
-                "I led 40 people and 12 projects.",
+                "I led 40 people and 99 projects.",
                 List.of(new ClaimCitation("Worked at Initech", "Senior Engineer at Initech")),
                 RESUME, POSTING);
 

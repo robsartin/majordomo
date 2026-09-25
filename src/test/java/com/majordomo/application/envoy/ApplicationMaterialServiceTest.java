@@ -152,6 +152,51 @@ class ApplicationMaterialServiceTest {
         assertThat(brief.getValue().kind()).isEqualTo(MaterialKind.INTRO_MESSAGE);
     }
 
+    /**
+     * Every kind goes through the same service, guard and storage — the only
+     * thing that differs is the prompt. Asserting that rather than assuming it,
+     * because "it is kind-agnostic" is exactly the sort of claim that stops
+     * being true the first time someone special-cases one.
+     */
+    @Test
+    void generate_handlesEveryKindThroughTheSamePath() {
+        givenPosting();
+        when(resumes.resolve(USER)).thenReturn(RESUME);
+        when(llm.modelId()).thenReturn("claude-opus-5");
+        when(llm.generate(any())).thenReturn(response(
+                "I led a team of 4 engineers.",
+                "Led a team", "Led a team of 4 engineers"));
+        when(materials.save(any())).thenAnswer(call -> call.getArgument(0));
+
+        for (MaterialKind kind : MaterialKind.values()) {
+            assertThat(service.generate(POSTING, kind, Tone.DIRECT, USER, ORG).kind())
+                    .isEqualTo(kind);
+        }
+    }
+
+    /**
+     * The defect #351 singles out for résumé bullets, at the level someone
+     * would actually meet it. The rewrite keeps a real cited bullet and changes
+     * its number to another number that does appear in the résumé — so it is
+     * caught only because each claim's numbers are checked against its own
+     * cited span.
+     */
+    @Test
+    void generate_refusesARewriteThatChangesTheNumberInTheBulletItCites() {
+        givenPosting();
+        when(resumes.resolve(USER)).thenReturn(RESUME + "\nDelivered 12 projects.\n");
+        when(llm.generate(any())).thenReturn(response(
+                "Led a team of 12 engineers on the payments platform.",
+                "Led a team of 12 engineers", "Led a team of 4 engineers"));
+
+        assertThatThrownBy(() -> service.generate(
+                POSTING, MaterialKind.RESUME_BULLETS, Tone.DIRECT, USER, ORG))
+                .isInstanceOf(UngroundedDraftException.class)
+                .hasMessageContaining("12");
+
+        verify(materials, never()).save(any());
+    }
+
     private void givenPosting() {
         JobPosting posting = new JobPosting();
         posting.setId(POSTING);

@@ -45,6 +45,23 @@ class MaterialPromptBuilderTest {
         assertThat(system).containsIgnoringCase("number");
     }
 
+    /**
+     * The guard checks a claim's numbers against its own cited span, not the
+     * whole résumé (#351). A model told only "use numbers from the résumé"
+     * would write a rewrite that swaps in another résumé number and fail for a
+     * rule it was never given.
+     */
+    @Test
+    void systemPrompt_saysANumberMustMatchTheSpanTheClaimCites() {
+        String system = builder.build(brief(MaterialKind.RESUME_BULLETS, Tone.DIRECT))
+                .systemPrompt();
+
+        assertThat(system).containsIgnoringCase("cite");
+        assertThat(system).containsIgnoringCase("span");
+        assertThat(system.toLowerCase(java.util.Locale.ROOT))
+                .contains("same number");
+    }
+
     @Test
     void userPrompt_carriesTheResumeAndThePosting() {
         var prompt = builder.build(brief(MaterialKind.COVER_LETTER, Tone.DIRECT));

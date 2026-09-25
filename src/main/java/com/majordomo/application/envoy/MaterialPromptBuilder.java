@@ -42,7 +42,11 @@ public class MaterialPromptBuilder {
             or the posting. Write "over a decade" rather than "11 years" if the \
             résumé gives only dates. Numbers are checked against both documents \
             and an ungrounded one fails the whole draft.
-            4. Never inflate. Citing a real span while overstating what it says \
+            4. A claim carrying a number must cite a span containing that same \
+            number. Taking the number from elsewhere in the résumé does not \
+            count: rewriting "led a team of 4" as a team of 12 fails even \
+            though 12 appears further down the page.
+            5. Never inflate. Citing a real span while overstating what it says \
             is the failure these rules exist to make difficult; do not attempt \
             to satisfy them while doing it.
 
