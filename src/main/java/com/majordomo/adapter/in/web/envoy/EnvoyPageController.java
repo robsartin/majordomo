@@ -3,7 +3,9 @@ package com.majordomo.adapter.in.web.envoy;
 import com.majordomo.adapter.in.web.config.OrgContext;
 import com.majordomo.application.envoy.LlmScoringException;
 import com.majordomo.domain.model.envoy.JobPosting;
+import com.majordomo.domain.model.envoy.MaterialKind;
 import com.majordomo.domain.model.envoy.Recommendation;
+import com.majordomo.domain.model.envoy.Tone;
 import com.majordomo.domain.model.envoy.ScoreReport;
 import com.majordomo.domain.model.envoy.ScoreReportFilter;
 import com.majordomo.domain.port.in.envoy.GetApplyNowConversionStatUseCase;
@@ -11,6 +13,7 @@ import com.majordomo.domain.port.in.envoy.IngestJobPostingUseCase;
 import com.majordomo.domain.port.in.envoy.MarkPostingConversionUseCase;
 import com.majordomo.domain.port.in.envoy.QueryScoreReportsUseCase;
 import com.majordomo.domain.port.in.envoy.ScoreJobPostingUseCase;
+import com.majordomo.domain.port.out.envoy.ApplicationMaterialRepository;
 import com.majordomo.domain.port.out.envoy.JobPostingRepository;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -49,6 +52,7 @@ public class EnvoyPageController {
     private final MarkPostingConversionUseCase conversionUseCase;
     private final GetApplyNowConversionStatUseCase conversionStatUseCase;
     private final JobPostingRepository jobPostingRepository;
+    private final ApplicationMaterialRepository materials;
 
     /**
      * View-model row binding a {@link ScoreReport} to its source {@link JobPosting}.
@@ -69,19 +73,22 @@ public class EnvoyPageController {
      * @param conversionUseCase     inbound port for marking APPLY_NOW conversion outcome
      * @param conversionStatUseCase inbound port for the APPLY_NOW conversion rollup
      * @param jobPostingRepository  outbound port for posting lookups
+     * @param materials             outbound port for previously generated drafts
      */
     public EnvoyPageController(QueryScoreReportsUseCase reports,
                                IngestJobPostingUseCase ingestUseCase,
                                ScoreJobPostingUseCase scoreUseCase,
                                MarkPostingConversionUseCase conversionUseCase,
                                GetApplyNowConversionStatUseCase conversionStatUseCase,
-                               JobPostingRepository jobPostingRepository) {
+                               JobPostingRepository jobPostingRepository,
+                               ApplicationMaterialRepository materials) {
         this.reports = reports;
         this.ingestUseCase = ingestUseCase;
         this.scoreUseCase = scoreUseCase;
         this.conversionUseCase = conversionUseCase;
         this.conversionStatUseCase = conversionStatUseCase;
         this.jobPostingRepository = jobPostingRepository;
+        this.materials = materials;
     }
 
     /**
@@ -269,6 +276,11 @@ public class EnvoyPageController {
                 .ifPresent(p -> model.addAttribute("posting", p));
 
         model.addAttribute("report", report);
+        // Drafts are never overwritten (ADR-0028), so a posting accumulates
+        // them and the page shows the history rather than only the newest.
+        model.addAttribute("materials", materials.findByPosting(report.postingId(), orgId));
+        model.addAttribute("materialKinds", MaterialKind.values());
+        model.addAttribute("tones", Tone.values());
         model.addAttribute("organizationId", orgId);
         model.addAttribute("username", orgContext.username());
         return "envoy-report";

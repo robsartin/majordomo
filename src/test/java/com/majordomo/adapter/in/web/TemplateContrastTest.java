@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Computed WCAG AA contrast check for the Librarian pages (#320).
+ * Computed WCAG AA contrast check for server-rendered pages (#320, #352).
  *
  * <p>{@code doc/accessibility.md} verifies contrast by a manual spot-check. That
  * catches what someone remembers to look at; this computes the ratio for every
@@ -27,14 +27,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * token fails rather than being skipped: a check that silently ignores what it
  * does not know is not a check.
  */
-class LibrarianContrastTest {
+class TemplateContrastTest {
 
     private static final double AA_NORMAL_TEXT = 4.5;
 
     private static final List<Path> PAGES = List.of(
             Path.of("src/main/resources/templates/librarian.html"),
             Path.of("src/main/resources/templates/librarian-book.html"),
-            Path.of("src/main/resources/templates/librarian-review.html"));
+            Path.of("src/main/resources/templates/librarian-review.html"),
+            Path.of("src/main/resources/templates/envoy-report.html"));
 
     /** The Tailwind tokens these templates use, and their hex values. */
     private static final Map<String, String> PALETTE = Map.ofEntries(
@@ -53,7 +54,22 @@ class LibrarianContrastTest {
             Map.entry("green-900", "#14532d"),
             Map.entry("red-50", "#fef2f2"),
             Map.entry("red-700", "#b91c1c"),
-            Map.entry("red-900", "#7f1d1d"));
+            Map.entry("red-900", "#7f1d1d"),
+            Map.entry("gray-500", "#6b7280"),
+            Map.entry("gray-600", "#4b5563"),
+            Map.entry("gray-800", "#1f2937"),
+            Map.entry("amber-800", "#92400e"),
+            Map.entry("amber-900", "#78350f"),
+            Map.entry("emerald-800", "#065f46"),
+            Map.entry("red-800", "#991b1b"),
+            Map.entry("emerald-600", "#059669"),
+            Map.entry("emerald-700", "#047857"),
+            Map.entry("amber-100", "#fef3c7"),
+            Map.entry("emerald-100", "#d1fae5"),
+            Map.entry("red-100", "#fee2e2"),
+            Map.entry("red-200", "#fecaca"),
+            Map.entry("gray-100", "#f3f4f6"),
+            Map.entry("gray-300", "#d1d5db"));
 
     private static final String LIGHTEST_SURFACE = PALETTE.get("gray-50");
 

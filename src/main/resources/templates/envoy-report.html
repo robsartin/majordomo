@@ -84,7 +84,7 @@
                           th:action="@{|/envoy/postings/${posting.getId()}/applied|}"
                           class="inline">
                         <button type="submit"
-                                class="rounded bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                                class="rounded bg-emerald-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-800">
                             Mark applied
                         </button>
                     </form>
@@ -225,6 +225,92 @@
                             </a>
                         </div>
                     </details>
+                </div>
+            </section>
+
+            <!-- Application materials (#352, ADR-0028) -->
+            <section class="bg-white rounded-lg shadow mt-6" aria-labelledby="materials-heading">
+                <div class="px-6 py-5">
+                    <h2 id="materials-heading" class="text-lg font-semibold text-gray-900">
+                        Application materials
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-700">
+                        Drafts, not finished documents. Every factual claim is traced back to a
+                        span of your r&eacute;sum&eacute; &mdash; read what each one rests on
+                        before you send anything.
+                    </p>
+
+                    <div th:if="${materialError}" role="alert"
+                         class="mt-4 rounded-md bg-red-50 border border-red-200 px-4 py-3">
+                        <p class="text-sm text-red-700" th:text="${materialError}">why it failed</p>
+                    </div>
+
+                    <form th:if="${posting != null}" method="post"
+                          th:action="@{|/envoy/reports/${report.id()}/materials|}"
+                          class="mt-4 flex flex-wrap items-end gap-4">
+                        <input type="hidden" name="postingId" th:value="${posting.getId()}">
+                        <div>
+                            <label for="material-kind"
+                                   class="block text-sm font-medium text-gray-700">What to draft</label>
+                            <select id="material-kind" name="kind"
+                                    class="mt-1 rounded-md border-gray-300 text-sm text-gray-900">
+                                <option th:each="k : ${materialKinds}" th:value="${k}"
+                                        th:text="${#strings.replace(#strings.toLowerCase(k), '_', ' ')}">kind</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="material-tone"
+                                   class="block text-sm font-medium text-gray-700">Tone</label>
+                            <select id="material-tone" name="tone"
+                                    class="mt-1 rounded-md border-gray-300 text-sm text-gray-900">
+                                <option th:each="t : ${tones}" th:value="${t}"
+                                        th:text="${#strings.toLowerCase(t)}">tone</option>
+                            </select>
+                        </div>
+                        <button type="submit"
+                                class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white
+                                       hover:bg-indigo-700 focus:outline-none focus:ring-2
+                                       focus:ring-indigo-600 focus:ring-offset-2">
+                            Generate draft
+                        </button>
+                    </form>
+
+                    <p th:if="${materials == null or materials.isEmpty()}"
+                       class="mt-6 text-sm text-gray-700">
+                        No drafts yet for this posting.
+                    </p>
+
+                    <ol th:unless="${materials == null or materials.isEmpty()}"
+                        class="mt-6 space-y-6">
+                        <li th:each="m : ${materials}" class="border border-gray-200 rounded-md">
+                            <div class="px-4 py-3 border-b border-gray-200 flex flex-wrap items-baseline gap-x-3">
+                                <h3 class="text-sm font-semibold text-gray-900"
+                                    th:text="${#strings.replace(#strings.toLowerCase(m.kind()), '_', ' ')}">kind</h3>
+                                <span class="text-xs text-gray-700"
+                                      th:text="${#strings.toLowerCase(m.tone())} + ' &middot; ' + ${m.llmModel()}">tone</span>
+                                <time class="text-xs text-gray-700"
+                                      th:datetime="${m.generatedAt()}"
+                                      th:text="${#temporals.format(m.generatedAt(), 'd MMM yyyy HH:mm')}">when</time>
+                            </div>
+                            <pre class="px-4 py-3 text-sm text-gray-900 whitespace-pre-wrap break-words"
+                                 th:text="${m.content()}">draft</pre>
+                            <div class="px-4 py-3 border-t border-gray-200">
+                                <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                                    What this rests on
+                                </h4>
+                                <p th:if="${m.claims().isEmpty()}" class="mt-2 text-sm text-gray-700">
+                                    No factual claims about you were made in this draft.
+                                </p>
+                                <dl th:unless="${m.claims().isEmpty()}" class="mt-2 space-y-2">
+                                    <div th:each="c : ${m.claims()}">
+                                        <dt class="text-sm text-gray-900" th:text="${c.claim()}">claim</dt>
+                                        <dd class="text-sm text-gray-700 pl-4 border-l-2 border-gray-200"
+                                            th:text="${c.source()}">cited span</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        </li>
+                    </ol>
                 </div>
             </section>
 
