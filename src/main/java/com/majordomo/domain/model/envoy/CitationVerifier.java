@@ -24,7 +24,12 @@ import java.util.regex.Pattern;
  * citing the span it came from. The span exists, so citation checking passes it
  * and number checking does not.
  *
- * <p>Neither check makes the draft true. Both make specific kinds of untrue
+ * <p>A claim's own numbers are checked against its own cited span, not the
+ * whole résumé. Swapping one résumé number for another passes the two checks
+ * above — the span is real, the number does occur somewhere — while changing
+ * what the cited line actually says.
+ *
+ * <p>None of these checks makes the draft true. Both make specific kinds of untrue
  * expensive, and what remains is why the citations are shown to a human.
  */
 public final class CitationVerifier {
@@ -54,6 +59,19 @@ public final class CitationVerifier {
             if (!resume.contains(normalise(claim.source()))) {
                 problems.add("Cited source is not in the résumé: \"" + claim.source()
                         + "\" (claim: " + claim.claim() + ")");
+            }
+            // Scoped to this claim's own span, not the whole résumé. Swapping
+            // one of the résumé's numbers for another of the résumé's numbers
+            // passes every other check here — the span is real and the number
+            // does appear somewhere — while changing what the cited line says.
+            // That is the rewrite defect #351 names, and it is not specific to
+            // résumé bullets.
+            Set<String> cited = numbersIn(claim.source());
+            for (String number : numbersIn(claim.claim())) {
+                if (!cited.contains(number)) {
+                    problems.add("Claim states " + number + ", which is not in the span it "
+                            + "cites: \"" + claim.source() + "\"");
+                }
             }
         }
 

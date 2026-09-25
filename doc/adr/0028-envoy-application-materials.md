@@ -150,6 +150,26 @@ the unquantified phrasing. That is the right way round — the prompt guides so
 that honest drafts pass, and the check decides. A guard that fires on honest
 work is one that gets switched off.
 
+## Amendment — 2026-09-25
+
+The amendment above overstated what the number check covered. It said the
+remaining gap was "everything not expressible as a number"; one numeric case
+was still open.
+
+Checking a draft's digits against the résumé and the posting as a whole lets a
+claim swap one of the résumé's numbers for another of the résumé's numbers. A
+bullet reading "led a team of 4" rewritten as a team of 12 cites a real span
+and states a number that does occur in the document — just not in the line
+being rewritten. Every check passed.
+
+**A claim's numbers are now checked against the span that claim cites**, not
+against the résumé as a whole. Found while implementing #351, which asked for a
+test specifically covering a rewrite that changes a number; the test was
+written, seen to pass, and that was the defect.
+
+Worth noting that this is not specific to résumé bullets, which is where #351
+expected it. Any claim can take a number from the wrong line.
+
 ## References
 
 - ADR-0022 — Envoy scoring, which this completes
